@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hello OpenCV.js</title>
+  </head>
+  <body>
+    <h2>Hello OpenCV.js</h2>
+    <div>
+      <p class="err" id="arucoErr"></p>
+      <div class="inputoutput">
+        <img id="imageSrc" alt="No Image" />
+        <div class="caption">
+          imageSrc <input type="file" id="fileInput" name="file" />
+        </div>
+        <button id="arucoTryIt" disabled="true" onclick="arucoExecuteCode()">
+          Try it</button
+        ><br />
+      </div>
+      <div class="inputoutput">
+        <canvas id="arucoCanvasOutput"></canvas>
+        <div class="caption">canvasOutput</div>
+      </div>
+    </div>
+    <textarea id="arucoTestCode">
+        let inputImage = cv.imread(imgElement);
+        cv.cvtColor(inputImage, inputImage, cv.COLOR_RGBA2RGB, 0);
+        let dictionary = new cv.Dictionary(
+          cv.DICT_6X6_250
+        );
+        let markedCorners = new cv.MatVector();
+        let markerIds = new cv.Mat();
+
+        cv.detectMarkers(inputImage, dictionary, markedCorners, markerIds);
+        if (markerIds.rows > 0) {
+          cv.drawDetectedMarkers(inputImage, markedCorners, markerIds);
+        }
+        cv.imshow("arucoCanvasOutput", inputImage);
+        inputImage.delete();
+        dictionary.delete();
+        markerCorners.delete();
+        markerIds.delete();
+
+    </textarea>
+    <script async src="opencv_copied.js" id="opencvjs"></script>
+
+    <script type="text/javascript">
+      let imgElement = document.getElementById("imageSrc");
+      let inputElement = document.getElementById("fileInput");
+      inputElement.addEventListener(
+        "change",
+        (e) => {
+          imgElement.src = URL.createObjectURL(e.target.files[0]);
+        },
+        false
+      );
+      function arucoExecuteCode() {
+        let arucoText = document.getElementById("arucoTestCode").value;
+        try {
+          eval(arucoText);
+          document.getElementById("arucoErr").innerHTML = " ";
+        } catch (err) {
+          document.getElementById("arucoErr").innerHTML = err;
+        }
+      }
+
+      function onReady() {
+        document.getElementById("arucoTryIt").disabled = false;
+      }
+      if (typeof cv !== "undefined") {
+        onReady();
+      } else {
+        document.getElementById("opencvjs").onload = onReady;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h2>Aruco camera stream</h2>
+    <video id="videoId" autoplay width="640" height="360"></video>
+    <canvas id="arucoCanvasOutput"></canvas>
+    <button onclick="activateCamera()" disabled id="buttonId">
+      Activate camera
+    </button>
+  </body>
+  <script async src="opencv_copied.js" id="opencvjs"></script>
+
+  <script type="text/javascript">
+    let videoObj = document.getElementById("videoId");
+    let width = videoObj.width;
+    let height = videoObj.height;
+    let src;
+    let dst;
+    let cameraMatrix;
+    let distCoeffs;
+
+    function onReady() {
+      document.getElementById("buttonId").disabled = false;
+      console.log(cv.__version__);
+      src = new cv.Mat(height, width, cv.CV_8UC4);
+      dst = new cv.Mat(height, width, cv.CV_8UC1);
+      /*Camera values*/
+      cameraMatrix = cv.matFromArray(
+        3,
+        3,
+        cv.CV_64F,
+        [
+          1181.1162112265451, 0.0, 948.8233981926403, 0.0, 1181.6472180982591,
+          541.2092582739663, 0.0, 0.0, 1.0,
+        ]
+      );
+      distCoeffs = cv.matFromArray(
+        5,
+        1,
+        cv.CV_64F,
+        [
+          0.19174712176744907, -0.08277619494389733, 0.0015721897019070517,
+          0.011591628661818381, -1.5351916635013496,
+        ]
+      );
+      cameraMatrix = cv.matFromArray(
+        3,
+        3,
+        cv.CV_64F,
+        [
+          9.6635571716090658e2, 0, 2.0679307818305685e2, 0,
+          9.6635571716090658e2, 2.9370020600555273e2, 0, 0, 1,
+        ]
+      );
+      distCoeffs = cv.matFromArray(
+        5,
+        1,
+        cv.CV_64F,
+        [
+          -1.5007354215536557e-3, 9.8722389825801837e-1, 1.7188452542408809e-2,
+          -2.6805958820424611e-2, -2.3313928379240205,
+        ]
+      );
+    }
+    if (typeof cv !== "undefined") {
+      onReady();
+    } else {
+      document.getElementById("opencvjs").onload = onReady;
+    }
+
+    async function activateCamera() {
+      console.log(navigator.mediaDevices.enumerateDevices());
+      let stream = null;
+      try {
+        stream = await window.navigator.mediaDevices.getUserMedia(constraints);
+        console.log("Got stream!");
+        /* use the stream */
+        // let videoObj = document.getElementById("videoObj");
+        videoObj.srcObject = stream;
+        processVideo();
+      } catch {
+        function handle(err) {
+          console.log(err);
+        }
+      }
+    }
+
+    let canvasFrame = document.getElementById("arucoCanvasOutput"); // canvasFrame is the id of <canvas>
+    let context = canvasFrame.getContext("2d");
+
+    const FPS = 30;
+
+    let constraints = {
+      audio: false,
+      video: {
+        width: 640,
+        height: 360,
+        frameRate: 30,
+        deviceId:
+          "900a49dfda6bfee6faf44cbb6b6b1cd7477dccb9c7ac304255fbac5c8d81f3d0",
+      },
+    };
+    function processVideo() {
+      let begin = Date.now();
+      context.drawImage(videoObj, 0, 0, width, height);
+      src.data.set(context.getImageData(0, 0, width, height).data);
+      cv.cvtColor(src, dst, cv.COLOR_RGBA2RGB, 0);
+      let dictionary = new cv.Dictionary(cv.DICT_6X6_250);
+      let markerCorners = new cv.MatVector();
+      let markerIds = new cv.Mat();
+      cv.detectMarkers(dst, dictionary, markerCorners, markerIds);
+      if (markerIds.rows > 0) {
+        console.log(markerIds.rows);
+        cv.drawDetectedMarkers(dst, markerCorners, markerIds);
+        let rvecs = new cv.Mat();
+        let tvecs = new cv.Mat();
+        cv.estimatePoseSingleMarkers(
+          markerCorners,
+          0.1,
+          cameraMatrix,
+          distCoeffs,
+          rvecs,
+          tvecs
+        );
+        // console.log(rvecs);
+        // console.log(tvecs);
+        // for (let i = 0; i < markerIds.rows; i++) {
+        //   cv.drawFrameAxes(
+        //     dst,
+        //     cameraMatrix,
+        //     distCoeffs,
+        //     rvecs[i],
+        //     tvecs[i],
+        //     0.1
+        //   );
+        // }
+        for (let i = 0; i < markerIds.rows; i++) {
+          let rvec = cv.matFromArray(3, 1, cv.CV_64F, [
+            rvecs.doublePtr(0, i)[0],
+            rvecs.doublePtr(0, i)[1],
+            rvecs.doublePtr(0, i)[2],
+          ]);
+          let tvec = cv.matFromArray(3, 1, cv.CV_64F, [
+            tvecs.doublePtr(0, i)[0],
+            tvecs.doublePtr(0, i)[1],
+            tvecs.doublePtr(0, i)[2],
+          ]);
+          cv.drawAxis(dst, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+          rvec.delete();
+          tvec.delete();
+        }
+      }
+      cv.imshow("arucoCanvasOutput", dst); // canvasOutput is the id of another <canvas>;
+      // schedule next one.
+      let delay = 1000 / FPS - (Date.now() - begin);
+      setTimeout(processVideo, delay);
+    }
+    // schedule first one.
+    setTimeout(processVideo, 0);
+  </script>
+</html>
