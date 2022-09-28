@@ -1,11 +1,12 @@
 let doodlebot;
 let server;
 let services;
-let characteristic;
+// let characteristic;
 let myDescriptor;
 SERVICE_UART_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 CHARACTERISTIC_UART_UUID_RX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 CHARACTERISTIC_UART_UUID_TX = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+all_characteristics = {};
 
 class Doodlebot {}
 
@@ -27,10 +28,11 @@ function time(text) {
   log("[" + new Date().toJSON().substr(11, 8) + "] " + text);
 }
 sendCommandButton.addEventListener("click", async function () {
-  if (!characteristic) {
+  if (!all_characteristics) {
     log("Uh oh...trying to send commands but hasn't initialized yet!");
     return;
   }
+  let characteristic = all_characteristics["RX"];
   //send command to doodlebot
   let commands = botCommand.value;
   let encoder = new TextEncoder("utf-8");
@@ -43,6 +45,7 @@ sendCommandButton.addEventListener("click", async function () {
   let res = await characteristic.writeValueWithResponse(value);
   log("Value received...: ");
   log(res);
+  console.log(res);
 });
 async function populateBluetoothDevices() {
   const devicesSelect = document.querySelector("#devicesSelect");
@@ -85,8 +88,11 @@ function connect() {
 
       log("Getting characteristic...");
       //could work
-      characteristic = await service.getCharacteristic(
+      all_characteristics["RX"] = await service.getCharacteristic(
         CHARACTERISTIC_UART_UUID_RX
+      );
+      all_characteristics["TX"] = await service.getCharacteristic(
+        CHARACTERISTIC_UART_UUID_TX
       );
 
       // const characteristics = await service.getCharacteristics();
@@ -99,18 +105,21 @@ function connect() {
       // );
 
       // For receiving messages
-      // await characteristic.startNotifications();
-      console.log(characteristic.properties);
+      await all_characteristics["TX"].startNotifications();
 
-      characteristic.addEventListener("characteristicvaluechanged", (evt) => {
-        const view = evt.target.value;
-        // const value = new Uint8Array(view.buffer);
-        // this.dispatchEvent("receive", value);
-        log("Received:");
-        log(view);
-      });
-      log(characteristic);
-      log(characteristic.uuid);
+      all_characteristics["TX"].addEventListener(
+        "characteristicvaluechanged",
+        (evt) => {
+          const view = evt.target.value;
+          // const value = new Uint8Array(view.buffer);
+          // this.dispatchEvent("receive", value);
+          log("Received:");
+          log(view);
+          var enc = new TextDecoder("utf-8"); // always utf-8
+          log(enc.decode(view.buffer));
+        }
+      );
+      // );
       //   log("Getting descriptor...");
       //   myDescriptor = await characteristic.getDescriptor(
       // "gatt.characteristic_user_description"
