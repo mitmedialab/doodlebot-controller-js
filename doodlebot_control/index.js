@@ -10,12 +10,26 @@ all_characteristics = {};
 
 class Doodlebot {}
 
-async function sendCommandToRobot(command, delayInMs) {
+async function sendCommandToRobot(commands, delayInMs = 500) {
   return new Promise((resolve) => {
     setTimeout(() => {
       if (doodlebot) {
-        console.log("Sending command:", command);
-        doodlebot.sendText(command);
+        log("Sending command: " + commands);
+        // doodlebot.sendText(command);
+        if (!all_characteristics) {
+          log("Uh oh...trying to send commands but hasn't initialized yet!");
+          return;
+        }
+        let characteristic = all_characteristics["RX"];
+        //send command to doodlebot
+        let encoder = new TextEncoder("utf-8");
+        log("Changing characteristic...");
+        const arrayData = commands.split("").map((e) => e.charCodeAt(0));
+        log("ArrayData");
+        log(arrayData);
+        let value = new Uint8Array(arrayData).buffer;
+        // await characteristic.writeValueWithoutResponse(value);
+        let res = characteristic.writeValueWithResponse(value);
       } else console.log("Robot not available");
       resolve();
     }, delayInMs);
@@ -28,24 +42,15 @@ function time(text) {
   log("[" + new Date().toJSON().substr(11, 8) + "] " + text);
 }
 sendCommandButton.addEventListener("click", async function () {
-  if (!all_characteristics) {
-    log("Uh oh...trying to send commands but hasn't initialized yet!");
-    return;
-  }
-  let characteristic = all_characteristics["RX"];
-  //send command to doodlebot
   let commands = botCommand.value;
-  let encoder = new TextEncoder("utf-8");
-  log("Changing characteristic...");
-  const arrayData = commands.split("").map((e) => e.charCodeAt(0));
-  log("ArrayData");
-  log(arrayData);
-  let value = new Uint8Array(arrayData).buffer;
-  // await characteristic.writeValueWithoutResponse(value);
-  let res = await characteristic.writeValueWithResponse(value);
-  log("Value received...: ");
-  log(res);
-  console.log(res);
+  sendCommandToRobot(commands);
+});
+connectInternetButton.addEventListener("click", async function () {
+  let network = "PRG-MIT";
+  let pwd = "JiboLovesPizzaAndMacaroni1";
+  let cmd = `(k,${network},${pwd})`;
+  sendCommandToRobot(cmd);
+  // .then(()=>{sendCommandToRobot()})
 });
 async function populateBluetoothDevices() {
   const devicesSelect = document.querySelector("#devicesSelect");
