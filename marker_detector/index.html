@@ -10,12 +10,12 @@
     <h2>Aruco camera stream</h2>
     <video id="videoId" autoplay width="640" height="360"></video>
     <canvas id="arucoCanvasOutput"></canvas>
-    <button onclick="activateCamera()" disabled id="buttonId">
-      Activate camera
-    </button>
+    <button disabled id="activateCameraButton">Activate camera</button>
     <button disabled id="deactivateCameraButton">Deactivate camera</button>
   </body>
   <script async src="opencv_copied.js" id="opencvjs"></script>
+  <script src="constants.js"></script>
+  <script src="camera-controller.js"></script>
   <script src="index.js"></script>
 
   <!-- <script type="text/javascript">
