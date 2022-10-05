@@ -139,5 +139,9 @@ class Doodlebot {
       }, delayInMs);
     });
   }
+  async connectToWifi(network, pwd) {
+    let cmd = `(k,${network},${pwd})`;
+    return sendCommandToRobot(cmd);
+  }
 }
 // module.exports = Doodlebot;
