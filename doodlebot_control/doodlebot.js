@@ -33,7 +33,7 @@ function exponentialBackoff(max, delay, toTry, success, fail) {
 }
 
 class Doodlebot {
-  constructor(log = (msg) => {}, onReceiveValue = (evt) => {}) {
+  constructor(log = (msg) => {}, customOnReceiveValue = (evt) => {}) {
     /**
      * Bluetooth variables
      */
@@ -41,9 +41,10 @@ class Doodlebot {
     this.server = null;
     this.service = null;
     this.all_characteristics = {};
+    this.isMoving = false;
 
     this.log = log;
-    this.onReceiveValue = onReceiveValue;
+    this.customOnReceiveValue = customOnReceiveValue;
   }
   async request_device() {
     this.log("Requesting any Bluetooth device...");
@@ -86,7 +87,7 @@ class Doodlebot {
 
     this.all_characteristics["TX"].addEventListener(
       "characteristicvaluechanged",
-      this.onReceiveValue
+      this.onReceiveValue.bind(this)
     );
     this.log("Connected succesfully!");
     return this.server;
@@ -108,11 +109,61 @@ class Doodlebot {
     this.log("> Bluetooth Device disconnected");
     this.connect();
   }
+  onReceiveValue(evt){
+    let enc = new TextDecoder("utf-8"); // always utf-8
+    let res = enc.decode(evt.target.value.buffer);
+    if (res === '(ms)'){
+      this.log('Stopped moving...');
+      this.isMoving = false;
+    }
+    this.customOnReceiveValue(evt);
+  }
   // async init() {
   //   // First add this to the bluetooth device list
   //   await this.request_device();
   //   await this.connect();
   // }
+  async drive(args){
+    if (this.isMoving){
+      console.log("It cannot be moving while already moving");
+      return;
+    }
+    this.isMoving = true;
+    let {NUM, DIR} = args;
+    //For left and right motor
+    let leftSteps = NUM;
+    let rightSteps = NUM; 
+    if (DIR === 'left' || DIR === 'backward'){
+      leftSteps *= -1;
+    }
+    if (DIR === 'right' || DIR === 'backward'){
+      rightSteps *= -1;
+    }
+    await this.sendCommandToRobot(`(m,100,100,${leftSteps},${rightSteps})`);
+
+    // this.isMoving = false;
+  }
+  async turn(args){
+    if (this.isMoving){
+      console.log("It cannot be moving while already moving");
+      return;
+    }
+    this.isMoving = true;
+    let {NUM, DIR} = args;
+    let nDegrees = NUM;
+    if (DIR === 'right'){
+      nDegrees *= -1;
+    }
+    this.log(`Trying to turn ${nDegrees}`);
+    await this.sendCommandToRobot(`(t,0,${nDegrees})`);
+  }
+  /**
+   * Users should not call this function, but rather the function-specific methods 
+   * like this.drive(), this.turn()
+   * @param {*} commands 
+   * @param {*} delayInMs 
+   * @returns 
+   */
   async sendCommandToRobot(commands, delayInMs = 500) {
     return new Promise((resolve) => {
       setTimeout(() => {
