@@ -19,7 +19,10 @@ if (typeof cv !== "undefined") {
     .getElementById("opencvjs")
     .addEventListener("load", onReadyConstants);
 }
-function onReadyConstants() {
+async function onReadyConstants() {
+  cv = await cv;
+  console.log("cv found:")
+  console.log(cv);
   /*Camera values*/
   cameraMatrix = cv.matFromArray(
     3,

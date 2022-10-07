@@ -40,6 +40,7 @@ class CameraController {
   deactivateCamera() {
     this.isCameraActive = false;
   }
+
   /**
    * Takes the data from one Canvas and writes it to another Canvas
    * @param {*} imageData
@@ -52,7 +53,7 @@ class CameraController {
     //   let dst = new cv.Mat(height, width, cv.CV_8UC1);
     this.src.data.set(imageData.data);
     cv.cvtColor(this.src, this.dst, cv.COLOR_RGBA2RGB, 0);
-    let dictionary = new cv.Dictionary(cv.DICT_6X6_250);
+    let dictionary = new cv.aruco_Dictionary(cv.DICT_6X6_250);
     let markerCorners = new cv.MatVector();
     let markerIds = new cv.Mat();
     cv.detectMarkers(this.dst, dictionary, markerCorners, markerIds);
@@ -73,8 +74,12 @@ class CameraController {
       rvecs,
       tvecs
     );
+    console.log(markerIds)
+
+
     for (let i = 0; i < markerIds.rows; i++) {
-      let rvec = cv.matFromArray(3, 1, cv.CV_64F, [
+
+        let rvec = cv.matFromArray(3, 1, cv.CV_64F, [
         rvecs.doublePtr(0, i)[0],
         rvecs.doublePtr(0, i)[1],
         rvecs.doublePtr(0, i)[2],
@@ -84,15 +89,20 @@ class CameraController {
         tvecs.doublePtr(0, i)[1],
         tvecs.doublePtr(0, i)[2],
       ]);
-      cv.drawAxis(this.dst, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+      cv.drawFrameAxes(this.dst, this.cameraMatrix, this.distCoeffs, rvec, tvec, 0.1);
+
+      //   cv.drawAxis(this.dst, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
       let marker_id = markerIds.data[4 * i]; //TODO: FIgure out a way this can generalize for bigger ids
-      response[marker_id] = { rvec: rvec.data64F, tvec: tvec.data64F };
-      // rvec.delete();
-      // tvec.delete();
+      response[marker_id] = { rvec, tvec };
+    //   // rvec.delete();
+    //   // tvec.delete();
     }
-    // if (response[1] && response[12]) {
-    //   console.log(diff(response[1]["tvec"], response[12]["tvec"]));
-    // }
+    if (response[1] && response[12]) {
+      console.log(response[1]["tvec"]);
+      console.log(response[12]["tvec"]);
+
+      console.log(diff(response[1]["tvec"].data64F, response[12]["tvec"].data64F));
+    }
     return response;
   }
 }
