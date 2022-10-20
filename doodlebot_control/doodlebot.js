@@ -14,6 +14,12 @@ class UartService {
     return "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
   }
 }
+
+class CustomEventTarget extends EventTarget{
+  constructor(){
+    super();
+  }
+}
 // This function keeps calling "toTry" until promise resolves or has
 // retried "max" number of times. First retry has a delay of "delay" seconds.
 // "success" is called upon success.
@@ -45,6 +51,8 @@ class Doodlebot {
 
     this.log = log;
     this.customOnReceiveValue = customOnReceiveValue;
+
+    this.motorEvent = new CustomEventTarget();
   }
   async request_device() {
     this.log("Requesting any Bluetooth device...");
@@ -114,6 +122,8 @@ class Doodlebot {
     let res = enc.decode(evt.target.value.buffer);
     if (res === '(ms)'){
       this.log('Stopped moving...');
+      let stopEvent = new CustomEvent("stop", {});
+      this.motorEvent.dispatchEvent(stopEvent);
       this.isMoving = false;
     }
     this.customOnReceiveValue(evt);
@@ -142,6 +152,11 @@ class Doodlebot {
     await this.sendCommandToRobot(`(m,100,100,${leftSteps},${rightSteps})`);
 
     // this.isMoving = false;
+    return new Promise((resolve) => {
+      this.motorEvent.addEventListener("stop", ()=>{
+        resolve();
+      }, {once: true})
+    })
   }
   async turn(args){
     // if (this.isMoving){
@@ -156,6 +171,12 @@ class Doodlebot {
     }
     this.log(`Trying to turn ${nDegrees}`);
     await this.sendCommandToRobot(`(t,0,${nDegrees})`);
+
+    return new Promise((resolve) => {
+      this.motorEvent.addEventListener("stop", ()=>{
+        resolve();
+      }, {once: true})
+    })
   }
   /**
    * Users should not call this function, but rather the function-specific methods 
@@ -164,7 +185,8 @@ class Doodlebot {
    * @param {*} delayInMs 
    * @returns 
    */
-  async sendCommandToRobot(commands, delayInMs = 500) {
+  async sendCommandToRobot(commands) {
+    let delayInMs = 100;
     return new Promise((resolve) => {
       setTimeout(() => {
         if (this.bot) {

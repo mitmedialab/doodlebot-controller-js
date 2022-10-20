@@ -11,6 +11,7 @@ let cameraConstraints = {
   },
 };
 const FPS = 15; //30;
+const INCHES_PER_STEP = 0.055; //Number from Franklin
 
 if (typeof cv !== "undefined") {
   onReadyConstants();

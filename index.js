@@ -538,6 +538,28 @@ async function moveToId2(){
 
 }
 
+multipleCommandsTestButton.addEventListener("click", async (evt)=>{
+  //Measured by hand
+  let realWidthInches = 12.5; 
+  let realHeightInches = 7;
+  let nStepsWidth = Math.floor(realWidthInches / INCHES_PER_STEP);
+  let nStepsHeight = Math.floor(realHeightInches / INCHES_PER_STEP);
+  log(`nStepsWidth = ${nStepsWidth}, nStepsHeight = ${nStepsHeight}`);
+  if (!doodlebot){
+    log(`Doodlebot not connected yet!`);
+    return;
+  }
+  // await doodlebot.turn({NUM: 90, DIR:"right"})
+  await doodlebot.drive({NUM: nStepsWidth});
+  await doodlebot.turn({NUM: 90, DIR:"left"})
+  await doodlebot.drive({NUM: nStepsHeight})
+  await doodlebot.turn({NUM: 90, DIR:"left"})
+  await doodlebot.drive({NUM: nStepsWidth})
+  await doodlebot.turn({NUM: 90, DIR:"left"})
+  await doodlebot.drive({NUM: nStepsHeight})
+  await doodlebot.turn({NUM: 180, DIR:"left"})
+
+})
 function log(message) {
   logBox.value = message + "\n" + logBox.value;
 }
