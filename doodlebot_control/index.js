@@ -8,8 +8,24 @@ function log(message) {
 // }
 sendCommandButton.addEventListener("click", async function () {
   let commands = botCommand.value;
-  doodlebot.sendCommandToRobot(commands);
+  await doodlebot.sendCommandToRobot(commands);
 });
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+testMovementButton.addEventListener('click', async function(){
+  await doodlebot.drive({NUM: 100});
+  await sleep(2000); //TODO: Update sendCommandToRobot so that this is not needed
+
+  await doodlebot.turn({NUM: 90, DIR: 'right'});
+  await sleep(2000);
+
+  await doodlebot.drive({NUM: 100});
+  await sleep(2000);
+
+  await doodlebot.turn({NUM: 90, DIR: 'left'});
+  await sleep(2000);
+})
 connectInternetButton.addEventListener("click", async function () {
   let network = "PRG-MIT";
   let pwd = "JiboLovesPizzaAndMacaroni1";

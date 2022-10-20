@@ -22,15 +22,23 @@
         <button id="sendCommandButton">Send command!</button>
       </div>
       <textarea id="logBox" rows="10" cols="100"></textarea>
+      <select id="selectCorners"></select>
       <button id="moveToTargetButton"> Move to target!</button>
       <button id="connectInternetButton">Connect to PRG-MIT WiFi!</button>
+      <div id="summary">
+
+      </div>
       <p>Camera:</p>
       <video id="videoId" autoplay width="640" height="360"></video>
       <canvas id="arucoCanvasOutput"></canvas>
+      <canvas id="arucoCanvasOutput2"></canvas>
       <button disabled id="activateCameraButton">
         Activate camera
       </button>
       <button disabled id="deactivateCameraButton">Deactivate camera</button>
+      <button id="updateBoard">Update Corners</button>
+      <button id="switchViewButton">Switch view</button>
+      <button id="lengthTestButton">Test length!</button>
 
     </body>
   </body>

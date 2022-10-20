@@ -124,10 +124,10 @@ class Doodlebot {
   //   await this.connect();
   // }
   async drive(args){
-    if (this.isMoving){
-      console.log("It cannot be moving while already moving");
-      return;
-    }
+    // if (this.isMoving){
+    //   console.log("[Driving] It cannot be moving while already moving");
+    //   return;
+    // }
     this.isMoving = true;
     let {NUM, DIR} = args;
     //For left and right motor
@@ -144,10 +144,10 @@ class Doodlebot {
     // this.isMoving = false;
   }
   async turn(args){
-    if (this.isMoving){
-      console.log("It cannot be moving while already moving");
-      return;
-    }
+    // if (this.isMoving){
+    //   console.log("[turning] It cannot be moving while already moving");
+    //   return;
+    // }
     this.isMoving = true;
     let {NUM, DIR} = args;
     let nDegrees = NUM;

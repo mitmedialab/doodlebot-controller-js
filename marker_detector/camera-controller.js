@@ -66,20 +66,22 @@ class CameraController {
     cv.drawDetectedMarkers(this.dst, markerCorners, markerIds);
     let rvecs = new cv.Mat();
     let tvecs = new cv.Mat();
+    let markerSize = 0.1
     cv.estimatePoseSingleMarkers(
       markerCorners,
-      0.1,
+      markerSize,
       cameraMatrix,
       distCoeffs,
       rvecs,
       tvecs
     );
-    console.log(markerIds)
+    // console.log(markerIds);
+    // console.log(markerCorners);
 
 
     for (let i = 0; i < markerIds.rows; i++) {
 
-        let rvec = cv.matFromArray(3, 1, cv.CV_64F, [
+      let rvec = cv.matFromArray(3, 1, cv.CV_64F, [
         rvecs.doublePtr(0, i)[0],
         rvecs.doublePtr(0, i)[1],
         rvecs.doublePtr(0, i)[2],
@@ -89,20 +91,36 @@ class CameraController {
         tvecs.doublePtr(0, i)[1],
         tvecs.doublePtr(0, i)[2],
       ]);
+      // console.log("tvecs");
+      // console.log(tvecs);
+      // console.log("tvec")
+      // console.log(tvec);
+      // console.log("markerCorners");
+      // console.log(markerCorners.get(i));
+      
+      // let markerCorner = cv.matFromArray(4, 1, cv.CV_64F, [
+      //   markerCorners.get(i)[0],
+      //   markerCorners.get(i)[1],
+      //   markerCorners.get(i)[2],
+      //   markerCorners.get(i)[3],
+      // ]);
+      // console.log("markerCorner");
+      // console.log(markerCorner);
       cv.drawFrameAxes(this.dst, this.cameraMatrix, this.distCoeffs, rvec, tvec, 0.1);
 
       //   cv.drawAxis(this.dst, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
-      let marker_id = markerIds.data[4 * i]; //TODO: FIgure out a way this can generalize for bigger ids
-      response[marker_id] = { rvec, tvec };
+      let marker_id = markerIds.data[4 * i]; //ßTODO: FIgure out a way this can generalize for bigger ids
+      response[marker_id] = { rvec, tvec, corners: markerCorners.get(i)};
+      // console.log(markerCorners.get(i))
     //   // rvec.delete();
     //   // tvec.delete();
     }
-    if (response[1] && response[12]) {
-      console.log(response[1]["tvec"]);
-      console.log(response[12]["tvec"]);
+    // if (response[1] && response[12]) {
+    //   console.log(response[1]["tvec"]);
+    //   console.log(response[12]["tvec"]);
 
-      console.log(diff(response[1]["tvec"].data64F, response[12]["tvec"].data64F));
-    }
+    //   console.log(diff(response[1]["tvec"].data64F, response[12]["tvec"].data64F));
+    // }
     return response;
   }
 }

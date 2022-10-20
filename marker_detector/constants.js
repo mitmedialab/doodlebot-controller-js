@@ -10,7 +10,7 @@ let cameraConstraints = {
       "900a49dfda6bfee6faf44cbb6b6b1cd7477dccb9c7ac304255fbac5c8d81f3d0",
   },
 };
-const FPS = 30;
+const FPS = 15; //30;
 
 if (typeof cv !== "undefined") {
   onReadyConstants();
@@ -42,6 +42,7 @@ async function onReadyConstants() {
       0.011591628661818381, -1.5351916635013496,
     ]
   );
+  //Values from other repo
   cameraMatrix = cv.matFromArray(
     3,
     3,
@@ -60,4 +61,24 @@ async function onReadyConstants() {
       -2.6805958820424611e-2, -2.3313928379240205,
     ]
   );
+  //Values from lab camera using video2calibration
+  if (false){
+  cameraMatrix = cv.matFromArray(
+    3,
+    3,
+    cv.CV_64F,
+    [
+      803.6482346316369, 0, 622.0533724011025, 0, 803.2871202639438,
+      352.18308586907744, 0, 0, 1,
+    ]
+  );
+  distCoeffs = cv.matFromArray(
+    5,
+    1,
+    cv.CV_64F,
+    [
+      0.08798626671471771, -0.21986096551594153, 0.00038579093799327664, 0.003067987420044901, 0.08999487132382833
+    ]
+  );
+  }
 }
