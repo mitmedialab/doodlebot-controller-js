@@ -58,7 +58,7 @@ class Doodlebot {
     this.log("Requesting any Bluetooth device...");
     // const device = RobotBLE.requestRobot(bluetooth, "Doodlebooth Frida");
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: "Doodlebot Frida" }, { services: [UartService.uuid] }], // <- Prefer filters to save energy & show relevant devices.
+      filters: [{ services: [UartService.uuid] }], // <- Prefer filters to save energy & show relevant devices.
       //   acceptAllDevices: true,
     });
 

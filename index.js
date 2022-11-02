@@ -1,6 +1,7 @@
 // console.log = (x, r)=>{if (r){}};
 
-let doodlebot;
+// let doodlebot;
+let allDoodlebots = {}; // id -> doodlebot object
 let cameraController;
 let videoObj = document.getElementById("videoId");
 let width = videoObj.width;
@@ -29,7 +30,7 @@ if (typeof cv !== "undefined") {
   document.getElementById("opencvjs").addEventListener("load", onReady);
 }
 
-async function onReady(){
+async function onReady() {
   console.log("Index on Ready");
   cv = await cv;
   document.getElementById("activateCameraButton").disabled = false;
@@ -43,7 +44,7 @@ async function onReady(){
     width,
     cameraConstraints
   );
-  for (key in BORDER_IDS){
+  for (key in BORDER_IDS) {
     let el = document.createElement("option");
     el.setAttribute("value", BORDER_IDS[key]);
     el.innerHTML = `${key} - ${BORDER_IDS[key]}`;
@@ -59,10 +60,10 @@ activateCameraButton.addEventListener("click", async (evt) => {
   videoObj.srcObject = stream;
   processVideo();
 });
-switchViewButton.addEventListener("click", (evt)=>{
+switchViewButton.addEventListener("click", (evt) => {
   showAruco = !showAruco;
 })
-updateBoard.addEventListener("click",  findHomographicMatrix);
+updateBoard.addEventListener("click", findHomographicMatrix);
 let markerSize = 0.1;
 
 /**
@@ -70,7 +71,7 @@ let markerSize = 0.1;
  * @param {*} rvec 
  * @returns  The 2d angle direction of the rotation vector
  */
-function getRotation2DAngle(rvec){
+function getRotation2DAngle(rvec) {
   // let center2D = get2D(tvec.data64F);
 
   // let halfSide = markerSize / 2;
@@ -91,10 +92,10 @@ function getRotation2DAngle(rvec){
   // let dy = middleTop[1] - center2D[1];
   let angle = Math.atan2(dir2D[1], dir2D[0]);
   angle = angle * 180 / Math.PI;
-  if (angle < 0){angle += 360;} //Make sure angle is on [0. 360)
+  if (angle < 0) { angle += 360; } //Make sure angle is on [0. 360)
   return angle;
 }
-function getCameraCoordinates(rvec, tvec){
+function getCameraCoordinates(rvec, tvec) {
   let half_side = markerSize / 2;
 
   let rot = new cv.Mat();
@@ -118,16 +119,16 @@ function getCameraCoordinates(rvec, tvec){
  * @param {*} point 3d point, usually from a tvec.data64F
  * @returns 
  */
-function get2D(point){
-  let rvec = cv.matFromArray(3, 1, cv.CV_64F, [0,0,0]);
-  let tvec = cv.matFromArray(3, 1, cv.CV_64F, [0,0,0]);
+function get2D(point) {
+  let rvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
+  let tvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
   let out = new cv.Mat();
   let pt = cv.matFromArray(3, 1, cv.CV_64F, point);
   cv.projectPoints(pt, rvec, tvec, cameraMatrix, distCoeffs, out);
   out = out.data64F;
   return out;
 }
-function findHomographicMatrix(){
+function findHomographicMatrix() {
   // let srcTri2 = cv.matFromArray(4, 1, cv.CV_32FC2, [56, 65, 368, 52, 28, 387, 389, 390]);
   // let dstTri2 = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 300, 0, 0, 300, 300, 300]);
   // let M = cv.getPerspectiveTransform(srcTri2, dstTri2);
@@ -140,14 +141,14 @@ function findHomographicMatrix(){
     !currentVectors[BORDER_IDS.BOTTOM_LEFT] ||
     !currentVectors[BORDER_IDS.BOTTOM_RIGHT] ||
     !currentVectors[BORDER_IDS.TOP_RIGHT] ||
-    !currentVectors[BORDER_IDS.TOP_LEFT] 
-  ){
+    !currentVectors[BORDER_IDS.TOP_LEFT]
+  ) {
     console.log("Not 4 corners have been found yet");
     return;
   }
   let bl = get2D(currentVectors[BORDER_IDS.BOTTOM_LEFT].tvec.data64F);
   let br = get2D(currentVectors[BORDER_IDS.BOTTOM_RIGHT].tvec.data64F);
-  
+
   let tr = get2D(currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
   let tl = get2D(currentVectors[BORDER_IDS.TOP_LEFT].tvec.data64F);
 
@@ -157,22 +158,22 @@ function findHomographicMatrix(){
   console.log(br);
   console.log(tr);
   console.log(tl);
-  
-  let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [bl[0], bl[1], br[0], br[1], tl[0], tl[1],tr[0], tr[1]]);
+
+  let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [bl[0], bl[1], br[0], br[1], tl[0], tl[1], tr[0], tr[1]]);
   let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, worldx, 0, 0, worldy, worldx, worldy]);
   homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri); //cv.findHomography(srcTri, dstTri);
 }
-function show2dProjection(){
-  if (!homographicMatrix){
+function show2dProjection() {
+  if (!homographicMatrix) {
     log("Cannot do until homographicMatrix is defined");
     return;
   }
-  if (!cameraController.src || !cameraController.src.data){
+  if (!cameraController.src || !cameraController.src.data) {
     log('Src canvas not ready..')
     return;
   }
   // let canvasOut = new cv.Mat(cameraController.height, cameraController.width, cv.CV_8UC1);
-  try{
+  try {
     let canvasOut = new cv.Mat();
     // let src = new cv.Mat(height, width, cv.CV_8UC4);
     // src.data.set(cameraController.src.data);
@@ -181,7 +182,7 @@ function show2dProjection(){
     cv.warpPerspective(cameraController.src, canvasOut, homographicMatrix, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
     cv.imshow("arucoCanvasOutput", canvasOut); // canvasOutput is the id of another <canvas>;
     return;
-  } catch(e){
+  } catch (e) {
     log("[show2dProjection] Uh oh..there was an error:");
     log(e);
     return
@@ -211,16 +212,16 @@ function show2dProjection(){
   )
   console.log(dst)
   // let dst = new cv.Mat([[0.0, 0.0], [worldx, 0.0], [0.0, worldy], [worldx, worldy]]);
-  
+
   let H = cv.findHomography(src, dst);
   console.log("H:");
-  console.log(H); 
+  console.log(H);
   return H;
 
 
 }
-function getAngleBetweenMarkers2(sourceId, targetId, imageData){
-  if (!cameraController){ return;}
+function getAngleBetweenMarkers2(sourceId, targetId, imageData) {
+  if (!cameraController) { return; }
   let worldx = 3;
   let worldy = 2;
 
@@ -249,7 +250,7 @@ function getAngleBetweenMarkers2(sourceId, targetId, imageData){
 
 }
 
-function getTranslationAngleDiff(tvecSource, tvecTarget){
+function getTranslationAngleDiff(tvecSource, tvecTarget) {
   let src = tvecSource.data64F;
   let target = tvecTarget.data64F;
   src = get2D(src);
@@ -259,12 +260,12 @@ function getTranslationAngleDiff(tvecSource, tvecTarget){
 
   let angle = Math.atan2(dy, dx);
   angle = angle * 180 / Math.PI;
-  if (angle < 0){angle += 360;} //Make sure angle is [0, 360), not -180, 180
-  return angle; 
+  if (angle < 0) { angle += 360; } //Make sure angle is [0, 360), not -180, 180
+  return angle;
 }
-function getAngleBetweenMarkers(sourceId, targetId){
+function getAngleBetweenMarkers(sourceId, targetId) {
   // return Math.floor(Math.random() * 100)
-  if (!currentVectors[sourceId] || !currentVectors[targetId]){
+  if (!currentVectors[sourceId] || !currentVectors[targetId]) {
     console.log(`Both source (id = ${sourceId}) and target (id = ${targetId}) should be present in currentVectors!`);
     console.log(currentVectors);
     return;
@@ -285,7 +286,7 @@ function getAngleBetweenMarkers(sourceId, targetId){
 
   let res = sourceRotationAngle - translationAngleDiff;
   // Make sure res is [0, 360)
-  if (res < 0) { res+= 360;}
+  if (res < 0) { res += 360; }
   //Only returning the smallest angle between res, 360-res
   if (res > 180) {
     return res - 360;
@@ -302,35 +303,35 @@ function getAngleBetweenMarkers(sourceId, targetId){
   let dy = realCoordsTarget[1] - realCoordsSource[1];
 
   // let angle = Math.atan2(dy, dx);
-  let angle = Math.atan(dy/dx);
+  let angle = Math.atan(dy / dx);
   angle = angle * 180 / Math.PI; //should be close to 90
   return angle;
 }
-function updateDistanceInfo(id, imageData){
+function updateDistanceInfo(id, imageData) {
   let angle = getAngleBetweenMarkers(DOODLEBOT_ID, id, imageData);
   // console.log(`Angle found between ${id} and doodlebot = ${angle}`);
 
   let distanceId = `distance-${id}`;
   let div = document.getElementById(distanceId);
-  if (!div){
+  if (!div) {
     let newEl = document.createElement('div');
-    newEl.setAttribute('id',  `summary-${id}`);
+    newEl.setAttribute('id', `summary-${id}`);
     let text = document.createElement('span');
     text.innerHTML = `Angle to id ${id}: `;
     let distanceEl = document.createElement('span');
     distanceEl.setAttribute('id', distanceId)
     distanceEl.innerText = angle;
-    
+
     newEl.appendChild(text);
     newEl.appendChild(distanceEl);
     summary.appendChild(newEl);
-  } else{
+  } else {
     div.innerText = angle;
   }
 }
-function allCornersFound(){
-  for (let key in BORDER_IDS){
-    if (!currentVectors[BORDER_IDS[key]]){
+function allCornersFound() {
+  for (let key in BORDER_IDS) {
+    if (!currentVectors[BORDER_IDS[key]]) {
       return false;
     }
   }
@@ -347,27 +348,27 @@ function processVideo() {
   // console.log(markersInfo);
   //Only draw when there is frame available
   if (context) {
-    if (showAruco){
+    if (showAruco) {
       cv.imshow("arucoCanvasOutput", cameraController.dst); // canvasOutput is the id of another <canvas>;
     } else {
       show2dProjection();
     }
 
 
-    if (!markersInfo){
+    if (!markersInfo) {
       console.log("No markers detected");
     } else {
-      if (allCornersFound() && !homographicMatrix){
+      if (allCornersFound() && !homographicMatrix) {
         findHomographicMatrix();
       }
       //Updating important vectors first
-      for (let important_id of IGNORE_IDS){
-        if (markersInfo[important_id]){
+      for (let important_id of IGNORE_IDS) {
+        if (markersInfo[important_id]) {
           currentVectors[important_id] = markersInfo[important_id];
         }
       }
       //Update non-importan vectors now
-      for (let id in markersInfo){
+      for (let id in markersInfo) {
         id = Number(id);
         if (IGNORE_IDS.indexOf(id) !== -1) continue;
         currentVectors[id] = markersInfo[id];
@@ -389,23 +390,33 @@ function processVideo() {
   setTimeout(processVideo, delay);
   return markersInfo;
 }
-
+function getCurrentDoodlebot() {
+  let id = devicesSelect.value;
+  console.log(`Current id of doodlebot found: ${id}`);
+  return allDoodlebots[id];
+}
 /**
  * Doodlebot controllers
  */
 connectInternetButton.addEventListener("click", async function () {
+  let doodlebot = getCurrentDoodlebot();
+
   let network = "PRG-MIT";
   let pwd = "JiboLovesPizzaAndMacaroni1";
   doodlebot.connectToWifi(network, pwd);
 });
 sendCommandButton.addEventListener("click", async function () {
+  let doodlebot = getCurrentDoodlebot();
+
   let commands = botCommand.value;
   doodlebot.sendCommandToRobot(commands);
 });
 
-moveToTargetButton.addEventListener("click", async (evt)=>{
+moveToTargetButton.addEventListener("click", async (evt) => {
+  let doodlebot = getCurrentDoodlebot();
+
   log("clicked moveToTargetButton");
-  if (!doodlebot){
+  if (!doodlebot) {
     log("Doodlebot not connected yet!");
   }
   let targetId = Number(selectCorners.value);
@@ -414,17 +425,17 @@ moveToTargetButton.addEventListener("click", async (evt)=>{
   angle = Math.floor(angle);
   log("turning...");
   log(angle);
-  await doodlebot.turn({NUM: angle, DIR: "left"});
+  await doodlebot.turn({ NUM: angle, DIR: "left" });
 })
 
-function logDistance(id1, id2){
+function logDistance(id1, id2) {
   let tvec1 = currentVectors[id1].tvec.data64F;
   let tvec2 = currentVectors[id2].tvec.data64F;
-  let diff = [tvec2[0]- tvec1[0], tvec2[1]-tvec1[1], tvec2[2]-tvec1[2]];
-  let d = Math.sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
+  let diff = [tvec2[0] - tvec1[0], tvec2[1] - tvec1[1], tvec2[2] - tvec1[2]];
+  let d = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
   log(`Distance between id ${id1} and ${id2}: ${d}`);
 }
-function log2DPosition(id){
+function log2DPosition(id) {
   let point = get2D(currentVectors[id].tvec.data64F);
   let point3D = cv.matFromArray(3, 1, cv.CV_64F, [point[0], point[1], 1]);
   let outPoint3D = new cv.Mat();
@@ -433,10 +444,10 @@ function log2DPosition(id){
   cv.gemm(homographicMatrix, point3D, 1, useless, 0, outPoint3D);//-rot^t * tvec 
 
   let [tx, ty, t] = outPoint3D.data64F;
-  let outPoint2D = [tx / t, ty/t ];
+  let outPoint2D = [tx / t, ty / t];
   log(`2d point for id ${id} = ${outPoint2D}`);
 }
-lengthTestButton.addEventListener("click", ()=>{
+lengthTestButton.addEventListener("click", () => {
   logDistance(BORDER_IDS.BOTTOM_LEFT, BORDER_IDS.BOTTOM_RIGHT);
   logDistance(BORDER_IDS.BOTTOM_RIGHT, BORDER_IDS.TOP_RIGHT);
   logDistance(BORDER_IDS.TOP_RIGHT, BORDER_IDS.TOP_LEFT);
@@ -461,38 +472,38 @@ lengthTestButton.addEventListener("click", ()=>{
 // # Calculates rotation matrix to euler angles
 // # The result is the same as MATLAB except the order
 // # of the euler angles ( x and z are swapped ).
-function rotationMatrixToEulerAngles(R){
-    console.log(R);
-    // if (!isRotationMatrix(R)){
-    //   console.log("Oops... his rotation should be a rotation matrix!")
-    // }
+function rotationMatrixToEulerAngles(R) {
+  console.log(R);
+  // if (!isRotationMatrix(R)){
+  //   console.log("Oops... his rotation should be a rotation matrix!")
+  // }
 
-    let sy = Math.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0]);
+  let sy = Math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0]);
 
-    let singular = sy < 1e-6;
-    let x, y, z;
-    if (!singular){
-        console.log("Not singular!")
-        x = Math.atan2(R[2,1] , R[2,2]) 
-        y = Math.atan2(-R[2,0], sy)  
-        z = Math.atan2(R[1,0], R[0,0]) 
-    } else{
-        console.log("Singular!")
-        x = Math.atan2(-R[1,2], R[1,1])
-        y = Math.atan2(-R[2,0], sy)
-        z = 0
-    }
-    let rots = cv.array([x, y, z])
-    rots = cv.array(rots.map(r => Math.degrees(r)));
+  let singular = sy < 1e-6;
+  let x, y, z;
+  if (!singular) {
+    console.log("Not singular!")
+    x = Math.atan2(R[2, 1], R[2, 2])
+    y = Math.atan2(-R[2, 0], sy)
+    z = Math.atan2(R[1, 0], R[0, 0])
+  } else {
+    console.log("Singular!")
+    x = Math.atan2(-R[1, 2], R[1, 1])
+    y = Math.atan2(-R[2, 0], sy)
+    z = 0
+  }
+  let rots = cv.array([x, y, z])
+  rots = cv.array(rots.map(r => Math.degrees(r)));
 
-    rots[0] = 180 - rots[0] % 360;
-    return rots 
+  rots[0] = 180 - rots[0] % 360;
+  return rots
 }
 
-async function moveToId(targetId){
+async function moveToId(targetId) {
 
 }
-async function moveToId2(){
+async function moveToId2() {
   // await doodlebot.turn({NUM: 90, DIR: 'left'});
   // return;
   let targetId = 12;
@@ -538,26 +549,28 @@ async function moveToId2(){
 
 }
 
-multipleCommandsTestButton.addEventListener("click", async (evt)=>{
+multipleCommandsTestButton.addEventListener("click", async (evt) => {
+  let doodlebot = getCurrentDoodlebot();
+
   //Measured by hand
-  let realWidthInches = 12.5; 
+  let realWidthInches = 12.5;
   let realHeightInches = 7;
   let nStepsWidth = Math.floor(realWidthInches / INCHES_PER_STEP);
   let nStepsHeight = Math.floor(realHeightInches / INCHES_PER_STEP);
   log(`nStepsWidth = ${nStepsWidth}, nStepsHeight = ${nStepsHeight}`);
-  if (!doodlebot){
+  if (!doodlebot) {
     log(`Doodlebot not connected yet!`);
     return;
   }
   // await doodlebot.turn({NUM: 90, DIR:"right"})
-  await doodlebot.drive({NUM: nStepsWidth});
-  await doodlebot.turn({NUM: 90, DIR:"left"})
-  await doodlebot.drive({NUM: nStepsHeight})
-  await doodlebot.turn({NUM: 90, DIR:"left"})
-  await doodlebot.drive({NUM: nStepsWidth})
-  await doodlebot.turn({NUM: 90, DIR:"left"})
-  await doodlebot.drive({NUM: nStepsHeight})
-  await doodlebot.turn({NUM: 180, DIR:"left"})
+  await doodlebot.drive({ NUM: nStepsWidth });
+  await doodlebot.turn({ NUM: 90, DIR: "left" })
+  await doodlebot.drive({ NUM: nStepsHeight })
+  await doodlebot.turn({ NUM: 90, DIR: "left" })
+  await doodlebot.drive({ NUM: nStepsWidth })
+  await doodlebot.turn({ NUM: 90, DIR: "left" })
+  await doodlebot.drive({ NUM: nStepsHeight })
+  await doodlebot.turn({ NUM: 180, DIR: "left" })
 
 })
 function log(message) {
@@ -569,24 +582,34 @@ function onReceiveValue(evt) {
   var enc = new TextDecoder("utf-8"); // always utf-8
   log(enc.decode(view.buffer));
 }
-async function populateBluetoothDevices() {
+async function populateBluetoothDevices(newDoodlebot) {
+  if (!newDoodlebot) { return; }
   try {
     log("Trying to connect...");
-    await doodlebot.connect();
+    await newDoodlebot.connect();
     const devicesSelect = document.querySelector("#devicesSelect");
     const option = document.createElement("option");
-    option.value = doodlebot.bot.id;
-    option.textContent = doodlebot.bot.name;
+    option.value = newDoodlebot.bot.id;
+    option.textContent = newDoodlebot.bot.name;
     devicesSelect.appendChild(option);
-  } catch (error) {
+  } catch (error) {  
     log("Argh! " + error);
   }
 }
+
+multipleRobotsTestButton.addEventListener("click", async () => {
+  for (let key in allDoodlebots) {
+    let bot = allDoodlebots[key];
+    await bot.drive({ NUM: 100 });
+    await bot.turn({ NUM: 90 })
+  }
+})
 async function onRequestBluetoothDeviceButtonClick() {
   try {
-    doodlebot = new Doodlebot(log, onReceiveValue);
-    await doodlebot.request_device();
-    populateBluetoothDevices();
+    let newDoodlebot = new Doodlebot(log, onReceiveValue);
+    await newDoodlebot.request_device();
+    allDoodlebots[newDoodlebot.bot.id] = newDoodlebot; // Saving object
+    populateBluetoothDevices(newDoodlebot);
   } catch (error) {
     log("Argh! " + error);
   }
