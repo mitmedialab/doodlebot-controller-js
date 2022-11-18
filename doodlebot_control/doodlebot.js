@@ -51,6 +51,7 @@ class Doodlebot {
 
     this.log = log;
     this.customOnReceiveValue = customOnReceiveValue;
+    this.commands_queue = new PromiseQueue();
 
     this.motorEvent = new CustomEventTarget();
   }
@@ -188,7 +189,7 @@ class Doodlebot {
   async sendCommandToRobot(commands) {
     let delayInMs = 100;
     return new Promise((resolve) => {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (this.bot) {
           this.log("Sending command: " + commands);
           if (!this.all_characteristics) {
@@ -205,8 +206,10 @@ class Doodlebot {
           this.log("ArrayData");
           this.log(arrayData);
           let value = new Uint8Array(arrayData).buffer;
+          await this.commands_queue.add(async ()=>characteristic.writeValueWithoutResponse(value));
           // await characteristic.writeValueWithoutResponse(value);
-          let res = characteristic.writeValueWithResponse(value);
+          // let res = characteristic.writeValueWithResponse(value);
+          console.log("Command sent!")
         } else this.log("Robot not available");
         resolve();
       }, delayInMs);
