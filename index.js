@@ -2,6 +2,8 @@
 
 // let doodlebot;
 let allDoodlebots = {}; // id -> doodlebot object
+let allWorkers = {}; //doodlebot id -> worker object
+
 let cameraController;
 let videoObj = document.getElementById("videoId");
 let width = videoObj.width;
@@ -21,6 +23,17 @@ let BORDER_IDS = {
   TOP_LEFT: 12 //top left
 }
 IGNORE_IDS = [1]; //, 8, 9, 10, 12]; //doodlebot + borders
+
+// Number of frames to check to figure out whether a coin is 
+let numFrames = 20; 
+//appear is an array of 0's and 1's. It's 1 if the frame was seen
+//and 0 if it wasn't
+// id -> {appear: []}
+const ALL_COIN_IDS = [7, 8, 9, 12];
+let COINS_INFO = {};
+for (let coin_id of ALL_COIN_IDS){
+  COINS_INFO[coin_id] = {};
+}
 /**
  * Camera controllers
  */
@@ -337,6 +350,53 @@ function allCornersFound() {
   }
   return true;
 }
+
+function updateCoinAppear(coin_id, appeared){
+  let appear = COINS_INFO[coin_id].appear;
+  if (!appear){appear = []};
+  appear.push(appeared);
+
+  if (appear.length > numFrames){
+    //Need to delete oldest entry
+    appear = appear.slice(1, appear.length);
+  }
+  COINS_INFO[coin_id].appear = appear;
+}
+const APPEAR_THRESHOLD = 0.8;
+
+function updateCoinInfo(coin_id){
+  let appear = COINS_INFO[coin_id].appear;
+  let timesDetected = appear.reduce((a, b) => a + b, 0); 
+  let avg = timesDetected / appear.length;
+  let decision = avg > APPEAR_THRESHOLD ? 'Still in board': 'Removed';
+  let text = `For coin ${coin_id}, detected it ${Math.floor(avg * 100)}% of times. Decision = ${decision}`;
+
+  //Updating UI 
+  let divId = `coin-${coin_id}`;
+  let div = document.getElementById(divId);
+  if (!div){
+    let newEl = document.createElement('tr');
+    newEl.setAttribute('id', divId);
+    coinsSummary.appendChild(newEl);
+    div = newEl;
+  }  else{
+    div.innerHTML = ""; //erase old values
+  }
+  //adding info
+  const create_td = (text) =>{
+    let td = document.createElement('td');
+    td.innerHTML = text;
+    return td;
+  }
+  let td_coin = create_td(coin_id)
+  let td_seen = create_td(`${timesDetected} / ${numFrames}`);
+  let td_percentage = create_td(`${Math.floor(avg * 100)}%`);
+  let td_decision = create_td(decision);
+  div.appendChild(td_coin);
+  div.appendChild(td_seen);
+  div.appendChild(td_percentage);
+  div.appendChild(td_decision);
+}
 function processVideo() {
   if (!cameraController.isCameraActive) {
     return;
@@ -367,10 +427,24 @@ function processVideo() {
           currentVectors[important_id] = markersInfo[important_id];
         }
       }
+      for (let coin_id in COINS_INFO){
+        let appeared = markersInfo[coin_id] ? 1: 0;
+        updateCoinAppear(coin_id, appeared);
+        updateCoinInfo(coin_id);
+      }
       //Update non-importan vectors now
       for (let id in markersInfo) {
         id = Number(id);
         if (IGNORE_IDS.indexOf(id) !== -1) continue;
+        if (id in COINS_INFO){
+          let appear = COINS_INFO[id].appear;
+          if (!appear){appear = []};
+          if (appear.length < numFrames-1){
+            appear.push(1);
+          }
+          COINS_INFO[id].appear = appear;
+          continue;  
+        }
         currentVectors[id] = markersInfo[id];
         updateDistanceInfo(id, imageData);
 
@@ -596,7 +670,17 @@ async function populateBluetoothDevices(newDoodlebot) {
     log("Argh! " + error);
   }
 }
+moveRobot1.addEventListener("click", async() =>{
+  let id1 = "PBFfpAWAdswsv6zvQ3Q5zQ=="; //hardcoded
+  await allDoodlebots[id1].drive({NUM:100});
+  await allDoodlebots[id1].drive({NUM:50});
+})
+moveRobot2.addEventListener("click", async() =>{
+  let id2 = "UJJh1Y3QIudHi3g9PkXhBg=="; //hardcoded
+  await allDoodlebots[id2].drive({NUM:200});
+  await allDoodlebots[id2].drive({NUM:100});
 
+})
 multipleRobotsTestButton.addEventListener("click", async () => {
   for (let key in allDoodlebots) {
     let bot = allDoodlebots[key];
@@ -604,10 +688,65 @@ multipleRobotsTestButton.addEventListener("click", async () => {
     await bot.turn({ NUM: 90 })
   }
 })
+
+/**Workers stuff, removing for now */
+// function onLog(data){
+//   let {message} = data;
+//   log(message);
+// }
+// function onCreate(worker, data){
+//   let {id, name} = data;
+//   allWorkers[id] = data;
+//   console.log("Worker saved!");
+//   console.log(allWorkers);
+
+//   const devicesSelect = document.querySelector("#devicesSelect");
+//   const option = document.createElement("option");
+//   option.value = id;
+//   option.textContent = name;
+//   devicesSelect.appendChild(option);
+// }
+// const CALLBACK_METHODS = {
+//   create: onCreate,
+//   log: onLog,
+// }
+// async function request_device() {
+//   log("Requesting any Bluetooth device...");
+//   // const device = RobotBLE.requestRobot(bluetooth, "Doodlebooth Frida");
+//   const device = await navigator.bluetooth.requestDevice({
+//     filters: [{ services: [UartService.uuid] }], // <- Prefer filters to save energy & show relevant devices.
+//     //   acceptAllDevices: true,
+//   });
+
+//   log("> Requested " + device.name + " (" + device.id + ")");
+
+//   let bot = device;
+
+
+//   return device;
+// }
 async function onRequestBluetoothDeviceButtonClick() {
   try {
+    // let tempWorker = new Worker("bot_worker.js");
+    // /**Initialize worker with its callbacks */
+    // tempWorker.addEventListener('message', (e) => {
+    //       let {type, res} = e.data;
+    //       if (!CALLBACK_METHODS[type]){
+    //           console.log(`[index.js] No valid method type: ${type}`)
+    //       } else{
+    //           //passing the data (and the worker) to the method bounded by the type we have
+    //           CALLBACK_METHODS[type](this, res);
+    //       }
+    // })
+    // let bot = await request_device();
+    // console.log("[main.js] Gotten bot:");
+    // console.log(bot);
+
+    // tempWorker.postMessage({type:"create", data:{bot: bot}}); //Telling worker to setup the doodlebot
+
     let newDoodlebot = new Doodlebot(log, onReceiveValue);
     await newDoodlebot.request_device();
+    console.log(`Added id with ${newDoodlebot.bot.id}`);
     allDoodlebots[newDoodlebot.bot.id] = newDoodlebot; // Saving object
     populateBluetoothDevices(newDoodlebot);
   } catch (error) {

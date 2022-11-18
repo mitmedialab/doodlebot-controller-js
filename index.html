@@ -28,6 +28,19 @@
       <div id="summary">
 
       </div>
+      <h1>Coin summary:</h1>
+      <table>
+        <thead>
+          <tr>
+            <td>Coin</td>
+            <td>Seen</td>
+            <td>%</td>
+            <td>Decision</td>
+          </tr>
+        </thead>
+        <tbody id="coinsSummary">
+        </tbody>
+      </table>
       <p>Camera:</p>
       <video id="videoId" autoplay width="640" height="360"></video>
       <canvas id="arucoCanvasOutput"></canvas>
@@ -41,6 +54,8 @@
       <button id="lengthTestButton">Test length!</button>
       <button id="multipleCommandsTestButton">Multiple Commands Test</button>
       <button id="multipleRobotsTestButton">Multiple Robots Test</button>
+      <button id="moveRobot1">Move robot 1</button>
+      <button id="moveRobot2">Move robot 2</button>
     </body>
   </body>
   <script
@@ -49,6 +64,7 @@
   id="opencvjs"
   type="text/javascript"
 ></script>
+  <script src="doodlebot_control/promise-queue.js"></script>
   <script src="doodlebot_control/doodlebot.js"></script>
   <script src="marker_detector/constants.js"></script>
   <script src="marker_detector/camera-controller.js"></script>
@@ -70,7 +86,19 @@
       errorMessage.innerText = "Bluetooth is not enabled :(";
     }
   </script>
-
+  <style>
+    table{
+      padding: 10
+    }
+    thead{
+      font-weight: bold;
+    }
+    table, th, td{
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 10px;
+    }
+  </style>
 
   <!-- <script>
     async function openCvReady() {
