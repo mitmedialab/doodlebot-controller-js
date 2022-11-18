@@ -1,4 +1,8 @@
 let grid;
+
+function log(message) {
+  logDiv.value = message + "\n" + logDiv.value;
+}
 function drawBoard(board){
     let gridDiv = document.getElementById("gridDiv");
     gridDiv.innerHTML = ""; //Erase everything before. TODO: Too innefficient, just update the ones you need to
@@ -23,10 +27,16 @@ function drawBoard(board){
             cell.classList.add('column')
             let text = board[i][j];
             cell.innerText = text;
-            if (text.startsWith("bot")){
-                cell.classList.add("cell-bot")
-            } else if (text.startsWith("obs")){
+            if (text.startsWith(BOT_TYPE)){
+                if (text.startsWith(`${BOT_TYPE}-edge`)){
+                    cell.classList.add("cell-bot-edge")
+                } else{
+                    cell.classList.add("cell-bot")
+                }
+            } else if (text.startsWith(OBSTACLE_TYPE)){
                 cell.classList.add("cell-obstacle")
+            } else if (text.startsWith(COIN_TYPE)){
+                cell.classList.add("cell-coin")
             }
             row.appendChild(cell);
 
@@ -56,20 +66,26 @@ function drawBoard(board){
     // // Adding directions
     // console.log('a');
     console.log(grid.bots)
+    let coinText = '\n';
     for (let [bot_id, bots] of Object.entries(grid.bots)){
         // console.log(bots);
         let bot = bots[0] //TODO: Change his for all indices
         console.log(angle_to_text(bot.angle))
-        text += `Bot #${bot_id}: ${angle_to_text(bot.angle)} \n`
+        text += `Bot #${bot_id}: ${angle_to_text(bot.angle)} \n`;
+        coinText += `Bot #${bot_id}: ${bot.coins.length} coin(s) \n`
     }
     botDirectionsDiv.innerText = text;
+    botScoresDiv.innerText = coinText;
 }
 let all_bot_ids = [];
 let min_bot_id = 1;
 let all_obstacle_ids = [];
 let min_obstacle_id = 11;
 
-let obstacle_id_1 = 10;
+let all_coin_ids = [];
+let min_coin_id = 21;
+
+// let obstacle_id_1 = 10;
 function getNewBotId(){
     //TODO: Make sure it doesnt crash with an obstacle id
     let max_bot_id = Math.max(min_bot_id-1, ...all_bot_ids);
@@ -78,6 +94,10 @@ function getNewBotId(){
 function getNewObstacleId(){
     let max_obstacle_id = Math.max(min_obstacle_id-1, ...all_obstacle_ids);
     return max_obstacle_id + 1;
+}
+function getNewCoinId(){
+    let max_coin_id = Math.max(min_coin_id-1, ...all_coin_ids);
+    return max_coin_id + 1;
 }
 create_grid_button.addEventListener("click", (evt)=>{
     let rows = 10;
@@ -99,7 +119,11 @@ addBotButton.addEventListener("click", (evt)=>{
         height: 3,
         angle: 0, //Right
     }
-    grid.add_bot(bot);
+    let {success, message} = grid.add_bot(bot);
+    if (!success){
+        log(message);
+        return;
+    }
     all_bot_ids.push(new_bot_id);
     console.log(grid.bots)
     console.log({...grid.bots[new_bot_id][0]})
@@ -129,38 +153,123 @@ addObstacleButton.addEventListener("click", (evt)=>{
         width: width,
         height: height,
     }
-    grid.add_obstacle(obstacle);
+    let {success, message} = grid.add_obstacle(obstacle);
+    if (!success){
+        log(message);
+        return;
+    }
     all_obstacle_ids.push(obstacleId);
 
     let board = grid.print_board();
     drawBoard(board);
 })
+addCoinButton.addEventListener("click", (evt)=>{
+    let coinId = getNewCoinId();
+    let row = Number(coinRowNumberInput.value);
+    let col = Number(coinColNumberInput.value);
+    let width = Number(coinWidthInput.value);
+    let height = Number(coinColNumber.value);  
+    let coin = {
+        id: coinId,
+        real_bottom_left: [col,row],
+        width: width,
+        height: height,
+    }
+    let {success, message} = grid.add_coin(coin);
+    if (!success){
+        log(message);
+        return;
+    }
+    all_coin_ids.push(coinId);
 
+    let board = grid.print_board();
+    drawBoard(board);
+})
 function updateCrashes(bot){
     console.log(bot.almost_crashes);
     let text = `Info for bot #${bot.id} \n`;
-    if (bot.almost_crashes.length === 0){
+    if (Object.keys(bot.almost_crashes).length === 0){
         text += "No crashes to be expected!"
     } else{
-        for (let [obstacle_id, obstacle_index] of bot.almost_crashes){
-            text += `Potential crash with obstacle ${obstacle_id} \n`;
+        for (let [object_type, object_crashes] of Object.entries(bot.almost_crashes)){
+            for (let [object_id, object_index, _] of object_crashes){
+                text += `Potential crash with ${object_type}:  ${object_id} \n`;
+            }
         }
     }
     botCrashLog.value = text;
 }
-moveButton.addEventListener("click", (evt)=>{
-    let bot_id = botSelect.value;
+function moveBot(bot_id, distance){
     console.log("move 1");
-    let bot = grid.move_bot(bot_id, 1);
+    let {success, bot, message} = grid.move_bot(bot_id, distance);
+    if (!success){
+        // log(`Problem with moving ${bot.id}:`)
+        log(message);
+        return;
+    } else{
+        //Dont print empty messages
+        if (message){
+            log(message);
+        }
+    }
     updateCrashes(bot);
     let board = grid.print_board();
     drawBoard(board);
-})
-turn90Button.addEventListener("click", (evt)=>{
-    let bot_id = botSelect.value;
+}
+function turnBot90(bot_id){
     console.log("Turning 90")
     let bot = grid.turn_bot(bot_id, 90);
     updateCrashes(bot);
     let board = grid.print_board();
     drawBoard(board);
+}
+moveButton.addEventListener("click", (evt)=>{
+    let bot_id = botSelect.value;
+    moveBot(bot_id, 1);
+})
+moveBackwardsButton.addEventListener("click", (evt)=>{
+    let bot_id = botSelect.value;
+    moveBot(bot_id, -1);
+})
+turn90Button.addEventListener("click", (evt)=>{
+    let bot_id = botSelect.value;
+    turnBot90(bot_id);
+})
+
+let movingRandomly = false;
+let intervals = {};
+generateRandomMovesButton.addEventListener("click", (evt)=>{
+    // 0 -> Move forward
+    // 1 -> Move backward
+    // 2 -> Turn 90
+    // movingRandomly = true;
+    let NUM_MOVES = 3;
+    let bot_id = botSelect.value;
+    if (bot_id in intervals){
+        log('The bot is already moving!');
+    }
+    function move(){
+        let randomMove = Math.floor(Math.random() * NUM_MOVES);
+
+        switch (randomMove){
+            case 0:
+                moveBot(bot_id, 1);
+                break;
+            case 1:
+                moveBot(bot_id, -1);
+                break;
+            case 2:
+                turnBot90(bot_id);
+                break;
+            default:
+                console.log(`Invalid randomMove = ${randomMove}`);
+        }
+    }
+    intervals[bot_id] = setInterval(move, 500);
+})
+
+stopButton.addEventListener("click", (evt)=>{
+    let bot_id = botSelect.value;
+    clearInterval(intervals[bot_id]);
+    delete intervals[bot_id];
 })
