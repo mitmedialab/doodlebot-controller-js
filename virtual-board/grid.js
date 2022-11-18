@@ -8,6 +8,10 @@ const ANGLE_DIRS = {
     LEFT: 180,
     DOWN: 270
 }
+const MIN_BOT_ID = 1;
+const MIN_OBSTACLE_ID = 11;
+const MIN_COIN_ID = 21;
+
 class VirtualGrid{
     constructor(m, n, bots=[], obstacles=[], coins=[]){
         this.rows = m;
@@ -42,7 +46,10 @@ class VirtualGrid{
         if (!this.isInsideBoard(obj.real_bottom_left, obj.width, obj.height)){
             return {success: false, message: `Error adding object with type ${type}: Outside bounds`}
         }
-        let {id} = obj;
+        let {id, width, height} = obj;
+        if (width <= 0 || height <= 0){
+            return {success: false, message: `Error adding object with type ${type}: Width not height can be 0`}
+        }
         //make sure this has the 
         let objects = type === BOT_TYPE ? this.bots : 
                      type === COIN_TYPE ? this.coins : 
@@ -120,6 +127,38 @@ class VirtualGrid{
 
         return 0 <= minBotX && maxBotX <= this.cols -1 && 0 <= minBotY && maxBotY <= this.rows -1;
     }
+    getNewBotId(){
+        //TODO: Make sure there are not too many bots
+        let max_bot_id = Math.max(MIN_BOT_ID-1, ...Object.keys(this.bots));
+        return max_bot_id + 1;
+    }
+    getNewObstacleId(){
+        //Make sure there are not too many obstacles
+        let max_obstacle_id = Math.max(MIN_OBSTACLE_ID-1, ...Object.keys(this.obstacles));
+        return max_obstacle_id + 1;
+    }
+    getNewCoinId(){
+        let max_coin_id = Math.max(MIN_COIN_ID-1, ...Object.keys(this.coins));
+        return max_coin_id + 1;
+    }
+    add_random_coin(){
+        while (true){
+            let col = Math.floor(Math.random() * this.cols);
+            let row = Math.floor(Math.random() * this.rows);
+            let coinId = this.getNewCoinId();
+            let potential_coin =  {
+                id: coinId,
+                real_bottom_left: [col,row],
+                width: 1,
+                height: 1,
+            }
+            let {success} = this.add_coin(potential_coin);
+            if (success){
+                //Just add it once!
+                return;
+            }
+        }
+    }
     /**
      * Walks in the current direction the bot is looking at
      * 
@@ -172,6 +211,7 @@ class VirtualGrid{
             for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]){
                 //TODO: Change bot state (e.g., give it more points)
                 this.remove_coin(coin_id, coin_index);
+                this.add_random_coin();
                 bot.coins.push([coin_id, coin_index])
                 coinsPicked.push([coin_id, coin_index]);
             }

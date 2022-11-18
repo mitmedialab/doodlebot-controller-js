@@ -86,19 +86,19 @@ let all_coin_ids = [];
 let min_coin_id = 21;
 
 // let obstacle_id_1 = 10;
-function getNewBotId(){
-    //TODO: Make sure it doesnt crash with an obstacle id
-    let max_bot_id = Math.max(min_bot_id-1, ...all_bot_ids);
-    return max_bot_id + 1;
-}
-function getNewObstacleId(){
-    let max_obstacle_id = Math.max(min_obstacle_id-1, ...all_obstacle_ids);
-    return max_obstacle_id + 1;
-}
-function getNewCoinId(){
-    let max_coin_id = Math.max(min_coin_id-1, ...all_coin_ids);
-    return max_coin_id + 1;
-}
+// function getNewBotId(){
+//     //TODO: Make sure it doesnt crash with an obstacle id
+//     let max_bot_id = Math.max(min_bot_id-1, ...all_bot_ids);
+//     return max_bot_id + 1;
+// }
+// function getNewObstacleId(){
+//     let max_obstacle_id = Math.max(min_obstacle_id-1, ...all_obstacle_ids);
+//     return max_obstacle_id + 1;
+// }
+// function getNewCoinId(){
+//     let max_coin_id = Math.max(min_coin_id-1, ...all_coin_ids);
+//     return max_coin_id + 1;
+// }
 create_grid_button.addEventListener("click", (evt)=>{
     let rows = 10;
     let cols = 12;
@@ -109,7 +109,7 @@ create_grid_button.addEventListener("click", (evt)=>{
 
 addBotButton.addEventListener("click", (evt)=>{
     console.log("Create bot")
-    let new_bot_id = getNewBotId();
+    let new_bot_id = grid.getNewBotId();
     console.log(new_bot_id)
     let bot = {
         id: new_bot_id, 
@@ -137,7 +137,7 @@ addBotButton.addEventListener("click", (evt)=>{
     botSelect.appendChild(option);
 })
 addObstacleButton.addEventListener("click", (evt)=>{
-    let obstacleId = getNewObstacleId();
+    let obstacleId = grid.getNewObstacleId();
     let row = Number(obstacleRowNumberInput.value);
     let col = Number(obstacleColNumberInput.value);
     let width = Number(obstacleWidthInput.value);
@@ -164,7 +164,7 @@ addObstacleButton.addEventListener("click", (evt)=>{
     drawBoard(board);
 })
 addCoinButton.addEventListener("click", (evt)=>{
-    let coinId = getNewCoinId();
+    let coinId = grid.getNewCoinId();
     let row = Number(coinRowNumberInput.value);
     let col = Number(coinColNumberInput.value);
     let width = Number(coinWidthInput.value);
