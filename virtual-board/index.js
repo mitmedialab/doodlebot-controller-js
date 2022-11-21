@@ -75,7 +75,7 @@ function drawBoard(board){
         coinText += `Bot #${bot_id}: ${bot.coins.length} coin(s) \n`
     }
     botDirectionsDiv.innerText = text;
-    botScoresDiv.innerText = coinText;
+    botScoresDiv.value = coinText;
 }
 let all_bot_ids = [];
 let min_bot_id = 1;
