@@ -1,38 +1,54 @@
-// console.log = (x, r)=>{if (r){}};
-
-// let doodlebot;
-let allDoodlebots = {}; // id -> doodlebot object
+let allDoodlebots = {}; // id -> doodlebot object for control the REAl doodlebots. id is the bluetooth device id
 let allWorkers = {}; //doodlebot id -> worker object
+let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id 
 
 let cameraController;
 let videoObj = document.getElementById("videoId");
 let width = videoObj.width;
 let height = videoObj.height;
 let context = arucoCanvasOutput.getContext("2d", { willReadFrequently: true });
-let currentVectors = {}; //id -> {rvec: , tvec: }
-let angles = {} //id -> angle (from doodlebot to id)
-let DOODLEBOT_ID = 1; //id of marker
-let homographicMatrix;
-let showAruco = true; // if false show the projected value
+let DOODLEBOT_ID = 1;
+let homographicMatrix; // to transform camera stream into a "flat" 2D frame
 
-//8, 9, 10, 12
+let canvasProjectionOut; //Opencv matrix to store projection of 2d - needs to be global variable because otherwise opencv complains after a few seconds
+let scalarProjection; //unclear if needed
+
 let BORDER_IDS = {
-  BOTTOM_LEFT: 8,  //bottom left
-  BOTTOM_RIGHT: 9, // bottom righ
-  TOP_RIGHT: 10, //top right
-  TOP_LEFT: 12 //top left
+  BOTTOM_LEFT: 31,  //bottom left
+  BOTTOM_RIGHT: 32, // bottom righ
+  TOP_RIGHT: 33, //top right
+  TOP_LEFT: 34 //top left
 }
-IGNORE_IDS = [1]; //, 8, 9, 10, 12]; //doodlebot + borders
+IGNORE_IDS = []; // ids for which we wont keep track of the aruco data (rvec, tvec)
 
-// Number of frames to check to figure out whether a coin is 
+// Number of frames to check to figure out whether a marker is still on the board
 let numFrames = 20; 
-//appear is an array of 0's and 1's. It's 1 if the frame was seen
-//and 0 if it wasn't
-// id -> {appear: []}
-const ALL_COIN_IDS = [7, 8, 9, 12];
-let COINS_INFO = {};
-for (let coin_id of ALL_COIN_IDS){
-  COINS_INFO[coin_id] = {};
+
+//id -> {type, width: , height: }
+const OBJECT_SIZES = {
+  //bots
+  1: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  2: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  3: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  4: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  // obstacles
+  11: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  12: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  13: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  14: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  15: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  // coins
+  21: {type: COIN_TYPE, width: 1, height: 1},
+  22: {type: COIN_TYPE, width: 1, height: 1},
+  23: {type: COIN_TYPE, width: 1, height: 1},
+  24: {type: COIN_TYPE, width: 1, height: 1},
+  25: {type: COIN_TYPE, width: 1, height: 1}
+
+}
+let MARKERS_INFO = {};
+for (let marker_id in OBJECT_SIZES){
+  MARKERS_INFO[marker_id] = {};
 }
 /**
  * Camera controllers
@@ -44,12 +60,14 @@ if (typeof cv !== "undefined") {
 }
 
 async function onReady() {
-  console.log("Index on Ready");
+  console.log("Opencv is ready!");
   cv = await cv;
   document.getElementById("activateCameraButton").disabled = false;
   document.getElementById("deactivateCameraButton").disabled = false;
-  console.log(cv);
-  console.log(cv.Rodrigues);
+
+  canvasProjectionOut = new cv.Mat();
+  scalarProjection = new cv.Scalar();
+
   cameraController = new CameraController(
     cameraMatrix,
     distCoeffs,
@@ -73,9 +91,6 @@ activateCameraButton.addEventListener("click", async (evt) => {
   videoObj.srcObject = stream;
   processVideo();
 });
-switchViewButton.addEventListener("click", (evt) => {
-  showAruco = !showAruco;
-})
 updateBoard.addEventListener("click", findHomographicMatrix);
 let markerSize = 0.1;
 
@@ -85,32 +100,17 @@ let markerSize = 0.1;
  * @returns  The 2d angle direction of the rotation vector
  */
 function getRotation2DAngle(rvec) {
-  // let center2D = get2D(tvec.data64F);
-
-  // let halfSide = markerSize / 2;
-
   let rot = new cv.Mat();
   cv.Rodrigues(rvec, rot);
-  // let inv = new cv.Mat();
-  // cv.transpose(rot, inv);
-  // console.log('rot');
-  // console.log(rot);
   //TODO: Figure out if you only need to do the 2d projection of the direction 
   let dir = rot.row(1).data64F; // * halfSide;
   let dir2D = get2D(dir);
-  // let middleTop = tvec.data64F + dir;
-  // let middleTop2D = get2D(middleTop);
-
-  // let dx = middleTop[0] - center2D[0];
-  // let dy = middleTop[1] - center2D[1];
   let angle = Math.atan2(dir2D[1], dir2D[0]);
   angle = angle * 180 / Math.PI;
   if (angle < 0) { angle += 360; } //Make sure angle is on [0. 360)
   return angle;
 }
 function getCameraCoordinates(rvec, tvec) {
-  let half_side = markerSize / 2;
-
   let rot = new cv.Mat();
   cv.Rodrigues(rvec, rot);
   let inv = new cv.Mat();
@@ -120,12 +120,7 @@ function getCameraCoordinates(rvec, tvec) {
   let coords = new cv.Mat();
   let useless = new cv.Mat(); //to be multiplied by 0
   cv.gemm(inv, tvec, -1, useless, 0, coords);//-rot^t * tvec 
-  // cv.multiply(inv, tvec, coords, -1);
-
-  // cv.multiply(inv,tvec, coords); //Need to multiply times -1
-  console.log(coords);
   return coords;
-
 }
 /**
  * 
@@ -138,18 +133,13 @@ function get2D(point) {
   let out = new cv.Mat();
   let pt = cv.matFromArray(3, 1, cv.CV_64F, point);
   cv.projectPoints(pt, rvec, tvec, cameraMatrix, distCoeffs, out);
-  out = out.data64F;
-  return out;
+  let res = out.data64F;
+  return res;
 }
 function findHomographicMatrix() {
-  // let srcTri2 = cv.matFromArray(4, 1, cv.CV_32FC2, [56, 65, 368, 52, 28, 387, 389, 390]);
-  // let dstTri2 = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 300, 0, 0, 300, 300, 300]);
-  // let M = cv.getPerspectiveTransform(srcTri2, dstTri2);
-  // return M;
-
+  console.log("Finding homographic matrix")
   let worldx = 640;//3;
-  let worldy = 360; //2;
-  // let bl, br, tr, tl;
+  let worldy = 640; //2;
   if (
     !currentVectors[BORDER_IDS.BOTTOM_LEFT] ||
     !currentVectors[BORDER_IDS.BOTTOM_RIGHT] ||
@@ -159,23 +149,188 @@ function findHomographicMatrix() {
     console.log("Not 4 corners have been found yet");
     return;
   }
+  //TODO: Figure out why bottom left and top left, and bottom right and top right are flipped!
   let bl = get2D(currentVectors[BORDER_IDS.BOTTOM_LEFT].tvec.data64F);
   let br = get2D(currentVectors[BORDER_IDS.BOTTOM_RIGHT].tvec.data64F);
 
-  let tr = get2D(currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
   let tl = get2D(currentVectors[BORDER_IDS.TOP_LEFT].tvec.data64F);
+  let tr = get2D(currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
 
-
-  console.log("bottom left info:")
-  console.log(bl);
-  console.log(br);
-  console.log(tr);
-  console.log(tl);
+  console.log(`Bottom left = ${bl}`);
+  console.log(`Bottom right = ${br}`);
+  console.log(`Top left: ${tl}`);
+  console.log(`Top right: ${tr}`);
 
   let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [bl[0], bl[1], br[0], br[1], tl[0], tl[1], tr[0], tr[1]]);
   let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, worldx, 0, 0, worldy, worldx, worldy]);
-  homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri); //cv.findHomography(srcTri, dstTri);
+  homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri) //, dstTri); //cv.findHomography(srcTri, dstTri);
 }
+/**
+ * 
+ * @param {*} id aruco marker
+ * @returns 2d position in the 2D grid of a given marker
+ */
+function getGridPosition(id){
+  let [x, y] = getReal2dPosition(id);
+  let [gridX, gridY] = [Math.floor(x / width * cols), Math.floor(y / width * rows)];
+  return [gridX, gridY];  
+}
+/**
+ * 
+ * @param {*} realAngle 
+ * @returns get angle from 0, 90, 180, 270 that is closest to realAngle
+ */
+function getClosestAngle(realAngle){
+  let possibilities = Object.values(ANGLE_DIRS).sort((a, b) => Math.abs(a-realAngle) - Math.abs(b-realAngle));
+  return possibilities[0]; //the closes to realAngle
+}
+/**
+ * 
+ * @param {*} id aruco marker
+ * @returns BOT_TYPE, OBSTACLE_TYPE or COIN_TYPE, accordingly
+ */
+function getTypeObject(id){
+  if (!(id in OBJECT_SIZES)){
+    return null; //not object we care about
+  }
+  return OBJECT_SIZES[id].type;
+}
+/**
+ * Updates position of a given bot in the virtual grid. If the bot is not there then it
+ * will create one
+ * @param {*} id aruco marker
+ */
+function updateVirtualBot(id){
+    let [gridX, gridY] = getGridPosition(id);
+    let realAngle = getRotation2DAngle(currentVectors[id].rvec);
+    let gridAngle = getClosestAngle(realAngle);
+    //If its not there, create one
+    if (!grid.bots[id]){
+      if (!(id in OBJECT_SIZES)){
+        console.log(`Couldnt find size information for id = ${id} `)
+      }
+      let {relative_anchor, width, height } = OBJECT_SIZES[id];
+      let [anchor_x, anchor_y] = relative_anchor;
+      //virtual bot doesnt exist, so create one
+      grid.add_bot({
+        id: id,
+        real_bottom_left: [gridX-anchor_x, gridY-anchor_y],
+        relative_anchor: [anchor_x, anchor_y],
+        width: width,
+        height: height,
+        angle: gridAngle
+      })
+    } else{
+      //If it already exists, just update position and angle
+      grid.update_bot(id, {new_angle: gridAngle, new_anchor: [gridX, gridY]})
+    }
+}
+/**
+ * Updates position of a given obstacle in the virtual grid. If the obstacle is not there then it
+ * will create one
+ * @param {*} id aruco marker
+ */
+function updateVirtualObstacle(id){
+    let [gridX, gridY] = getGridPosition(id);
+    if (!grid.obstacles[id]){
+      if (!(id in OBJECT_SIZES)){
+        console.log(`Couldnt find size information for id =${id} `)
+      }
+      let {width, height} = OBJECT_SIZES[id];
+      grid.add_obstacle({
+        id: id,
+        real_bottom_left:[gridX, gridY],
+        relative_anchor: [0,0], //All obstacles will be created this way
+        width: width,
+        height: height,
+      })
+    } else {
+      grid.update_obstacle(id, {new_anchor: [gridX, gridY]})
+    }
+}
+/**
+ * Updates position of a given coin in the virtual grid. If the coin is not there then it
+ * will create one
+ * @param {*} id aruco marker
+ */
+function updateVirtualCoin(id){
+    let [gridX, gridY] = getGridPosition(id);
+    if (!grid.coins[id]){
+      if (!(id in OBJECT_SIZES)){
+        console.log(`Couldnt find size information for id =${id} `)
+      }
+      let {width, height} = OBJECT_SIZES[id];
+      grid.add_coin({
+        id: id,
+        real_bottom_left:[gridX, gridY],
+        relative_anchor: [0,0], //All obstacles will be created this way
+        width: width,
+        height: height,
+      })
+    } else {
+      grid.update_coin(id, {new_anchor: [gridX, gridY]})
+    }
+}
+/**
+ * Updates virtual positions of all aruco markers found in currentVectors
+ */
+function updateVirtualObjects(){
+  if (!grid){
+    return;
+  }
+  for (let id in currentVectors){
+    let typeObj = getTypeObject(id);
+    if (!typeObj){
+      continue;
+    }
+    if (typeObj === BOT_TYPE){
+      updateVirtualBot(id);
+    } else if (typeObj === OBSTACLE_TYPE){
+      updateVirtualObstacle(id);
+    } else if (typeObj === COIN_TYPE){
+      updateVirtualCoin(id);
+    }
+  }
+}
+/**
+ * Draws horizontal and vertical lines in the canvas (just for visualization)
+ */
+function drawGrid(){
+    let color = [0, 0, 255, 255];
+    let thickness = 1;
+    let p1;
+    let p2;
+
+    //Draw vertical lines
+    for (let i = 0; i <= cols; i+=1){
+      let x_1 = Math.floor((width-1) / cols * i)
+      let y_1 = 0;
+      let x_2 = Math.floor((width-1) / cols * i)
+      let y_2 = height-1;
+      p1 = new cv.Point(x_1, y_1);
+      p2 = new cv.Point(x_2, y_2);
+      
+      cv.line(canvasProjectionOut, p1, p2, color, thickness);
+    }
+
+    //For horizontal lines
+    for (let i = 0; i <= rows; i+=1){
+      let x_1 = 0;
+      let y_1 = Math.floor((height-1) / rows * i);
+      let x_2 = width - 1;
+      let y_2 = Math.floor((height-1) / rows * i);
+      p1 = new cv.Point(x_1, y_1);
+      p2 = new cv.Point(x_2, y_2);
+      
+      cv.line(canvasProjectionOut, p1, p2, color, thickness);
+    }
+    //TODO: Figure out why is this necessary, maybe because the camera coefficients
+    //TODO 2: Maybe create a copy before moving
+    cv.flip(canvasProjectionOut, canvasProjectionOut, 0)
+}
+/**
+ * Projects the frame into a "flat" 2d version, adds grid lines and shows it in the canvas
+ */
 function show2dProjection() {
   if (!homographicMatrix) {
     log("Cannot do until homographicMatrix is defined");
@@ -185,84 +340,27 @@ function show2dProjection() {
     log('Src canvas not ready..')
     return;
   }
-  // let canvasOut = new cv.Mat(cameraController.height, cameraController.width, cv.CV_8UC1);
   try {
-    let canvasOut = new cv.Mat();
-    // let src = new cv.Mat(height, width, cv.CV_8UC4);
-    // src.data.set(cameraController.src.data);
-
     let dsize = new cv.Size(width, height); //new cv.Size(cameraController.src.cols, cameraController.src.rows);
-    cv.warpPerspective(cameraController.src, canvasOut, homographicMatrix, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-    cv.imshow("arucoCanvasOutput", canvasOut); // canvasOutput is the id of another <canvas>;
+    cv.warpPerspective(cameraController.src, canvasProjectionOut, homographicMatrix, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, scalarProjection);
+    drawGrid();
+    cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
+    // dsize.release();
     return;
   } catch (e) {
     log("[show2dProjection] Uh oh..there was an error:");
     log(e);
     return
   }
-  // return;
-
-
-
-
-  // let src = [[bl[0], bl[1]], [br[0], br[1]], [tr[0], tr[1]], [tl[0], tl[1]]];
-  let src = [[bl[0], bl[1]], [br[0], br[1]], [tr[0], tr[1]], [tl[0], tl[1]]]
-  src = cv.matFromArray(
-    4,
-    2,
-    cv.CV_64F,
-    [].concat(...src)
-  )
-  console.log(src)
-
-  // let src = new cv.Mat([[bl[0], bl[1]], [br[0], br[1]], [tr[0], tr[1]], [tl[0], tl[1]]]);
-  let dst = [[0.0, 0.0], [worldx, 0.0], [0.0, worldy], [worldx, worldy]];
-  dst = cv.matFromArray(
-    4,
-    2,
-    cv.CV_64F,
-    [].concat(...dst)
-  )
-  console.log(dst)
-  // let dst = new cv.Mat([[0.0, 0.0], [worldx, 0.0], [0.0, worldy], [worldx, worldy]]);
-
-  let H = cv.findHomography(src, dst);
-  console.log("H:");
-  console.log(H);
-  return H;
-
-
-}
-function getAngleBetweenMarkers2(sourceId, targetId, imageData) {
-  if (!cameraController) { return; }
-  let worldx = 3;
-  let worldy = 2;
-
-  // let H = getHomographyMatrix();
-  console.log('Found matrix');
-  console.log(H);
-  // console.log(cameraController.src)
-  // cameraController.src.data.set(imageData.data);
-
-  // let canvasOut = new cv.Mat(cameraController.height, cameraController.width, cv.CV_8UC1);
-  let canvasOut = new cv.Mat();
-  let dsize = new cv.Size(cameraController.src.cols, cameraController.src.rows);
-  cv.warpPerspective(cameraController.src, canvasOut, H, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-
-
-  // let canvasOut = new cv.Mat(worldx, worldy, cv.CV_8UC1);
-
-  // cv.cvtColor(cameraController.src, canvasOut, cv.COLOR_RGBA2RGB, 0);
-  // console.log(canvasOut)
-  // let size = new cv.Size(cameraController.width, cameraController.height);
-  // console.log(size);
-  // cv.warpPerspective(cameraController.src, canvasOut, H, size);
-  // console.log(canvasOut);
-  cv.imshow("arucoCanvasOutput2", canvasOut); // canvasOutput is the id of another <canvas>;
-
-
 }
 
+/**
+ * 
+ * @param {*} tvecSource 
+ * @param {*} tvecTarget 
+ * @returns Gets difference of angles between two translation vector. Each angle is calculated with respect to the x axis. Returns an difference
+ * on the interval [0, 360)
+ */
 function getTranslationAngleDiff(tvecSource, tvecTarget) {
   let src = tvecSource.data64F;
   let target = tvecTarget.data64F;
@@ -270,14 +368,20 @@ function getTranslationAngleDiff(tvecSource, tvecTarget) {
   target = get2D(target);
   let dx = target[0] - src[0];
   let dy = target[1] - src[1];
-
   let angle = Math.atan2(dy, dx);
   angle = angle * 180 / Math.PI;
   if (angle < 0) { angle += 360; } //Make sure angle is [0, 360), not -180, 180
   return angle;
 }
+/**
+ * 
+ * @param {*} sourceId aruco marker
+ * @param {*} targetId aruco marker
+ * @returns angle between two markers by taking into consideration both translation and rotation vectors. The response is on the range [-180, 180)
+ * Still unclear if the calculations are correct. Might not be needed if we only care about grid movements, tho could help to check that the bot
+ * is where it's supposed to be
+ */
 function getAngleBetweenMarkers(sourceId, targetId) {
-  // return Math.floor(Math.random() * 100)
   if (!currentVectors[sourceId] || !currentVectors[targetId]) {
     console.log(`Both source (id = ${sourceId}) and target (id = ${targetId}) should be present in currentVectors!`);
     console.log(currentVectors);
@@ -320,10 +424,13 @@ function getAngleBetweenMarkers(sourceId, targetId) {
   angle = angle * 180 / Math.PI; //should be close to 90
   return angle;
 }
-function updateDistanceInfo(id, imageData) {
-  let angle = getAngleBetweenMarkers(DOODLEBOT_ID, id, imageData);
-  // console.log(`Angle found between ${id} and doodlebot = ${angle}`);
-
+/**
+ * Updates UI to show whats the angle between DOODLEBOT_ID and the given id
+ * @param {*} id aruco marker
+ * @param {*} imageData 
+ */
+function updateDistanceInfo(id) {
+  let angle = getAngleBetweenMarkers(DOODLEBOT_ID, id);
   let distanceId = `distance-${id}`;
   let div = document.getElementById(distanceId);
   if (!div) {
@@ -342,6 +449,9 @@ function updateDistanceInfo(id, imageData) {
     div.innerText = angle;
   }
 }
+/**
+ * @returns true iff all the corners defined in BORDER_IDS have been detected by Aruco
+ */
 function allCornersFound() {
   for (let key in BORDER_IDS) {
     if (!currentVectors[BORDER_IDS[key]]) {
@@ -350,22 +460,39 @@ function allCornersFound() {
   }
   return true;
 }
-
-function updateCoinAppear(coin_id, appeared){
-  let appear = COINS_INFO[coin_id].appear;
+/**
+ * update marker_id's "appear" array of 1s and 0s. It makes sure the length is up to numFrames 
+ * @param {*} marker_id aruco marker
+ * @param {*} appeared 1 if marker was detected, 0 otherwise
+ */
+function updateMarkerAppear(marker_id, appeared){
+  let appear = MARKERS_INFO[marker_id].appear;
   if (!appear){appear = []};
   appear.push(appeared);
-
   if (appear.length > numFrames){
     //Need to delete oldest entry
     appear = appear.slice(1, appear.length);
   }
-  COINS_INFO[coin_id].appear = appear;
+  MARKERS_INFO[marker_id].appear = appear;
 }
 const APPEAR_THRESHOLD = 0.8;
-
+/**
+ * 
+ * @param {*} marker_id aruco marker
+ * @returns true iff the given marker is considered to be in the board, according to APPEAR_THRESHOLD
+ */
+function isInBoard(marker_id){
+  let appear = MARKERS_INFO[marker_id].appear;
+  let timesDetected = appear.reduce((a, b) => a + b, 0); 
+  let avg = timesDetected / appear.length;
+  return avg > APPEAR_THRESHOLD;
+}
+/**
+ * Writes to the UI info about the coin's appear state (times detected, percentage, final decision)
+ * @param {*} coin_id marker id of a coin
+ */
 function updateCoinInfo(coin_id){
-  let appear = COINS_INFO[coin_id].appear;
+  let appear = MARKERS_INFO[coin_id].appear;
   let timesDetected = appear.reduce((a, b) => a + b, 0); 
   let avg = timesDetected / appear.length;
   let decision = avg > APPEAR_THRESHOLD ? 'Still in board': 'Removed';
@@ -397,6 +524,10 @@ function updateCoinInfo(coin_id){
   div.appendChild(td_percentage);
   div.appendChild(td_decision);
 }
+/**
+ * Most important method. This will be grabbing a frame from the video stream according to FPS
+ * It's responsible for detecting aruco codes, show the 2d projection and keeping track of the virtual grid
+ */
 function processVideo() {
   if (!cameraController.isCameraActive) {
     return;
@@ -405,57 +536,52 @@ function processVideo() {
   context.drawImage(videoObj, 0, 0, width, height);
   let imageData = context.getImageData(0, 0, width, height);
   let markersInfo = cameraController.findArucoCodes(imageData);
-  // console.log(markersInfo);
   //Only draw when there is frame available
   if (context) {
-    if (showAruco) {
-      cv.imshow("arucoCanvasOutput", cameraController.dst); // canvasOutput is the id of another <canvas>;
-    } else {
-      show2dProjection();
+    cv.imshow("arucoCanvasOutput", cameraController.dst); // canvasOutput is the id of another <canvas>;
+    show2dProjection();
+    if (grid){
+      updateVirtualObjects();
+      drawBoard();
     }
-
-
     if (!markersInfo) {
       console.log("No markers detected");
     } else {
       if (allCornersFound() && !homographicMatrix) {
         findHomographicMatrix();
       }
-      //Updating important vectors first
-      for (let important_id of IGNORE_IDS) {
-        if (markersInfo[important_id]) {
-          currentVectors[important_id] = markersInfo[important_id];
+      
+      for (let possible_marker_id in OBJECT_SIZES){
+        let appeared = markersInfo[possible_marker_id] ? 1: 0;
+        updateMarkerAppear(possible_marker_id, appeared);
+        if (!isInBoard(possible_marker_id)){
+          if (possible_marker_id in currentVectors){
+            console.log(`Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`)
+            delete currentVectors[possible_marker_id];
+          }
+          delete MARKERS_INFO[possible_marker_id].appear; // delete previous appear history
+          if (!grid){continue};
+          // If not in board anymore, delete it from the virtual grid
+          if (possible_marker_id in grid.bots){
+            grid.remove_bot(possible_marker_id);
+          } else if (possible_marker_id in grid.obstacles){
+            grid.remove_obstacle(possible_marker_id)
+          } else if (possible_marker_id in grid.coins){
+            grid.remove_coin(possible_marker_id);
+          }
+        } else {
+          //It's still in board
+          if (grid && possible_marker_id in grid.coins){
+            updateCoinInfo(possible_marker_id);
+          }
         }
       }
-      for (let coin_id in COINS_INFO){
-        let appeared = markersInfo[coin_id] ? 1: 0;
-        updateCoinAppear(coin_id, appeared);
-        updateCoinInfo(coin_id);
-      }
-      //Update non-importan vectors now
       for (let id in markersInfo) {
         id = Number(id);
         if (IGNORE_IDS.indexOf(id) !== -1) continue;
-        if (id in COINS_INFO){
-          let appear = COINS_INFO[id].appear;
-          if (!appear){appear = []};
-          if (appear.length < numFrames-1){
-            appear.push(1);
-          }
-          COINS_INFO[id].appear = appear;
-          continue;  
-        }
         currentVectors[id] = markersInfo[id];
-        updateDistanceInfo(id, imageData);
-
+        updateDistanceInfo(id);
       }
-      // console.log("Values:")
-      // let bl = get2D(currentVectors[BORDER_IDS["BOTTOM_LEFT"]].tvec.data64F);
-      // for (let key in BORDER_IDS){
-      //   console.log(key);
-      //   let v = get2D(currentVectors[BORDER_IDS[key]].tvec.data64F);
-      //   console.log(`[${v[0]-bl[0]}, ${v[1]-bl[1]}]`);
-      // }
     }
   }
   // schedule next one.
@@ -464,6 +590,9 @@ function processVideo() {
   setTimeout(processVideo, delay);
   return markersInfo;
 }
+/**
+ * @returns id of the current REAL doodlebot object chosen from the dropdown.
+ */
 function getCurrentDoodlebot() {
   let id = devicesSelect.value;
   console.log(`Current id of doodlebot found: ${id}`);
@@ -474,21 +603,17 @@ function getCurrentDoodlebot() {
  */
 connectInternetButton.addEventListener("click", async function () {
   let doodlebot = getCurrentDoodlebot();
-
   let network = "PRG-MIT";
   let pwd = "JiboLovesPizzaAndMacaroni1";
   doodlebot.connectToWifi(network, pwd);
 });
 sendCommandButton.addEventListener("click", async function () {
   let doodlebot = getCurrentDoodlebot();
-
   let commands = botCommand.value;
   doodlebot.sendCommandToRobot(commands);
 });
-
 moveToTargetButton.addEventListener("click", async (evt) => {
   let doodlebot = getCurrentDoodlebot();
-
   log("clicked moveToTargetButton");
   if (!doodlebot) {
     log("Doodlebot not connected yet!");
@@ -501,7 +626,11 @@ moveToTargetButton.addEventListener("click", async (evt) => {
   log(angle);
   await doodlebot.turn({ NUM: angle, DIR: "left" });
 })
-
+/**
+ * Logs the distance between two markers
+ * @param {*} id1 aruco marker
+ * @param {*} id2 aruco marker
+ */
 function logDistance(id1, id2) {
   let tvec1 = currentVectors[id1].tvec.data64F;
   let tvec2 = currentVectors[id2].tvec.data64F;
@@ -509,7 +638,12 @@ function logDistance(id1, id2) {
   let d = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
   log(`Distance between id ${id1} and ${id2}: ${d}`);
 }
-function log2DPosition(id) {
+/**
+ * 
+ * @param {*} id aruco marker
+ * @returns 2d position of the 3d coordinates (from tvec) of a given marker
+ */
+function getReal2dPosition(id){
   let point = get2D(currentVectors[id].tvec.data64F);
   let point3D = cv.matFromArray(3, 1, cv.CV_64F, [point[0], point[1], 1]);
   let outPoint3D = new cv.Mat();
@@ -519,6 +653,14 @@ function log2DPosition(id) {
 
   let [tx, ty, t] = outPoint3D.data64F;
   let outPoint2D = [tx / t, ty / t];
+  return outPoint2D;
+}
+/**
+ * logs the 2d position for a given aruco
+ * @param {*} id aurco marker 
+ */
+function log2DPosition(id) {
+  let outPoint2D = getReal2dPosition(id);
   log(`2d point for id ${id} = ${outPoint2D}`);
 }
 lengthTestButton.addEventListener("click", () => {
@@ -546,6 +688,11 @@ lengthTestButton.addEventListener("click", () => {
 // # Calculates rotation matrix to euler angles
 // # The result is the same as MATLAB except the order
 // # of the euler angles ( x and z are swapped ).
+/**
+ * From https://gist.github.com/nouyang/c08202f97c607e2e6b7728577ffcb47f
+ * @param {*} R 
+ * @returns 
+ */
 function rotationMatrixToEulerAngles(R) {
   console.log(R);
   // if (!isRotationMatrix(R)){
@@ -574,9 +721,9 @@ function rotationMatrixToEulerAngles(R) {
   return rots
 }
 
-async function moveToId(targetId) {
-
-}
+/**
+ * Moving doodlebot to another aruco marker
+ */
 async function moveToId2() {
   // await doodlebot.turn({NUM: 90, DIR: 'left'});
   // return;
@@ -622,7 +769,6 @@ async function moveToId2() {
   // await doodlebot.turn({NUM: angle, DIR: 'right'});
 
 }
-
 multipleCommandsTestButton.addEventListener("click", async (evt) => {
   let doodlebot = getCurrentDoodlebot();
 
@@ -647,15 +793,29 @@ multipleCommandsTestButton.addEventListener("click", async (evt) => {
   await doodlebot.turn({ NUM: 180, DIR: "left" })
 
 })
+/**
+ * Logs message in the 'logBox' textarea
+ * @param {*} message 
+ */
 function log(message) {
   logBox.value = message + "\n" + logBox.value;
 }
+/**
+ * Callback to handle received values that come from the doodlebot
+ * @param {*} evt the received event
+ */
 function onReceiveValue(evt) {
   const view = evt.target.value;
   log("Received:");
   var enc = new TextDecoder("utf-8"); // always utf-8
   log(enc.decode(view.buffer));
 }
+/**
+ * Setup doodlebot connections and add it as a select option in the UI
+ * TODO: Since tis doesnt seem to be called anywehre else than in onRequestBluetoothDeviceButtonClick,
+ * check if al this logic could be moved there
+ * @param {*} newDoodlebot a Doodlebot object
+ */
 async function populateBluetoothDevices(newDoodlebot) {
   if (!newDoodlebot) { return; }
   try {

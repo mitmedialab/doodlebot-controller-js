@@ -11,6 +11,7 @@ const ANGLE_DIRS = {
 const MIN_BOT_ID = 1;
 const MIN_OBSTACLE_ID = 11;
 const MIN_COIN_ID = 21;
+const MIN_OTHER_ID = 31;
 
 class VirtualGrid{
     constructor(m, n, bots=[], obstacles=[], coins=[]){
@@ -116,8 +117,8 @@ class VirtualGrid{
                 }
             }
         }
-        console.log("almost_crashes");
-        console.log(almost_crashes);
+        // console.log("almost_crashes");
+        // console.log(almost_crashes);
         return almost_crashes;
 
     }
@@ -225,12 +226,70 @@ class VirtualGrid{
         let message = coinsPicked.length === 0 ? "": `Moved succesfully and picked up ${coinsPicked.length} coins ${coinsPicked}`
         return {success: true, bot: bot, message: message};
     }
+    /**
+     * 
+     * @param {*} bot_id 
+     * @param {*} new_anchor ABSOLUTE position (i.e., with respect to the board)
+     * @param {*} bot_index 
+     */
+    update_bot(bot_id, update, bot_index=0){
+        let {new_anchor, new_angle} = update;
+
+        //TODO: This function does not take into considerations crashes
+        let bot = this.bots[bot_id][bot_index];
+
+        if (new_anchor){
+            let [x, y] = bot.real_bottom_left;
+            let [anchor_x, anchor_y] = bot.relative_anchor;
+            let dx =  new_anchor[0] - (x + anchor_x);
+            let dy =  new_anchor[1] - (y + anchor_y);
+            bot.real_bottom_left = [x+dx, y+dy];
+        }
+        if (new_angle){
+            bot.angle = new_angle;
+        }
+        let message = `Moved succesfully`;
+        return {success: true, bot: bot, message: message};
+    }
+    update_obstacle(obstacle_id, update, obstacle_index=0){
+        let {new_anchor} = update;
+
+        //TODO: This function does not take into considerations crashes
+        let obstacle = this.obstacles[obstacle_id][obstacle_index];
+
+        if (new_anchor){
+            let [x, y] = obstacle.real_bottom_left;
+            let [anchor_x, anchor_y] = obstacle.relative_anchor;
+            let dx =  new_anchor[0] - (x + anchor_x);
+            let dy =  new_anchor[1] - (y + anchor_y);
+            obstacle.real_bottom_left = [x+dx, y+dy];
+        }
+        let message = `Moved succesfully`;
+        return {success: true, obstacle: obstacle, message: message};
+    }
+    update_coin(coin_id, update, coin_index=0){
+        let {new_anchor} = update;
+
+        //TODO: This function does not take into considerations crashes
+        let coin = this.coins[coin_id][coin_index];
+
+        if (new_anchor){
+            let [x, y] = coin.real_bottom_left;
+            let [anchor_x, anchor_y] = coin.relative_anchor;
+            let dx =  new_anchor[0] - (x + anchor_x);
+            let dy =  new_anchor[1] - (y + anchor_y);
+            coin.real_bottom_left = [x+dx, y+dy];
+        }
+        let message = `Moved succesfully`;
+        return {success: true, coin: coin, message: message};
+    }
+
     almost_crash(bot, obstacle, look_ahead){
         let obs_pos = obstacle.real_bottom_left;
         let dx = 0;
         let dy = 0;
         if (bot.type !== BOT_TYPE  && look_ahead !== 0){
-            console.log("Careful, the only movable objects should be bots...")
+            console.log(`Careful, the only movable objects should be bots... but got ${bot.type}`)
         }
         if (bot.type === BOT_TYPE){
             switch(bot.angle){
@@ -254,9 +313,9 @@ class VirtualGrid{
                     console.log(`Incorrect ANGLE : ${bot.angle}`)
             }
         }
-        console.log("look ahead:")
-        console.log(look_ahead);
-        console.log([dx, dy]);
+        // console.log("look ahead:")
+        // console.log(look_ahead);
+        // console.log([dx, dy]);
         let [minObsX, minObsY] = [obs_pos[0], obs_pos[1]];
         let [maxObsX, maxObsY] = [minObsX + obstacle.width - 1, minObsY + obstacle.height - 1];
         
@@ -344,6 +403,14 @@ class VirtualGrid{
      */
     add_bot(bot){
         return this.add_object(bot, BOT_TYPE);
+    }
+    remove_bot(bot_id, bot_index=0){
+        delete this.bots[bot_id][bot_index];
+        // this.obstacles[obstacle_id].splice(obstacle_index, 1);
+
+        if (Object.keys(this.bots[bot_id]).length === 0){
+            delete this.bots[bot_id];
+        }
     }
     add_obstacle(obstacle){
         return this.add_object(obstacle, OBSTACLE_TYPE);
@@ -444,8 +511,8 @@ class VirtualGrid{
                 }
             }
         }
-        console.log("Current state of board: ");
-        console.log("Current state of board: ");
+        // console.log("Current state of board: ");
+        // console.log("Current state of board: ");
         //Finally, print everything!
         //Starting from last to 0 so that it appears correctly
         for (let i = this.rows-1; i >= 0; i--){
@@ -453,7 +520,7 @@ class VirtualGrid{
             for (let j = 0; j < this.cols; j++){
                 row += (" | " + board[i][j]);
             }
-            console.log(row);
+            // console.log(row);
         }
 
         return board;

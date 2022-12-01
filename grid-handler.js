@@ -1,12 +1,19 @@
 let grid;
 
+let [rows, cols] = [8, 8];
+
 function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
 }
 function drawBoard(){
+    if (!grid){
+        log(`Couldnt draw board because there is no grid available!`);
+        return;
+    }
     let board = grid.print_board();
     let gridDiv = document.getElementById("gridDiv");
     gridDiv.innerHTML = ""; //Erase everything before. TODO: Too innefficient, just update the ones you need to
+
     let rows = board.length;
     let cols = board[0].length;
     let colNumbersDiv = document.createElement('div');
@@ -54,7 +61,7 @@ function drawBoard(){
     // console.log(ANGLE_DIRS);
     const angle_to_text = (angle) => {
         angle = Number(angle)
-        console.log(`Angle = ${angle}`)
+        // console.log(`Angle = ${angle}`)
         switch(angle){
             case ANGLE_DIRS.DOWN: return "down"
             case ANGLE_DIRS.LEFT: return "left"
@@ -63,14 +70,9 @@ function drawBoard(){
         }
     }
     let text = "\n";
-    // // Adding directions
-    // console.log('a');
-    console.log(grid.bots)
     let coinText = '\n';
     for (let [bot_id, bots] of Object.entries(grid.bots)){
-        // console.log(bots);
         let bot = bots[0] //TODO: Change his for all indices
-        console.log(angle_to_text(bot.angle))
         text += `Bot #${bot_id}: ${angle_to_text(bot.angle)} \n`;
         coinText += `Bot #${bot_id}: ${bot.coins.length} coin(s) \n`
     }
@@ -85,23 +87,7 @@ let min_obstacle_id = 11;
 let all_coin_ids = [];
 let min_coin_id = 21;
 
-// let obstacle_id_1 = 10;
-// function getNewBotId(){
-//     //TODO: Make sure it doesnt crash with an obstacle id
-//     let max_bot_id = Math.max(min_bot_id-1, ...all_bot_ids);
-//     return max_bot_id + 1;
-// }
-// function getNewObstacleId(){
-//     let max_obstacle_id = Math.max(min_obstacle_id-1, ...all_obstacle_ids);
-//     return max_obstacle_id + 1;
-// }
-// function getNewCoinId(){
-//     let max_coin_id = Math.max(min_coin_id-1, ...all_coin_ids);
-//     return max_coin_id + 1;
-// }
 create_grid_button.addEventListener("click", (evt)=>{
-    let rows = 10;
-    let cols = 12;
     grid = new VirtualGrid(rows, cols);
     drawBoard();
 })
@@ -113,9 +99,9 @@ addBotButton.addEventListener("click", (evt)=>{
     let bot = {
         id: new_bot_id, 
         real_bottom_left: [0, 0],
-        relative_anchor: [1, 1],
-        width: 3,
-        height: 3,
+        relative_anchor: [2, 2],
+        width: 5,
+        height: 5,
         angle: 0, //Right
     }
     let {success, message} = grid.add_bot(bot);
@@ -124,6 +110,8 @@ addBotButton.addEventListener("click", (evt)=>{
         return;
     }
     all_bot_ids.push(new_bot_id);
+    console.log(grid.bots)
+    console.log({...grid.bots[new_bot_id][0]})
     drawBoard();
 
     //Add it to options
@@ -180,7 +168,7 @@ addCoinButton.addEventListener("click", (evt)=>{
     drawBoard();
 })
 function updateCrashes(bot){
-    console.log(bot.almost_crashes);
+    // console.log(bot.almost_crashes);
     let text = `Info for bot #${bot.id} \n`;
     if (Object.keys(bot.almost_crashes).length === 0){
         text += "No crashes to be expected!"
@@ -194,7 +182,7 @@ function updateCrashes(bot){
     botCrashLog.value = text;
 }
 function moveBot(bot_id, distance){
-    console.log("move 1");
+    // console.log("move 1");
     let {success, bot, message} = grid.move_bot(bot_id, distance);
     if (!success){
         // log(`Problem with moving ${bot.id}:`)

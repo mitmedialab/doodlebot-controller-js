@@ -4,7 +4,7 @@ let cameraConstraints = {
   audio: false,
   video: {
     width: 640,
-    height: 360,
+    height: 640,
     frameRate: 30,
     deviceId:
       "900a49dfda6bfee6faf44cbb6b6b1cd7477dccb9c7ac304255fbac5c8d81f3d0",

@@ -53,7 +53,7 @@ class CameraController {
     //   let dst = new cv.Mat(height, width, cv.CV_8UC1);
     this.src.data.set(imageData.data);
     cv.cvtColor(this.src, this.dst, cv.COLOR_RGBA2RGB, 0);
-    let dictionary = new cv.aruco_Dictionary(cv.DICT_6X6_250);
+    let dictionary = new cv.aruco_Dictionary(cv.DICT_6X6_250); //TODO: Try 4x4, april tags dictionary
     let markerCorners = new cv.MatVector();
     let markerIds = new cv.Mat();
     cv.detectMarkers(this.dst, dictionary, markerCorners, markerIds);
