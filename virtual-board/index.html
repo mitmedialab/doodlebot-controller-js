@@ -62,6 +62,77 @@
             padding: 20px;
             border: black solid 2px;
         }
+        #botControlsContainer{
+            display: flex;
+            flex-wrap: wrap;
+            /* background-color: red; */
+            /* flex: 1; */
+        }
+        .bot-options{
+            display: flex;
+            flex-direction: row;
+            /* flex:1; */
+            /* align-items: center; */
+            justify-content: center;
+            border: black solid 5px;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px;
+            /* width: "40vw"; */
+            /* max-width: "40vw"; */
+            /* background-color: blue; */
+        }
+        .bot-options > *{
+            margin: 5px;
+        }
+        .left-header-right{
+            display: flex;
+            flex-direction: row;
+        }
+        .bot-moving-btn {
+            border: 0;
+            padding: 10px;
+            border-radius: 5px;
+            color:white;
+            cursor: pointer;
+        }
+        .bot-start {
+            background-color: green;
+        }
+        .bot-stop{
+            background-color: red;
+        }
+        .bot-policy-container{
+            display:flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content:space-evenly;
+            text-align: center;
+            flex:1;
+        }
+        .bot-moving-controls{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex:1;
+        }
+        .move-button-selected{
+            background-color: black;
+            color: white;
+        }
+        .bot-moving-controls-down{
+            
+        }
+        .bot-moving-controls h1{
+            margin: 10px;
+        }
+        .checkbox-group{
+            display: flex;
+            flex-direction: column;
+        }
+        /* .bot-moving-controls  */
     </style>
 </head>
 <body>
@@ -79,13 +150,12 @@
     </div>
     <section>
         <h1>Select bot:</h1>
-        <select id="botSelect"></select>
-        <button id="moveButton">Move</button>
-        <button id="moveBackwardsButton">Go back</button>
-        <button id="turn90Button">Turn 90deg</button>
-        <button id="generateRandomMovesButton">Generate random moves!</button>
-        <button id="stopButton">Stop random moves!</button>
+        <div id="botControlsContainer">
+
+        </div>
+        <!-- <select id="botSelect"></select> -->
         <textarea id="botCrashLog" rows="10" cols="100"></textarea>
+
     </section>
     <section>
         <h1>Editing part:</h1>

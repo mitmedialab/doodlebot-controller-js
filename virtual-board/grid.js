@@ -13,6 +13,13 @@ const MIN_OBSTACLE_ID = 11;
 const MIN_COIN_ID = 21;
 const MIN_OTHER_ID = 31;
 
+const BOT_POLICIES = {
+    // NONE: "none",
+    RANDOM: "random",
+    GET_CLOSER: "Get closer",
+    GET_FARTHER: "Get farther"
+}
+
 class VirtualGrid{
     constructor(m, n, bots=[], obstacles=[], coins=[]){
         this.rows = m;
@@ -32,12 +39,16 @@ class VirtualGrid{
         this.obstacles = {};
         this.coins = {};
     }
+    get_bot_angle(bot_id, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        return bot.angle;
+    }
     add_object(obj, type){
         if (!("id" in obj)){
             console.log("Error! Object should have an id parameter");
             return;
         }
-        let potential_crashes = this.get_almost_crashes({...obj, type}, obj.real_bottom_left, 0);
+        let potential_crashes = this.get_almost_crashes({...obj, type}, 0);
         console.log("adding objects");
         console.log({...obj, type})
         console.log(potential_crashes);
@@ -64,13 +75,15 @@ class VirtualGrid{
         let id_index = Math.max(-1, ...Object.keys(objects[id])) + 1; 
         let newObject = {...obj, type, id_index};
         if (type === BOT_TYPE){
-            newObject = {...newObject, coins: []}
+            newObject = {...newObject, coins: [], policies: new Set(), targets:[]};
         }
         objects[id][id_index] = newObject;
         // objects[id].push(newObject);
         return {success: true, message: `Succesfully added object with type ${type} and id ${id}`}
     }
-    get_almost_crashes(bot, new_position, look_ahead=1){
+    get_almost_crashes(future_bot, look_ahead=1){
+        console.log("Getting almost crashes for")
+        console.log(future_bot);
         //Check for almost-crashes with obstacles
         let almost_crashes = {};
 
@@ -79,11 +92,13 @@ class VirtualGrid{
             newBot_id = Number(newBot_id);
             for(let [newBot_index, newBot] of Object.entries(this.bots[newBot_id])){
                 newBot_index = Number(newBot_index);
-                if (bot.type === BOT_TYPE && bot.id === newBot_id && newBot.id_index === newBot_index){
+                // if (future_bot.type === BOT_TYPE && future_bot.id === newBot_id && newBot.id_index === newBot_index){
+                // TODO: Put the check back if have multiple bots with same id
+                if (future_bot.type === BOT_TYPE && future_bot.id === newBot_id){
                     //Dont count crashes with itself
                     continue;
                 }
-                if (this.almost_crash({...bot, real_bottom_left: new_position}, newBot, look_ahead)){
+                if (this.almost_crash(future_bot, newBot, look_ahead)){
                     if (!(BOT_TYPE in almost_crashes)){
                         almost_crashes[BOT_TYPE] = [];
                     }
@@ -96,7 +111,7 @@ class VirtualGrid{
             obstacle_id = Number(obstacle_id)
             for(let [obstacle_index, obstacle] of Object.entries(this.obstacles[obstacle_id])){
                 obstacle_index = Number(obstacle_index);
-                if (this.almost_crash({...bot, real_bottom_left: new_position}, obstacle, look_ahead)){
+                if (this.almost_crash(future_bot, obstacle, look_ahead)){
                     if (!(OBSTACLE_TYPE in almost_crashes)){
                         almost_crashes[OBSTACLE_TYPE] = [];
                     }
@@ -109,7 +124,7 @@ class VirtualGrid{
             coin_id = Number(coin_id)
             for(let [coin_index, coin] of Object.entries(this.coins[coin_id])){
                 coin_index = Number(coin_index);
-                if (this.almost_crash({...bot, real_bottom_left: new_position}, coin, look_ahead)){
+                if (this.almost_crash(future_bot, coin, look_ahead)){
                     if (!(COIN_TYPE in almost_crashes)){
                         almost_crashes[COIN_TYPE] = [];
                     }
@@ -117,8 +132,8 @@ class VirtualGrid{
                 }
             }
         }
-        // console.log("almost_crashes");
-        // console.log(almost_crashes);
+        console.log("Ouput: almost_crashes");
+        console.log(almost_crashes);
         return almost_crashes;
 
     }
@@ -161,16 +176,14 @@ class VirtualGrid{
         }
     }
     /**
-     * Walks in the current direction the bot is looking at
      * 
      * @param {*} bot_id 
-     * @param {*} distance a number
-     * @param {*} bot_index the index of which bot with a given idis this referring to. If all ids are different this should be 0
+     * @param {*} distance 
+     * @param {*} bot_index 
+     * @returns where the bot would end up + 'valid_position' which is true or false;
      */
-    move_bot(bot_id, distance, bot_index=0){
-        let bot = this.bots[bot_id][bot_index]
-
-        let {angle, real_bottom_left} = bot;
+    future_position_after_move(prev_bot, distance){
+        let {angle, real_bottom_left} = prev_bot;
         let dx, dy;
         switch(angle){
             case ANGLE_DIRS.RIGHT:
@@ -194,18 +207,58 @@ class VirtualGrid{
         }
         //TODO: Check for out-of-board cases
         let new_bottom_left = [real_bottom_left[0]+dx, real_bottom_left[1]+dy];
-        if (!this.isInsideBoard(new_bottom_left, bot.width, bot.height)){
+
+        let future_bot = {...prev_bot, real_bottom_left: new_bottom_left}
+        let valid_position = this.is_valid_bot_position(future_bot).valid;
+        return {...future_bot, valid_position: valid_position}
+    }
+    /**
+     * 
+     * @param {*} future_bot
+     * Checks that it's inside the board, and that it doesnt crash with other bots or obstacles 
+     */
+    is_valid_bot_position(future_bot){
+        // console.log(`Checking if the bot is valid:`);
+        console.log(future_bot);
+        let new_bottom_left = future_bot.real_bottom_left;
+        if (!this.isInsideBoard(new_bottom_left, future_bot.width, future_bot.height)){
             //TODO: Apply a policy here (i.e., change direction)
-            return {success: false, bot: bot, message: "Cant move because it'd go outside the board"}
+            // console.log("It's not, it'd be outside the board!")
+            return {valid: false, message: "Cant move because it'd go outside the board"}
         }
-        let potential_crashes = this.get_almost_crashes(bot, new_bottom_left, 0);
-        console.log("potential_crashes");
-        console.log(potential_crashes);
+        let potential_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE}, 0);
+        // console.log("potential_crashes:");
+        // console.log(potential_crashes)
         if (BOT_TYPE in potential_crashes || OBSTACLE_TYPE in potential_crashes){
             //Error, should not allow crashes with other bots or obstacles
             //TODO: Apply a policy here (i.e., change direction)
-            return {success: false, bot: bot, message:"Found potential crash with a bot or an obstacle"}
+            // console.log("It's not, it's crash with other bots/obstacles!")
+            return {valid: false, message:"Found potential crash with a bot or an obstacle"}
         }
+        // console.log("It's valid!")
+        return {valid: true, message: "Valid bot position!"};
+    }
+    /**
+     * Walks in the current direction the bot is looking at
+     * 
+     * @param {*} bot_id 
+     * @param {*} distance a number
+     * @param {*} bot_index the index of which bot with a given idis this referring to. If all ids are different this should be 0
+     * @param {*} is_fake If true, this would only return the expected response but only after making a deep copy of it, so no actual changes
+     */
+    move_bot(bot_id, distance, bot_index=0, is_fake = false){
+        console.log("moving bot!")
+        let bot = this.bots[bot_id][bot_index]
+        let future_bot = this.future_position_after_move(bot, distance);
+        let new_bottom_left = future_bot.real_bottom_left;
+        //TODO: Why this if almost_crashes will be defined later
+        let potential_crashes = this.get_almost_crashes({...future_bot,type: BOT_TYPE}, 0);
+
+        let valid_position_response = this.is_valid_bot_position(future_bot);
+        if (!valid_position_response.valid){
+            return {...valid_position_response, bot: bot};
+        }
+
         let coinsPicked = [];
         if (COIN_TYPE in potential_crashes){
             //If crashed with coins then pick them up
@@ -218,7 +271,7 @@ class VirtualGrid{
             }
         }
 
-        let almost_crashes = this.get_almost_crashes(bot, new_bottom_left, 1)
+        let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
         bot.almost_crashes = almost_crashes;
         bot.real_bottom_left = new_bottom_left;
         //Below might not be necessary because Javascript send objects by reference, not by copy
@@ -230,6 +283,7 @@ class VirtualGrid{
      * 
      * @param {*} bot_id 
      * @param {*} new_anchor ABSOLUTE position (i.e., with respect to the board)
+     * @param {*} needToAdd whether to add new policy or remove it
      * @param {*} bot_index 
      */
     update_bot(bot_id, update, bot_index=0){
@@ -250,6 +304,161 @@ class VirtualGrid{
         }
         let message = `Moved succesfully`;
         return {success: true, bot: bot, message: message};
+    }
+    update_bot_policy(bot_id, new_policy, needToAdd, bot_index=0){
+        console.log(`Trying to update policy ${new_policy} for id ${bot_id} [${needToAdd}]`);
+        let bot = this.bots[bot_id][bot_index];
+        if (!(Object.values(BOT_POLICIES).includes(new_policy))){
+            console.log(`Incorrect new_policy : ${new_policy}. Only valid policies are ${Object.values(BOT_POLICIES)}`)
+            return;
+        }
+        if (needToAdd){
+            bot.policies.add(new_policy);
+        } else{
+            bot.policies.delete(new_policy);
+        }
+        console.log(`Updated bot ${bot_id} and now new policies are ${Array.from(bot.policies)}`);
+        // this.bots[bot_id][bot_index] = bot;
+    }
+    /**
+     * Either moves the bot forward, backward or turns 90 degrees 
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     */
+    move_bot_randomly(bot_id, bot_index=0){
+        let NUM_MOVES = 3;
+        let randomMove = Math.floor(Math.random() * NUM_MOVES);
+
+        switch (randomMove){
+            case 0:
+                return this.move_bot(bot_id, 1, bot_index)
+            case 1:
+                return this.move_bot(bot_id, -1, bot_index)
+            case 2:
+                return this.turn_bot(bot_id, 90);
+            default:
+                console.log(`Invalid randomMove = ${randomMove}`);
+        }
+    }
+    /**
+     * 
+     * @param {*} board_position 
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     * @returns 2D distance between bot and board position
+     */
+    distance_to_bot(future_bot, bot_id, bot_index=0){
+        let {real_bottom_left, relative_anchor} = this.bots[bot_id][bot_index];
+        let bot_position = [real_bottom_left[0] + relative_anchor[0], real_bottom_left[1] + relative_anchor[1]];
+        console.log(`bot_id=${bot_id}, bot_position:`);
+        console.log(bot_position);
+        // TODO: Use another distance function? Maybe Euclidean?
+        // Make this part of the policy??
+        let future_position = [
+            future_bot.real_bottom_left[0] + future_bot.relative_anchor[0],
+            future_bot.real_bottom_left[1] + future_bot.relative_anchor[1]
+        ]
+        let dx = future_position[0] - bot_position[0];
+        let dy = future_position[1] - bot_position[1];
+        console.log(`dx=${dx}, dy=${dy}`);
+        let result = Math.abs(dx) + Math.abs(dy);
+        console.log(result)
+        return result;
+    }
+    /**
+     * 
+     * @param {*} future_bot
+     * @param {*} bots array of bot ids
+     * @returns Sum of distances (in board coordinates) to all given bots.
+     */
+    distance_to_bots(future_bot, bots){
+        console.log(`Calculating distances to bots: ${bots}`);
+        console.log("Starting:");
+        console.log(future_bot)
+        let res = 0;
+        for (let bot_id of bots){
+            res += this.distance_to_bot(future_bot, bot_id);
+        }
+        return res;
+    }
+    /*
+        Moves the bot to whichever direction keeps them the closest
+        to the other bots
+    */
+    move_bot_closer_or_farther(bot_id, bot_index=0, is_closer){
+        console.log("------------------------CLOSER-------------------------------------")
+        let bot = this.bots[bot_id][bot_index];
+        //TODO: Get this bots from bot.targets array
+        let other_bots = Object.keys(this.bots).filter(other_bot_id => other_bot_id!== bot_id);
+        let extreme_distance = is_closer ? Number.MAX_SAFE_INTEGER: -Number.MAX_SAFE_INTEGER;
+        let extreme_distance_move = null;
+        //Gonna go through all turns (and moving 1 on that direction)
+        for (let direction in ANGLE_DIRS) {
+            let turn_angle = ANGLE_DIRS[direction];
+            console.log(`Trying angle ${turn_angle} for bot ${bot_id}`);
+            let future_bot = this.future_position_after_turn(bot, turn_angle)
+            console.log(`Future bot after turning ${turn_angle} is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping")
+                continue;
+            }
+            future_bot = this.future_position_after_move(future_bot, 1);
+            console.log(`Future bot after turning ${turn_angle} and moving 1 is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping again")
+                continue;
+            }
+            let distance = this.distance_to_bots(future_bot, other_bots);
+            console.log(`Future distance = ${distance}`);
+
+            if (is_closer === (distance < extreme_distance)){
+                console.log(`Found new min_distance = ${distance} with diection = ${direction}`);
+                extreme_distance = distance;
+                extreme_distance_move = direction;
+            }
+        }   
+        console.log(`[Move bot closer] Moved bot ${bot_id} ${extreme_distance} deg`);
+        //Now that we know which direction to move, we can move the bot for real
+        let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
+        if (!response_turn.success){
+            //If not successful, just return what happened
+            return response_turn;
+        }
+        let response_move = this.move_bot(bot_id, 1, bot_index);
+
+        return response_move;
+    }
+    /**
+     * 
+     * @param {} bot_id 
+     * @param {*} bot_index 
+     * @returns an object with at least {bot: updated_bot} field 
+     */
+    move_bot_using_policies(bot_id, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        
+        if (bot.policies.has(BOT_POLICIES.GET_FARTHER)){
+            return this.move_bot_closer_or_farther(bot_id, bot_index, false);
+        } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER)){
+            // Default is to move rand
+            return this.move_bot_closer_or_farther(bot_id, bot_index, true);
+        } else if (bot.policies.has(BOT_POLICIES.RANDOM)){
+            return this.move_bot_randomly(bot_id, bot_index);
+        } else {
+            return {bot: bot}
+        }
+
+        // switch(bot.policy){
+        //     case BOT_POLICIES.NONE:
+        //         log(`Not moving because no policy is selected for bot with id ${bot.id}`);
+        //         return {bot: bot};
+        //     case BOT_POLICIES.RANDOM:
+        //         return this.move_bot_randomly(bot_id, bot_index);
+        //     default:
+        //         log(`Invalid policy = ${bot.policy}. Only valid policies are ${Object.values(BOT_POLICIES)}`);
+        // }  
     }
     update_obstacle(obstacle_id, update, obstacle_index=0){
         let {new_anchor} = update;
@@ -329,13 +538,13 @@ class VirtualGrid{
 
     }
     /**
-     * Turn 90 deg counterclockwise
-     * @param {*} bot_id 
+     * 
+     * @param {*} prev_bot 
      * @param {*} bot_index 
+     * @returns the position of the bot, if it turned 90 deg counterclockwise
      */
-    turn_90(bot_id, bot_index=0){
-        let bot = this.bots[bot_id][bot_index];
-        let {angle, real_bottom_left, relative_anchor, width, height} = bot;
+    future_position_after_90_turn(prev_bot){
+        let {angle, real_bottom_left, relative_anchor, width, height} = prev_bot;
         //Update values as necessary
         // switch(angle){
         //     case (ANGLE_DIRS.RIGHT):
@@ -351,15 +560,46 @@ class VirtualGrid{
         // }
         let [i, j] = relative_anchor;
         let real_anchor = [real_bottom_left[0] + relative_anchor[0], real_bottom_left[1]+ relative_anchor[1]];
-        console.log(`real_anchor: ${real_anchor}`)
+        // console.log(`real_anchor: ${real_anchor}`)
         relative_anchor = [height-j-1, i]; //new anchor
-        console.log(`new_real_anchor: ${relative_anchor}`)
+        // console.log(`new_real_anchor: ${relative_anchor}`)
         real_bottom_left = [real_anchor[0]-relative_anchor[0],real_anchor[1]-relative_anchor[1]]; //so that real_anchor stays the same, since we are turning over the anchor
         // console.log(`real_bottom_left: ${real_bottom_left}`)
         //Turning 90 always changes dimensions
         [width, height] = [height, width];
         angle = ( angle + 90 ) % 360;
 
+        //Need to keep id info from the bot
+        let future_bot = {...prev_bot, angle, real_bottom_left, relative_anchor, width, height};
+        let valid_position = this.is_valid_bot_position(future_bot).valid;
+        return {...future_bot, valid_position};
+    }
+    future_position_after_turn(prev_bot, turn_angle){
+        //cast the angle to 0, 360
+        turn_angle = turn_angle % 360;
+        if (turn_angle < 0){
+            turn_angle += 360;
+        }
+        let valid_position = true;
+        for (let i = 0; i < turn_angle; i+=90){
+            prev_bot = this.future_position_after_90_turn(prev_bot);
+            let temp_valid = this.is_valid_bot_position(prev_bot).valid;
+            if (!temp_valid && valid_position){
+                valid_position = false;
+            }
+        }
+
+        return {...prev_bot, valid_position};
+    }
+    /**
+     * Turn 90 deg counterclockwise
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     */
+    turn_90(bot_id, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        let future_bot = this.future_position_after_90_turn(bot);
+        let {angle, real_bottom_left, relative_anchor, width, height} = future_bot;
 
         //Save new values
         bot.real_bottom_left = real_bottom_left;
@@ -370,7 +610,7 @@ class VirtualGrid{
 
 
         //Check for almost-cross
-        let almost_crashes = this.get_almost_crashes(bot, real_bottom_left)
+        let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
 
         bot.almost_crashes = almost_crashes;
 
@@ -395,7 +635,9 @@ class VirtualGrid{
             //TODO: Maybe don't update global object, yet
             bot = this.turn_90(bot_id, bot_index);
         }
-        return bot;
+        // TODO: Under assumption of squae bots, turning should always be fine
+        // But might be better to check for other cases.
+        return {bot, success: true, message:`Bot with id ${bot_id} turned ${angle} degrees`};
     }
     /**
      * 
