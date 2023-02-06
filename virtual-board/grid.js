@@ -43,6 +43,13 @@ class VirtualGrid{
         let bot = this.bots[bot_id][bot_index];
         return bot.angle;
     }
+    /**
+     * It returns the correct object 
+     * 
+     * @param {*} obj 
+     * @param {*} type 
+     * @returns 
+     */
     add_object(obj, type){
         if (!("id" in obj)){
             console.log("Error! Object should have an id parameter");
@@ -79,7 +86,7 @@ class VirtualGrid{
         }
         objects[id][id_index] = newObject;
         // objects[id].push(newObject);
-        return {success: true, message: `Succesfully added object with type ${type} and id ${id}`}
+        return {success: true, message: `Succesfully added object with type ${type} and id ${id}`, object: newObject}
     }
     get_almost_crashes(future_bot, look_ahead=1){
         console.log("Getting almost crashes for")
@@ -168,10 +175,72 @@ class VirtualGrid{
                 width: 1,
                 height: 1,
             }
-            let {success} = this.add_coin(potential_coin);
-            if (success){
+            let result = this.add_coin(potential_coin);
+            if (result.success){
                 //Just add it once!
-                return;
+                return result;
+            }
+        }
+    }
+    //min = inclusive, max = exclusive
+    random_number_between(min, max){
+        return min + Math.floor(Math.random() * max-min);
+    }
+    random_from(arr){
+        return arr[this.random_number_between(0, arr.length)]
+    }
+    /**
+     * For now hardcodes it as a 3x3 with a central pivot. It randomly chooses 
+     * a (valid) position and angle.
+     * @returns 
+     */
+    add_random_bot(){
+        while(true){
+            let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
+            let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
+            let botId = this.getNewBotId();
+            //For now hardcode it
+            let [width, height] = [3, 3];
+            let relative_anchor = [1, 1];
+            let angle = this.random_from(Object.values(ANGLE_DIRS));
+            let potential_bot =  {
+                id: botId,
+                real_bottom_left: [col,row],
+                width: width,
+                height: height,
+                relative_anchor: relative_anchor,
+                angle: angle,
+            }
+            let result = this.add_bot(potential_bot);
+            if (result.success){
+                //Just add it once!
+                return result;
+            }
+        }
+    }
+    add_random_obstacle(){
+        while (true){
+            let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
+            let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
+            let possible_sizes = [
+                [1, 2],
+                [1, 3],
+                [2, 1],
+                [3, 1],
+                [2, 2],
+            ]
+            let [width, height] = this.random_from(possible_sizes);
+            let obstacleId = this.getNewObstacleId();
+            let potential_obstacle =  {
+                id: obstacleId,
+                real_bottom_left: [col,row],
+                width: width,
+                height: height,
+            }
+            let result = this.add_obstacle(potential_obstacle);
+            if (result.success){
+                //Just add it once!
+                return result;
             }
         }
     }
@@ -644,7 +713,15 @@ class VirtualGrid{
      * @param {*} bot Object with id, bottom_left, width, height
      */
     add_bot(bot){
-        return this.add_object(bot, BOT_TYPE);
+        let result = this.add_object(bot, BOT_TYPE);
+        if (!result.success){
+            return result;
+        } else {
+            let bot = result.object;
+            delete result.object;
+            result.bot = bot;
+            return result;
+        }
     }
     remove_bot(bot_id, bot_index=0){
         delete this.bots[bot_id][bot_index];
@@ -655,7 +732,15 @@ class VirtualGrid{
         }
     }
     add_obstacle(obstacle){
-        return this.add_object(obstacle, OBSTACLE_TYPE);
+        let result = this.add_object(obstacle, OBSTACLE_TYPE);
+        if (!result.success){
+            return result;
+        } else{
+            let obstacle = result.object;
+            delete result.object;
+            result.obstacle = obstacle;
+            return result;
+        }
     }
     remove_obstacle(obstacle_id, obstacle_index=0){
         delete this.obstacles[obstacle_id][obstacle_index];
@@ -666,7 +751,15 @@ class VirtualGrid{
         }
     }
     add_coin(coin){
-        return this.add_object(coin, COIN_TYPE);
+        let result = this.add_object(coin, COIN_TYPE);
+        if (!result.success){
+            return result;
+        } else{
+            let coin = result.object;
+            delete result.object;
+            result.coin = coin;
+            return result;
+        }
     }
     remove_coin(coin_id, coin_index=0){
         delete this.coins[coin_id][coin_index];

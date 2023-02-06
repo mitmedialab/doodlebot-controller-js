@@ -12,6 +12,15 @@
             row-gap: 50px;
             grid-template-columns: 10 10; */
         }
+        #editingContainer{
+            display:flex;
+            flex:1;
+            align-items: center;
+            flex-direction: center;
+        }
+        #editingContainer > * {
+            flex: 1;
+        }
         /* #grid > * {
             background-color: rgba(255, 255, 255, 0.8);
             text-align: center;
@@ -133,6 +142,9 @@
             flex-direction: column;
         }
         /* .bot-moving-controls  */
+        .editor-hide{
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -158,43 +170,72 @@
 
     </section>
     <section>
-        <h1>Editing part:</h1>
-        <div>
-            <h3>Creating bots</h3>
-            <br/>
-            <button id="addBotButton">Add bot</button>
-        </div>
-        <div>
-            <h3>Creating obstacles</h3>
-            Col number (bottom left)
-            <input type="number" id="obstacleColNumberInput" min="0" />
-            <br />
-            Row number (bottom left)
-            <input type="number" id="obstacleRowNumberInput" min="0">
-            <br/>
-            Width
-            <input type="number" id="obstacleWidthInput" min="1"/>
-            <br />
-            Height
-            <input type="number" id="obstacleColNumber" min="1"/>
-            <br />
-            <button id="addObstacleButton">Add obstacle</button>
-        </div>
-        <div>
-            <h3>Creating Coins</h3>
-            Col number (bottom left)
-            <input type="number" id="coinColNumberInput" min="0" />
-            <br />
-            Row number (bottom left)
-            <input type="number" id="coinRowNumberInput" min="0">
-            <br/>
-            Width
-            <input type="number" id="coinWidthInput" min="1"/>
-            <br />
-            Height
-            <input type="number" id="coinColNumber" min="1"/>
-            <br />
-            <button id="addCoinButton">Add coin</button>
+        <!-- <h1>Editing part:</h1> -->
+        <div id="editingContainer">
+            <div>
+                <h2>Creating bots</h2>
+                <button id="addRandomBotButton">Add random bot</button>
+                <br />
+                <button id="openEditorBot">Toggle editor</button>
+                <div id="botEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="botColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="botRowNumberInput" min="0">
+                    <br />
+                    <!-- Width
+                    <input type="number" id="botWidthInput" min="1" />
+                    <br />
+                    Height
+                    <input type="number" id="botColNumber" min="1" /> -->
+                    <br />
+                    <button id="addBotButton">Add bot</button>
+                </div>
+            </div>
+            <div>
+                <h2>Creating obstacles</h2>
+                <button id="addRandomObstacleButton">Add random Obstacle</button>
+                <br />
+                <button id="openEditorObstacle">Toggle editor</button>
+
+                <div id="obstacleEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="obstacleColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="obstacleRowNumberInput" min="0">
+                    <br/>
+                    Width
+                    <input type="number" id="obstacleWidthInput" min="1"/>
+                    <br />
+                    Height
+                    <input type="number" id="obstacleColNumber" min="1"/>
+                    <br />
+                    <button id="addObstacleButton">Add obstacle</button>
+                </div>
+            </div>
+            <div>
+                <h2>Creating Coins</h2>
+                <button id="addRandomCoinButton">Add random coin</button>
+                <br/>
+                <button id="openEditorCoin">Toggle editor</button>
+                <div id="coinEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="coinColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="coinRowNumberInput" min="0">
+                    <br/>
+                    Width
+                    <input type="number" id="coinWidthInput" min="1"/>
+                    <br />
+                    Height
+                    <input type="number" id="coinColNumber" min="1"/>
+                    <br />
+                    <button id="addCoinButton">Add coin</button>
+                </div>
+            </div>
         </div>
     </section>
 

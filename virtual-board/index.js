@@ -1,7 +1,7 @@
 let grid;
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
-    let cols = 12;
+    let cols = 20;
     grid = new VirtualGrid(rows, cols);
     drawBoard();
 })
@@ -82,13 +82,12 @@ function drawBoard(){
     botDirectionsDiv.innerText = text;
     botScoresDiv.value = coinText;
 }
-let all_bot_ids = [];
-let min_bot_id = 1;
-let all_obstacle_ids = [];
-let min_obstacle_id = 11;
+// let all_bot_ids = [];
+// let min_bot_id = 1;
+// let all_obstacle_ids = [];
+// let min_obstacle_id = 11;
 
-let all_coin_ids = [];
-let min_coin_id = 21;
+// let min_coin_id = 21;
 
 // let obstacle_id_1 = 10;
 // function getNewBotId(){
@@ -246,12 +245,16 @@ function create_bot_options(bot){
     switch (bot.angle){
         case ANGLE_DIRS.UP:
             moveUpButton.classList.add("move-button-selected"); //Because it's the default
+            break;
         case ANGLE_DIRS.DOWN:
             moveDownButton.classList.add("move-button-selected");
+            break;
         case ANGLE_DIRS.LEFT:
             moveLeftButton.classList.add("move-button-selected");
+            break;
         case ANGLE_DIRS.RIGHT:
             moveRightButton.classList.add("move-button-selected");
+            break;
     }
     controlsDiv.classList.add("bot-moving-controls")
     controlsDiv.appendChild(moveUpButton);
@@ -296,9 +299,11 @@ addBotButton.addEventListener("click", (evt)=>{
     console.log("Create bot")
     let new_bot_id = grid.getNewBotId();
     console.log(new_bot_id)
+    let row = Number(botRowNumberInput.value);
+    let col = Number(botColNumberInput.value);
     let bot = {
         id: new_bot_id, 
-        real_bottom_left: [0, 0],
+        real_bottom_left: [col, row],
         relative_anchor: [1, 1],
         width: 3,
         height: 3,
@@ -309,7 +314,7 @@ addBotButton.addEventListener("click", (evt)=>{
         log(message);
         return;
     }
-    all_bot_ids.push(new_bot_id);
+    // all_bot_ids.push(new_bot_id);
     drawBoard();
 
     //Add it to options
@@ -337,7 +342,7 @@ addObstacleButton.addEventListener("click", (evt)=>{
         log(message);
         return;
     }
-    all_obstacle_ids.push(obstacleId);
+    // all_obstacle_ids.push(obstacleId);
 
     drawBoard();
 })
@@ -358,9 +363,29 @@ addCoinButton.addEventListener("click", (evt)=>{
         log(message);
         return;
     }
-    all_coin_ids.push(coinId);
-
     drawBoard();
+})
+addRandomBotButton.addEventListener("click", evt=>{
+    let {bot} = grid.add_random_bot();
+    drawBoard();
+    create_bot_options(bot)
+})
+addRandomObstacleButton.addEventListener('click', (evt)=>{
+    grid.add_random_obstacle();
+    drawBoard();
+})
+addRandomCoinButton.addEventListener('click', (evt)=>{
+    grid.add_random_coin();
+    drawBoard();
+})
+openEditorBot.addEventListener("click", evt=>{
+    botEditorDiv.classList.toggle("editor-hide");
+})
+openEditorObstacle.addEventListener("click", evt => {
+    obstacleEditorDiv.classList.toggle("editor-hide");
+})
+openEditorCoin.addEventListener("click", evt=> {
+    coinEditorDiv.classList.toggle("editor-hide");
 })
 function updateCrashes(bot){
     // console.log(bot.almost_crashes);
