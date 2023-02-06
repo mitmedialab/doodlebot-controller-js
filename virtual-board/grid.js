@@ -455,13 +455,18 @@ class VirtualGrid{
         to the other bots
     */
     move_bot_closer_or_farther(bot_id, bot_index=0, is_closer){
-        console.log("------------------------CLOSER-------------------------------------")
+        if (is_closer){
+            console.log("------------------------CLOSER-------------------------------------")
+        } else{
+            console.log("------------------------FARTHER-------------------------------------")
+        }
         let bot = this.bots[bot_id][bot_index];
         //TODO: Get this bots from bot.targets array
         let other_bots = Object.keys(this.bots).filter(other_bot_id => other_bot_id!== bot_id);
         let extreme_distance = is_closer ? Number.MAX_SAFE_INTEGER: -Number.MAX_SAFE_INTEGER;
-        let extreme_distance_move = null;
+        // let extreme_distance_move = null;
         //Gonna go through all turns (and moving 1 on that direction)
+        let extreme_directions = [];
         for (let direction in ANGLE_DIRS) {
             let turn_angle = ANGLE_DIRS[direction];
             console.log(`Trying angle ${turn_angle} for bot ${bot_id}`);
@@ -482,12 +487,19 @@ class VirtualGrid{
             let distance = this.distance_to_bots(future_bot, other_bots);
             console.log(`Future distance = ${distance}`);
 
-            if (is_closer === (distance < extreme_distance)){
-                console.log(`Found new min_distance = ${distance} with diection = ${direction}`);
-                extreme_distance = distance;
-                extreme_distance_move = direction;
+            if (distance === extreme_distance){
+                extreme_directions.push(direction);
+            } else {
+                if (is_closer === (distance < extreme_distance)){
+                    console.log(`Found new extreme_distance = ${distance} with diection = ${direction}`);
+                    extreme_distance = distance;
+                    // extreme_distance_move = direction;
+                    extreme_directions = [direction];
+                }
             }
         }   
+        // If there was a tie, pick one direction at random
+        let extreme_distance_move = this.random_from(extreme_directions);
         console.log(`[Move bot closer] Moved bot ${bot_id} ${extreme_distance} deg`);
         //Now that we know which direction to move, we can move the bot for real
         let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
