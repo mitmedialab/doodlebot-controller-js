@@ -14,10 +14,18 @@ const MIN_COIN_ID = 21;
 const MIN_OTHER_ID = 31;
 
 const BOT_POLICIES = {
-    // NONE: "none",
-    RANDOM: "random",
-    GET_CLOSER: "Get closer",
-    GET_FARTHER: "Get farther"
+    RANDOM: {
+        value: "random",
+        text: "Random"
+    },
+    GET_CLOSER: {
+        value: "Get closer",
+        text: "Get closer"
+    },
+    GET_FARTHER: {
+        value: "Get farther",
+        text: "Get farther"
+    }
 }
 
 class VirtualGrid{
@@ -374,17 +382,21 @@ class VirtualGrid{
         let message = `Moved succesfully`;
         return {success: true, bot: bot, message: message};
     }
-    update_bot_policy(bot_id, new_policy, needToAdd, bot_index=0){
-        console.log(`Trying to update policy ${new_policy} for id ${bot_id} [${needToAdd}]`);
+    /**
+     * policy_key should be a valid key of BOT_POLICIES
+     */
+    update_bot_policy(bot_id, policy_key, needToAdd, bot_index=0){
+        console.log(`Trying to update policy ${policy_key} for id ${bot_id} [${needToAdd}]`);
         let bot = this.bots[bot_id][bot_index];
-        if (!(Object.values(BOT_POLICIES).includes(new_policy))){
-            console.log(`Incorrect new_policy : ${new_policy}. Only valid policies are ${Object.values(BOT_POLICIES)}`)
+        if (!(Object.keys(BOT_POLICIES).includes(policy_key))){
+            console.log(`Incorrect new_policy : ${policy_key}. Only valid policies are ${Object.keys(BOT_POLICIES)}`)
             return;
         }
+        let policy_value = BOT_POLICIES[policy_key].value;
         if (needToAdd){
-            bot.policies.add(new_policy);
+            bot.policies.add(policy_value);
         } else{
-            bot.policies.delete(new_policy);
+            bot.policies.delete(policy_value);
         }
         console.log(`Updated bot ${bot_id} and now new policies are ${Array.from(bot.policies)}`);
         // this.bots[bot_id][bot_index] = bot;
@@ -520,26 +532,16 @@ class VirtualGrid{
     move_bot_using_policies(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
         
-        if (bot.policies.has(BOT_POLICIES.GET_FARTHER)){
+        if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)){
             return this.move_bot_closer_or_farther(bot_id, bot_index, false);
-        } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER)){
+        } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER.value)){
             // Default is to move rand
             return this.move_bot_closer_or_farther(bot_id, bot_index, true);
-        } else if (bot.policies.has(BOT_POLICIES.RANDOM)){
+        } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)){
             return this.move_bot_randomly(bot_id, bot_index);
         } else {
             return {bot: bot}
         }
-
-        // switch(bot.policy){
-        //     case BOT_POLICIES.NONE:
-        //         log(`Not moving because no policy is selected for bot with id ${bot.id}`);
-        //         return {bot: bot};
-        //     case BOT_POLICIES.RANDOM:
-        //         return this.move_bot_randomly(bot_id, bot_index);
-        //     default:
-        //         log(`Invalid policy = ${bot.policy}. Only valid policies are ${Object.values(BOT_POLICIES)}`);
-        // }  
     }
     update_obstacle(obstacle_id, update, obstacle_index=0){
         let {new_anchor} = update;

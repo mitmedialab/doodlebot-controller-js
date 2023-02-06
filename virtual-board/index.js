@@ -154,23 +154,27 @@ function createSelect(id, labelText, options, listeners=[]){
     div.appendChild(select);
     return div;
 }
-
+/**
+ * 
+ * @param {*} bot_id 
+ * @param {*} container_id 
+ * @param {*} options {key: {value: "value", text:"text value"}}
+ * @returns 
+ */
 function createCheckboxGroup(bot_id, container_id, options){
     let container = document.createElement('div');
     container.classList.add('checkbox-group');
     container.setAttribute('id', container_id);
-    for (let option of options){
-        let {value, text} = option;
+    for (let [key, {value, text}] of Object.entries(options)){
         let input = document.createElement('input');
         let inputId = `${container_id}-value-${value}`
         input.setAttribute('type', 'checkbox');
-        // input.setAttribute('value', value);
         input.setAttribute('id', inputId);
         let label = document.createElement('label');
         label.setAttribute('for', inputId);
         label.innerText = text;
         input.addEventListener('change', (evt)=>{
-            changeCheckbox_changeHandler(bot_id, value, evt);
+            changeCheckbox_changeHandler(bot_id, key, evt);
         })
         let subContainer = document.createElement('div');
         subContainer.appendChild(label);
@@ -182,31 +186,32 @@ function createCheckboxGroup(bot_id, container_id, options){
 function moveButton(bot_id){
     return document.getElementById(`moveButton-${bot_id}`);
 }
-let POLICY_SELECT_OPTIONS = [
-    {
-        value: "none",
-        text: "None"
-    },
-    {
-        value: "random",
-        text: "Random moves"
-    }
-]
+// let POLICY_SELECT_OPTIONS = [
+//     {
+//         value: "none",
+//         text: "None"
+//     },
+//     {
+//         value: "random",
+//         text: "Random moves"
+//     }
+// ]
+
 // 'value' should match the values of BOT_POLICIES in grid.js
-let POLICY_CHECKBOX_OPTIONS = [
-    {
-        value: "random",
-        text: "Random moves"
-    },
-    {
-        value: "Get closer",
-        text: "Get closer"
-    },
-    {
-        value: "Get farther",
-        text: "Get farther"
-    }
-]
+// let POLICY_CHECKBOX_OPTIONS = [
+//     {
+//         value: "random",
+//         text: "Random moves"
+//     },
+//     {
+//         value: "Get closer",
+//         text: "Get closer"
+//     },
+//     {
+//         value: "Get farther",
+//         text: "Get farther"
+//     }
+// ]
 function create_bot_options(bot){
     let bot_id = bot.id;
     let div = document.createElement('div');
@@ -280,7 +285,7 @@ function create_bot_options(bot){
     //         handler: (evt)=>{policySelect_ChangeHandler(bot_id, evt)}
     //     }
     // ]);
-    let policyCheckboxGroupDiv = createCheckboxGroup(bot_id, `policyCheckboxGroup-${bot_id}`, POLICY_CHECKBOX_OPTIONS);
+    let policyCheckboxGroupDiv = createCheckboxGroup(bot_id, `policyCheckboxGroup-${bot_id}`, BOT_POLICIES);
 
     let policyContainer = document.createElement('div');
     policyContainer.classList.add("bot-policy-container");
@@ -506,10 +511,10 @@ function stopMovingButton_ClickHandler(bot_id, evt){
     delete intervals[bot_id];
 }
 
-function policySelect_ChangeHandler(bot_id, evt){
-    let newPolicy = evt.target.value;
-    grid.update_bot_policy(bot_id, newPolicy);
-}
-function changeCheckbox_changeHandler(bot_id, value, evt){
-    grid.update_bot_policy(bot_id, value, evt.target.checked);
+// function policySelect_ChangeHandler(bot_id, evt){
+//     let newPolicy = evt.target.value;
+//     grid.update_bot_policy(bot_id, newPolicy);
+// }
+function changeCheckbox_changeHandler(bot_id, key, evt){
+    grid.update_bot_policy(bot_id, key, evt.target.checked);
 }
