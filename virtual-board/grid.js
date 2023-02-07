@@ -25,6 +25,10 @@ const BOT_POLICIES = {
     GET_FARTHER: {
         value: "Get farther",
         text: "Get farther"
+    },
+    GET_COINS: {
+        value: "Get coins",
+        text: "Get coins"
     }
 }
 
@@ -421,6 +425,20 @@ class VirtualGrid{
                 console.log(`Invalid randomMove = ${randomMove}`);
         }
     }
+    get_object_center(obj){
+        //If bot, calculate position in terms of the anchor
+        // Otherwise, calculate position as the center
+        let object_position;
+        let {real_bottom_left} = obj;
+        if (obj.type === BOT_TYPE){
+            let {relative_anchor} = obj;
+            object_position = [real_bottom_left[0] + relative_anchor[0], real_bottom_left[1] + relative_anchor[1]];
+        } else {
+            let {width, height} = obj;
+            object_position = [real_bottom_left[0] + width/2, real_bottom_left[1] + height/2];
+        }
+        return object_position;
+    }
     /**
      * 
      * @param {*} board_position 
@@ -428,19 +446,17 @@ class VirtualGrid{
      * @param {*} bot_index 
      * @returns 2D distance between bot and board position
      */
-    distance_to_bot(future_bot, bot_id, bot_index=0){
-        let {real_bottom_left, relative_anchor} = this.bots[bot_id][bot_index];
-        let bot_position = [real_bottom_left[0] + relative_anchor[0], real_bottom_left[1] + relative_anchor[1]];
-        console.log(`bot_id=${bot_id}, bot_position:`);
-        console.log(bot_position);
+    distance_to_object(future_bot, obj){
+        let object_position = this.get_object_center(obj);
         // TODO: Use another distance function? Maybe Euclidean?
         // Make this part of the policy??
-        let future_position = [
-            future_bot.real_bottom_left[0] + future_bot.relative_anchor[0],
-            future_bot.real_bottom_left[1] + future_bot.relative_anchor[1]
-        ]
-        let dx = future_position[0] - bot_position[0];
-        let dy = future_position[1] - bot_position[1];
+        let future_position = this.get_object_center(future_bot);
+        // let future_position = [
+        //     future_bot.real_bottom_left[0] + future_bot.relative_anchor[0],
+        //     future_bot.real_bottom_left[1] + future_bot.relative_anchor[1]
+        // ]
+        let dx = future_position[0] - object_position[0];
+        let dy = future_position[1] - object_position[1];
         console.log(`dx=${dx}, dy=${dy}`);
         let result = Math.abs(dx) + Math.abs(dy);
         console.log(result)
@@ -458,7 +474,25 @@ class VirtualGrid{
         console.log(future_bot)
         let res = 0;
         for (let bot_id of bots){
-            res += this.distance_to_bot(future_bot, bot_id);
+            console.log(this.bots[bot_id])
+            for (let bot_index in this.bots[bot_id]){
+                let bot_obj = this.bots[bot_id][bot_index];
+                res += this.distance_to_object(future_bot, bot_obj);
+            }
+        }
+        return res;
+    }
+    /**
+     * @param {*} future_bot 
+     * @returns the minimum distance from the bot to all the coins
+     */
+    min_distance_to_coins(future_bot){
+        let res = Number.MAX_SAFE_INTEGER;
+        for (let coin_id in this.coins){
+            for (let coin_index in this.coins[coin_id]){
+                let coin_obj = this.coins[coin_id][coin_index];
+                res = Math.min(res, this.distance_to_object(future_bot, coin_obj));
+            }
         }
         return res;
     }
@@ -523,6 +557,44 @@ class VirtualGrid{
 
         return response_move;
     }
+    move_bot_using_get_coins(bot_id, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        let min_distance = Number.MAX_SAFE_INTEGER;
+        let directions = [];
+        for (let direction in ANGLE_DIRS) {
+            let turn_angle = ANGLE_DIRS[direction];
+            let future_bot = this.future_position_after_turn(bot, turn_angle)
+            if (!future_bot.valid_position){
+                continue;
+            }
+            future_bot = this.future_position_after_move(future_bot, 1);
+            if (!future_bot.valid_position){
+                continue;
+            }
+            let distance = this.min_distance_to_coins(future_bot);
+            console.log(`Future distance = ${distance}`);
+            if (distance === min_distance){
+                directions.push(direction);
+            } else {
+                if (distance < min_distance){
+                    console.log(`Found new extreme_distance = ${distance} with diection = ${direction}`);
+                    min_distance = distance;
+                    // extreme_distance_move = direction;
+                    directions = [direction];
+                }
+            }
+        }
+        // If there was a tie, pick one direction at random
+        let extreme_distance_move = this.random_from(directions);
+        //Now that we know which direction to move, we can move the bot for real
+        let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
+        if (!response_turn.success){
+            //If not successful, just return what happened
+            return response_turn;
+        }
+        let response_move = this.move_bot(bot_id, 1, bot_index);
+        return response_move;
+    }
     /**
      * 
      * @param {} bot_id 
@@ -531,6 +603,12 @@ class VirtualGrid{
      */
     move_bot_using_policies(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
+        if (bot.policies.has(BOT_POLICIES.GET_COINS.value)){
+            //Only do this if there are coins to move to
+            if (Object.keys(this.coins).length !== 0){
+                return this.move_bot_using_get_coins(bot_id, bot_index);
+            }
+        }
         
         if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)){
             return this.move_bot_closer_or_farther(bot_id, bot_index, false);
