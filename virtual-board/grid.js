@@ -33,7 +33,7 @@ const BOT_POLICIES = {
 }
 
 class VirtualGrid{
-    constructor(m, n, bots=[], obstacles=[], coins=[]){
+    constructor(m, n, drawBoard, bots=[], obstacles=[], coins=[]){
         this.rows = m;
         this.cols = n;
         for (let bot of bots){
@@ -50,6 +50,7 @@ class VirtualGrid{
         this.bots = {}; //bots should have an {angle} that the bot is looking at (e.g., 0 is looking right)
         this.obstacles = {};
         this.coins = {};
+        this.drawBoard = drawBoard;
     }
     get_bot_angle(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
@@ -98,11 +99,12 @@ class VirtualGrid{
         }
         objects[id][id_index] = newObject;
         // objects[id].push(newObject);
+        this.drawBoard(this.print_board());
         return {success: true, message: `Succesfully added object with type ${type} and id ${id}`, object: newObject}
     }
     get_almost_crashes(future_bot, look_ahead=1){
-        console.log("Getting almost crashes for")
-        console.log(future_bot);
+        // console.log("Getting almost crashes for")
+        // console.log(future_bot);
         //Check for almost-crashes with obstacles
         let almost_crashes = {};
 
@@ -151,8 +153,8 @@ class VirtualGrid{
                 }
             }
         }
-        console.log("Ouput: almost_crashes");
-        console.log(almost_crashes);
+        // console.log("Ouput: almost_crashes");
+        // console.log(almost_crashes);
         return almost_crashes;
 
     }
@@ -300,7 +302,7 @@ class VirtualGrid{
      */
     is_valid_bot_position(future_bot){
         // console.log(`Checking if the bot is valid:`);
-        console.log(future_bot);
+        // console.log(future_bot);
         let new_bottom_left = future_bot.real_bottom_left;
         if (!this.isInsideBoard(new_bottom_left, future_bot.width, future_bot.height)){
             //TODO: Apply a policy here (i.e., change direction)
@@ -328,7 +330,7 @@ class VirtualGrid{
      * @param {*} is_fake If true, this would only return the expected response but only after making a deep copy of it, so no actual changes
      */
     move_bot(bot_id, distance, bot_index=0, is_fake = false){
-        console.log("moving bot!")
+        // console.log("moving bot!")
         let bot = this.bots[bot_id][bot_index]
         let future_bot = this.future_position_after_move(bot, distance);
         let new_bottom_left = future_bot.real_bottom_left;
@@ -354,10 +356,12 @@ class VirtualGrid{
 
         let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
         bot.almost_crashes = almost_crashes;
+        console.log(`Updating position of bot ${bot_id} from ${bot.real_bottom_left} to ${new_bottom_left}`)
         bot.real_bottom_left = new_bottom_left;
         //Below might not be necessary because Javascript send objects by reference, not by copy
-        // this.bots[bot_id][bot_index] = bot;
+        this.bots[bot_id][bot_index] = bot;
         let message = coinsPicked.length === 0 ? "": `Moved succesfully and picked up ${coinsPicked.length} coins ${coinsPicked}`
+        this.drawBoard(this.print_board());
         return {success: true, bot: bot, message: message};
     }
     /**
@@ -457,9 +461,10 @@ class VirtualGrid{
         // ]
         let dx = future_position[0] - object_position[0];
         let dy = future_position[1] - object_position[1];
-        console.log(`dx=${dx}, dy=${dy}`);
-        let result = Math.abs(dx) + Math.abs(dy);
-        console.log(result)
+        // console.log(`dx=${dx}, dy=${dy}`);
+        // let result = Math.abs(dx) + Math.abs(dy);
+        let result = Math.sqrt(dx*dx+dy*dy); //much better
+        // console.log(result)
         return result;
     }
     /**
@@ -557,56 +562,130 @@ class VirtualGrid{
 
         return response_move;
     }
-    move_bot_using_get_coins(bot_id, bot_index=0){
+    /**
+     * 
+     * @param {*} num_turns 
+     * @returns Array of possible moves, each of the form of ['RIGHT', 'UP', 'RIGHT']
+     */
+    get_multiple_turns(num_turns){
+        if (num_turns < 1){
+            return [];
+        }
+        if (num_turns === 1){
+            return Object.keys(ANGLE_DIRS).map(direction => [direction]);
+        }
+        let prev = this.get_multiple_turns(num_turns-1);
+        let res = []
+        for (let direction in ANGLE_DIRS){
+            for (let move of prev){
+                res.push([...move, direction])
+            }
+        }
+        return res;
+    }
+    /**
+     * Returns the position a bot would be after a certain amount of turns (and moving in that direction). If at any point it 
+     * makes an invalid position, it will just continue to the next one. Additionally, it adds a `valid_move`
+     * field which is true iff at least one movement was valid.
+     * 
+     * @param {*} initial_bot 
+     * @param {*} directions of the form ['RIGHT', 'UP', 'RIGHT']
+     * 
+     */
+    future_position_after_turns(initial_bot, directions){
+        let future_bot = {...initial_bot};
+        let valid_move = false;
+        for (let direction of directions){
+            let turn_angle = ANGLE_DIRS[direction];
+            let potential_bot = this.future_position_after_turn(future_bot, turn_angle)
+            if (!potential_bot.valid_position){
+                continue;
+            }
+            potential_bot = this.future_position_after_move(potential_bot, 1);
+            if (!potential_bot.valid_position){
+                continue;
+            }
+            valid_move = true;
+            delete potential_bot.valid_position;
+            //Succesful move, update bot
+            future_bot = {...potential_bot};
+        }
+        return {...future_bot, valid_move};
+    }
+    /**
+     * As with any move, returns a LIST of {bot: , success: } object. Success is defined if at least 
+     * one of the turn and move were succesful
+     * 
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     * @param {*} turns 
+     * @returns 
+     */
+    move_bot_multiple_turns(bot_id, bot_index, turns){
+        console.log(`Update with multiple turns: ${turns}`)
+        let bot = this.bots[bot_id][bot_index];
+        let success = false;
+        let history = [];
+        for (let direction of turns){
+            let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[direction], bot_index);
+            if (!response_turn.success){
+                continue;
+            }
+            let response_move = this.move_bot(bot_id, 1, bot_index);
+            if (!response_move.success){
+                continue;
+            }
+            success = true;
+            history.push({...response_move, bot: {...response_move.bot}, board: this.print_board()}); //TODO: Do deepCopy
+        }
+        return history;
+    }
+    /**
+     *
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     * @param {*} look_ahead How many steps to perform
+     * @returns 
+     */
+    move_bot_using_get_coins(bot_id, bot_index=0, num_moves=1){
         let bot = this.bots[bot_id][bot_index];
         let min_distance = Number.MAX_SAFE_INTEGER;
         let directions = [];
-        for (let direction in ANGLE_DIRS) {
-            let turn_angle = ANGLE_DIRS[direction];
-            let future_bot = this.future_position_after_turn(bot, turn_angle)
-            if (!future_bot.valid_position){
-                continue;
-            }
-            future_bot = this.future_position_after_move(future_bot, 1);
-            if (!future_bot.valid_position){
+        let list_of_turns = this.get_multiple_turns(num_moves);
+        for (let turns of list_of_turns){
+            let future_bot = this.future_position_after_turns(bot, turns);
+            if (!future_bot.valid_move){
+                //didnt move at all, dont take into consideration
                 continue;
             }
             let distance = this.min_distance_to_coins(future_bot);
-            console.log(`Future distance = ${distance}`);
             if (distance === min_distance){
-                directions.push(direction);
-            } else {
-                if (distance < min_distance){
-                    console.log(`Found new extreme_distance = ${distance} with diection = ${direction}`);
-                    min_distance = distance;
-                    // extreme_distance_move = direction;
-                    directions = [direction];
-                }
+                directions.push(turns);
+            } else if (distance < min_distance){
+                min_distance = distance;
+                directions = [turns];
             }
         }
-        // If there was a tie, pick one direction at random
-        let extreme_distance_move = this.random_from(directions);
-        //Now that we know which direction to move, we can move the bot for real
-        let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
-        if (!response_turn.success){
-            //If not successful, just return what happened
-            return response_turn;
-        }
-        let response_move = this.move_bot(bot_id, 1, bot_index);
-        return response_move;
+        //If there was a tie, pick randomly
+        let chosen_turns = this.random_from(directions);
+        console.log(`Chosen = ${chosen_turns} with distance ${min_distance}`)
+        //IMPORTANT Only move the first step!
+        chosen_turns = [chosen_turns[0]] 
+        return this.move_bot_multiple_turns(bot_id, bot_index, chosen_turns);
     }
     /**
      * 
      * @param {} bot_id 
      * @param {*} bot_index 
-     * @returns an object with at least {bot: updated_bot} field 
+     * @returns a LIST of [ object with at least {bot: updated_bot} field ]. If it only moved once then the list would have 
+     * length 1
      */
-    move_bot_using_policies(bot_id, bot_index=0){
+    move_bot_using_policies(bot_id, bot_index=0, num_turns){
         let bot = this.bots[bot_id][bot_index];
         if (bot.policies.has(BOT_POLICIES.GET_COINS.value)){
             //Only do this if there are coins to move to
             if (Object.keys(this.coins).length !== 0){
-                return this.move_bot_using_get_coins(bot_id, bot_index);
+                return this.move_bot_using_get_coins(bot_id, bot_index, num_turns);
             }
         }
         
@@ -778,6 +857,7 @@ class VirtualGrid{
         return bot;
     }
     /**
+     * Returns bot and success
      * 
      * @param {*} bot_id 
      * @param {*} angle in counterclowise
@@ -796,6 +876,7 @@ class VirtualGrid{
             //TODO: Maybe don't update global object, yet
             bot = this.turn_90(bot_id, bot_index);
         }
+        this.drawBoard(this.print_board());
         // TODO: Under assumption of squae bots, turning should always be fine
         // But might be better to check for other cases.
         return {bot, success: true, message:`Bot with id ${bot_id} turned ${angle} degrees`};
