@@ -1,15 +1,28 @@
 let grid;
+let boardDrawing;
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
     let cols = 20;
-    grid = new VirtualGrid(rows, cols);
+    grid = new VirtualGrid(rows, cols, ()=>{});
+    // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
+    // let duration = 100;
+    // setTimeout(function a() {
+    // // your own code
+    //     drawBoard()
+    //     setTimeout(a, duration);
+    // }, duration);
     drawBoard();
 })
+
 function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
 }
-function drawBoard(){
-    let board = grid.print_board();
+function drawBoard(board){
+    console.log("drawing board...")
+    if (!board){
+        console.log("Didint find one, so get board")
+        board = grid.print_board();
+    }
     let gridDiv = document.getElementById("gridDiv");
     gridDiv.innerHTML = ""; //Erase everything before. TODO: Too innefficient, just update the ones you need to
     let rows = board.length;
@@ -107,7 +120,7 @@ create_grid_button.addEventListener("click", (evt)=>{
     let rows = 10;
     let cols = 12;
     grid = new VirtualGrid(rows, cols);
-    drawBoard();
+    // drawBoard();
 })
 /**
  *
@@ -135,8 +148,9 @@ function createButton(id, text, listeners=[]){
 //options is an array of {value:, text:} objects
 function createSelect(id, labelText, options, listeners=[]){
     let div = document.createElement('div');
-    // let label = document.createElement('label');
-    // label.innerText = labelText;
+    div.setAttribute('id', `container-${id}`)
+    let label = document.createElement('label');
+    label.innerText = labelText;
     let select = document.createElement('select');
     select.setAttribute('id', id);
     for (let option of options){
@@ -150,7 +164,7 @@ function createSelect(id, labelText, options, listeners=[]){
         let {key, handler} = listener;
         select.addEventListener(key, handler);
     }
-    // div.appendChild(label);
+    div.appendChild(label);
     div.appendChild(select);
     return div;
 }
@@ -179,6 +193,32 @@ function createCheckboxGroup(bot_id, container_id, options){
         let subContainer = document.createElement('div');
         subContainer.appendChild(label);
         subContainer.appendChild(input);
+        if (key === "GET_COINS"){
+            // Add a count input for how long to look ahead
+            
+            let countId = `coins-policy-turns-${bot_id}`;
+            let select = createSelect(countId, "How far ahead?", [
+                {value: 1, text: 1},
+                {value: 2, text: 2},
+                {value: 3, text: 3},
+                {value: 4, text: 4},
+            ], [])
+            select.classList.add("coin-hide");
+            subContainer.appendChild(select);
+
+            // let countInput = document.createElement('input');
+            // countInput.setAttribute('type', 'number');
+            // countInput.setAttribute('id', countId)
+            // countInput.setAttribute('min', 1);
+            // countInput.setAttribute('max', 4);
+            // countInput.setAttribute('value', 1); //default
+            // let countLabel = document.createElement('label');
+            // countLabel.innerText = "How far ahead?"
+            // countLabel.setAttribute('for', countId);
+
+            // subContainer.appendChild(countLabel);
+            // subContainer.appendChild(countInput);
+        }
         container.appendChild(subContainer);
     }
     return container;
@@ -492,16 +532,65 @@ function changeMoving_ClickHandler(bot_id, evt){
         evt.target.classList.add("bot-stop");
     }
 }
+// function setTimeOutMultiple(functions, duration){
+//     if (functions.length === 0){
+//         return;
+//     }
+//     functions[0]();
+//     setTimeout(()=>{
+//         setTimeOutMultiple(functions.slice(1, functions.length))
+//     }, duration);
+// }
+let i = 0;
+let x;
+let drawQueue = {} //bot id -> queue
+
 function startMovingButton_ClickHandler(bot_id, evt){
     if (bot_id in intervals){
         log('The bot is already moving!');
         return;
     }
+    // if (!(bot_id in drawQueue)){
+    //     drawQueue[bot_id] = [];
+    // }
     function move(){
-        let {bot} = grid.move_bot_using_policies(bot_id);
-        //TODO: Check if the `bot` object has been updated
-        updateCrashes(bot);
-        drawBoard();
+        console.log("-------------------------MOVING-------------------")
+        // if (drawQueue[bot_id].length > 0){
+        //     console.log(`Drawing 1 frame from ${drawQueue.length}`)
+        //     let {board} = drawQueue[bot_id].shift();
+        //     drawBoard(board);
+        //     return;
+        // }
+        let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
+        let history = grid.move_bot_using_policies(bot_id, bot_index=0, num_turns=num_turns);
+        drawBoard()
+        // drawQueue[bot_id] = [...drawQueue[bot_id], ...history];
+
+        // console.log(`Found ${history.length} frames`)
+        // // let functions = []
+        // function drawEverything(){
+        //     console.log(`Drawing history ${i}`)
+        //     drawBoard(history[i].board);
+        //     i+=1;
+        //     if (i === history.length){
+        //         console.log("clearing x!")
+        //         clearInterval(x);
+        //         delete x
+        //         i=0;
+        //     }
+        // }
+        // x = setInterval(drawEverything, 200);
+
+        // for (let {bot, board} of history){
+        //     functions.push(()=>{
+        //         updateCrashes(bot);
+        //         drawBoard(board);
+        //     })
+
+        //     // updateCrashes(bot);
+        //     // drawBoard(board);
+        // }
+        // setTimeOutMultiple(functions, 500)
     }
     intervals[bot_id] = setInterval(move, 500);
 }
@@ -516,5 +605,8 @@ function stopMovingButton_ClickHandler(bot_id, evt){
 //     grid.update_bot_policy(bot_id, newPolicy);
 // }
 function changeCheckbox_changeHandler(bot_id, key, evt){
+    if (key === "GET_COINS"){
+        document.getElementById(`container-coins-policy-turns-${bot_id}`).classList.toggle("coin-hide")
+    }
     grid.update_bot_policy(bot_id, key, evt.target.checked);
 }
