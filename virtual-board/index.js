@@ -2,7 +2,7 @@ let grid;
 let boardDrawing;
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
-    let cols = 20;
+    let cols = 10;
     grid = new VirtualGrid(rows, cols, ()=>{});
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
@@ -18,9 +18,9 @@ function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
 }
 function drawBoard(board){
-    console.log("drawing board...")
+    // console.log("drawing board...")
     if (!board){
-        console.log("Didint find one, so get board")
+        // console.log("Didint find one, so get board")
         board = grid.print_board();
     }
     let gridDiv = document.getElementById("gridDiv");
@@ -615,10 +615,18 @@ let graph;
 testGraphButton.addEventListener("click", (evt)=>{
     console.log("test graph")
     graph = new GridGraph(grid, 1, 0);
-    console.log(Object.keys(graph.graph.graph))
+    console.log(graph.graph)
     let bot = grid.bots[1][0];
     let coin_obj = grid.coins[21][0];
     console.log(bot);
     console.log(coin_obj);
     console.log(graph.shortest_path(bot, coin_obj));
+})
+
+testLogicButton.addEventListener("click", (evt)=>{
+    let coin = {id: 21, real_bottom_left: [0, 2], width: 1, height: 1, type: 'coin'};
+    let bot = {id: 1, real_bottom_left: [0, 0], width: 3, height: 3, relative_anchor: [1, 1], type:"bot", angle: 180}
+    console.log(`Do they crash?`)
+    console.log(grid.almost_crash(coin, bot, 0));
+    console.log("done!")
 })

@@ -45,7 +45,7 @@ class Graph{
      * @param {string} end 
      */
     shortestPath(start, end){
-        console.log(`Finding shortest path from ${start} to ${end}`);
+        // console.log(`Finding shortest path from ${start} to ${end}`);
         return findShortestPath(this.graph, start, end);
     }
 }
@@ -102,6 +102,7 @@ class GridGraph{
      * @param {*} graph 
      */
     constructor(grid, bot_id, bot_index=0){
+        this.grid = grid;
         this.graph = new Graph();
         this.update_values_from_grid(grid, bot_id, bot_index);
     }
@@ -115,26 +116,25 @@ class GridGraph{
         let binary_board = grid.binary_board(bot_id, bot_index);
         let bot = grid.bots[bot_id][bot_index];
         let {width, height} = bot;
-        console.log(`grid rows = ${grid.rows} and columns = ${grid.cols}`);
-        for (let i = 0; i < grid.rows; i++){
-            for (let j = 0; j < grid.cols; j++){
+        // console.log(`grid rows = ${grid.rows} and columns = ${grid.cols}`);
+        for (let i = 0; i < grid.cols; i++){
+            for (let j = 0; j < grid.rows; j++){
                 for (let angle of [0, 90, 180, 270]){
                     let start_bot = {...bot, angle: angle, real_bottom_left: [i, j]}; //node
                     //This is possible because the is_valid_bot_position only checks for the id to ignore crashes
-                    let {valid} = grid.is_valid_bot_position(start_bot);
-                    // if (!valid){
-                    //     continue;
-                    // }
+                    let {valid} = grid.is_valid_bot_position({...start_bot});
+                    if (!valid){
+                        continue;
+                    }
                     let start_node = this.get_node_from_position(i, j, angle);
-                    this.graph.addNode(start_node);
                     let end_bots = [
-                        {info: ['move', 1], weight: 1, end_bot: grid.future_position_after_move(start_bot, 1)},
-                        {info: ['turn', 90], weight: 0, end_bot: grid.future_position_after_turn(start_bot, 90)},
-                        {info: ['turn', 180], weight: 0, end_bot: grid.future_position_after_turn(start_bot, 180)},
-                        {info: ['turn', 270], weight: 0, end_bot: grid.future_position_after_turn(start_bot, 270)},
+                        {info: ['move', 1], weight: 1, end_bot: grid.future_position_after_move({...start_bot}, 1)},
+                        {info: ['turn', 90], weight: 0, end_bot: grid.future_position_after_turn({...start_bot}, 90)},
+                        {info: ['turn', 180], weight: 0, end_bot: grid.future_position_after_turn({...start_bot}, 180)},
+                        {info: ['turn', 270], weight: 0, end_bot: grid.future_position_after_turn({...start_bot}, 270)},
                     ];
                     for (let {info, weight, end_bot} of end_bots){
-                        if (!grid.is_valid_bot_position(end_bot)){
+                        if (!(end_bot.valid_position)){
                             continue;
                         }
                         let [end_i, end_j] = end_bot.real_bottom_left;
@@ -152,12 +152,25 @@ class GridGraph{
      */
     shortest_path(bot, obj){
         let start_node = this.get_node_from_position(bot.real_bottom_left[0],bot.real_bottom_left[1], bot.angle);
-        let [x, y] = obj.real_bottom_left;
+        let [obj_x, obj_y] = obj.real_bottom_left;
+        let obj_width = obj.width;
+        let obj_height = obj.height;
+        let w = bot.width;
+        let h = bot.height;
         let min_distance = null;
-        let min_response = null;
-        for (let dx = 0; dx < obj.width; dx++){
-            for (let dy = 0; dy < obj.height; dy++){
-                let end_node = this.get_node_from_position(x + dx, y + dy, 0);
+        let min_response = {
+            distance: null,
+            path_nodes: null,
+            path_edges: null,
+        };
+
+        let min_bot_x = Math.max(0, obj_x-w+1);
+        let max_bot_x = Math.min(grid.cols-w, obj_x+obj_width-1);
+        let min_bot_y = Math.max(0, obj_y-h+1);
+        let max_bot_y = Math.min(grid.rows-h, obj_y+obj_height-1);
+        for (let new_x = min_bot_x; new_x <= max_bot_x; new_x++){
+            for (let new_y = min_bot_y; new_y <= max_bot_y; new_y++){
+                let end_node = this.get_node_from_position(new_x, new_y, 0);
                 let distance_info = this.graph.shortestPath(start_node, end_node);
                 if (distance_info.distance === null){
                     //Not reachable
@@ -169,11 +182,11 @@ class GridGraph{
                 }
             }
         }
-        if (min_distance === null){
-            return null;
-        } else {
-            return min_response;
-        }
-
+        return min_response;
     }
+    is_reachable_from(bot, obj){
+        //TODO: Shouldn't need to calculate the minimum to do this
+        return this.shortest_path(bot, obj).distance !== null;
+    }
+
 }

@@ -45,6 +45,7 @@ class VirtualGrid{
         for (let coin of coins){
             this.add_coin(coin);
         }       
+        // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
         // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
         // If the relative_anchor is (0,0) that means tha 
         this.bots = {}; //bots should have an {angle} that the bot is looking at (e.g., 0 is looking right)
@@ -69,9 +70,9 @@ class VirtualGrid{
             return;
         }
         let potential_crashes = this.get_almost_crashes({...obj, type}, 0);
-        console.log("adding objects");
-        console.log({...obj, type})
-        console.log(potential_crashes);
+        // console.log("adding objects");
+        // console.log({...obj, type})
+        // console.log(potential_crashes);
         if (BOT_TYPE in potential_crashes || OBSTACLE_TYPE in potential_crashes || COIN_TYPE in potential_crashes){
             return {success: false, message: `Error adding object with type ${type}: There is a crash`}
         }
@@ -80,7 +81,7 @@ class VirtualGrid{
         }
         let {id, width, height} = obj;
         if (width <= 0 || height <= 0){
-            return {success: false, message: `Error adding object with type ${type}: Width not height can be 0`}
+            return {success: false, message: `Error adding object with type ${type}: Width and height have to be positive`}
         }
         //make sure this has the 
         let objects = type === BOT_TYPE ? this.bots : 
@@ -106,7 +107,7 @@ class VirtualGrid{
      * 
      * @param {*} future_bot 
      * @param {*} look_ahead 
-     * @returns an Object representing 
+     * @returns an Object representing all bosts, obstacles and coins this would crash into
      */
     get_almost_crashes(future_bot, look_ahead=1){
         // console.log("Getting almost crashes for")
@@ -192,7 +193,10 @@ class VirtualGrid{
         return max_coin_id + 1;
     }
     add_random_coin(){
-        while (true){
+        let MAX_ATTEMPTS = 10;
+        let attempt = 0;
+        while (attempt < MAX_ATTEMPTS){
+            attempt++;
             let col = Math.floor(Math.random() * this.cols);
             let row = Math.floor(Math.random() * this.rows);
             let coinId = this.getNewCoinId();
@@ -222,7 +226,10 @@ class VirtualGrid{
      * @returns 
      */
     add_random_bot(){
-        while(true){
+        let MAX_ATTEMPTS = 10;
+        let attempt = 0;
+        while(attempt < MAX_ATTEMPTS){
+            attempt++;
             let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
             let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
             let botId = this.getNewBotId();
@@ -246,7 +253,9 @@ class VirtualGrid{
         }
     }
     add_random_obstacle(){
-        while (true){
+        let MAX_ATTEMPTS = 10;
+        let attempt = 0;
+        while (attempt < MAX_ATTEMPTS){
             let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
             let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
             let possible_sizes = [
@@ -318,7 +327,8 @@ class VirtualGrid{
 
         let future_bot = {...prev_bot, real_bottom_left: new_bottom_left}
         let valid_position = this.is_valid_bot_position(future_bot).valid;
-        return {...future_bot, valid_position: valid_position}
+        let future_crashes = this.get_almost_crashes(future_bot, 0)
+        return {...future_bot, valid_position: valid_position, future_crashes: future_crashes}
     }
     /**
      * 
@@ -364,7 +374,7 @@ class VirtualGrid{
 
         let valid_position_response = this.is_valid_bot_position(future_bot);
         if (!valid_position_response.valid){
-            return {...valid_position_response, bot: bot};
+            return {bot: bot, ...valid_position_response, success: valid_position_response.valid};
         }
 
         let coinsPicked = [];
@@ -373,13 +383,10 @@ class VirtualGrid{
             for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]){
                 //TODO: Change bot state (e.g., give it more points)
                 this.remove_coin(coin_id, coin_index);
-                this.add_random_coin(); //TODO: just for fun
-                this.add_or_change_obstacle(); //TODO: just for fun
                 bot.coins.push([coin_id, coin_index])
                 coinsPicked.push([coin_id, coin_index]);
             }
         }
-
         let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
         bot.almost_crashes = almost_crashes;
         console.log(`Updating position of bot ${bot_id} from ${bot.real_bottom_left} to ${new_bottom_left}`)
@@ -388,6 +395,14 @@ class VirtualGrid{
         this.bots[bot_id][bot_index] = bot;
         let message = coinsPicked.length === 0 ? "": `Moved succesfully and picked up ${coinsPicked.length} coins ${coinsPicked}`
         this.drawBoard(this.print_board());
+
+        //Now that the bot has moved, we can add stuff
+        for (let _ of coinsPicked){
+            //If crashed with coins then pick them up
+            //TODO: Change bot state (e.g., give it more points)
+            this.add_random_coin(); //TODO: just for fun
+            this.add_or_change_obstacle(); //TODO: just for fun
+        }
         return {success: true, bot: bot, message: message};
     }
     /**
@@ -514,20 +529,33 @@ class VirtualGrid{
         return res;
     }
     /**
+     * Returns whether the bot can get to the given object, by taking into consideration other bots 
+     * and other obstacles
+     * @param {*} future_bot 
+     * @param {*} obj 
+     * @returns 
+     */
+    is_reachable_from(future_bot, obj){
+        //Not the most efficient way. TODO: Try the "bleed" method
+        return this.graphs[future_bot.id].is_reachable_from(future_bot, obj);
+    }
+    /**
      * @param {*} future_bot 
      * @returns the minimum distance from the bot to all the coins
      */
     min_distance_to_coins(future_bot){
-        let res = Number.MAX_SAFE_INTEGER;
+        let res = null;
         for (let coin_id in this.coins){
             for (let coin_index in this.coins[coin_id]){
                 let coin_obj = this.coins[coin_id][coin_index];
                 // let distance_response = this.distance_to_object(future_bot, coin_obj);
-                let distance_response = this.graphs[future_bot.id].shortest_path(future_bot, coin_obj);
-                if (distance_response){
-                    console.log("distance_response")
-                    console.log(distance_response)
-                    res = Math.min(res, distance_response.distance);
+                if (this.is_reachable_from(future_bot, coin_obj)){
+                    if (res === null){
+                        res = this.distance_to_object(future_bot, coin_obj);
+                    } else {
+                        res = Math.min(res, this.distance_to_object(future_bot, coin_obj));
+                        // res = Math.min(res, distance_response.distance);
+                    }
                 }
             }
         }
@@ -694,12 +722,30 @@ class VirtualGrid{
                 //didnt move at all, dont take into consideration
                 continue;
             }
-            let distance = this.min_distance_to_coins(future_bot);
+            let distance;
+            if (future_bot.future_crashes[COIN_TYPE]){
+                //While moving it potentially will crash with a coin, that's good!
+                distance = 0;
+            } else {
+                distance = this.min_distance_to_coins(future_bot);
+                if (distance === null){
+                    //No coin is within reach
+                    continue;
+                }
+            }
             if (distance === min_distance){
                 directions.push(turns);
             } else if (distance < min_distance){
                 min_distance = distance;
                 directions = [turns];
+            }
+        }
+        if (directions.length === 0){
+            //If no position let to a reachable place
+            return {
+                bot: bot,
+                success: false,
+                message: "No moves leaves coin within reach"
             }
         }
         //If there was a tie, pick randomly
@@ -854,7 +900,8 @@ class VirtualGrid{
         //Need to keep id info from the bot
         let future_bot = {...prev_bot, angle, real_bottom_left, relative_anchor, width, height};
         let valid_position = this.is_valid_bot_position(future_bot).valid;
-        return {...future_bot, valid_position};
+        let future_crashes = this.get_almost_crashes(future_bot, 0)
+        return {...future_bot, valid_position, future_crashes: future_crashes};
     }
     future_position_after_turn(prev_bot, turn_angle){
         //cast the angle to 0, 360
@@ -863,18 +910,20 @@ class VirtualGrid{
             turn_angle += 360;
         }
         let valid_position = true;
+        let future_crashes = [];
         for (let i = 0; i < turn_angle; i+=90){
             prev_bot = this.future_position_after_90_turn(prev_bot);
             let temp_valid = this.is_valid_bot_position(prev_bot).valid;
-            if (!temp_valid && valid_position){
+            if (!temp_valid){
                 valid_position = false;
+            } else {
+                future_crashes = [...future_crashes, prev_bot.future_crashes]
             }
         }
-
-        return {...prev_bot, valid_position};
+        return {...prev_bot, valid_position: valid_position, future_crashes: future_crashes};
     }
     /**
-     * Turn 90 deg counterclockwise
+     * Turn 90 deg counterclockwise. Updates global object
      * @param {*} bot_id 
      * @param {*} bot_index 
      */
@@ -918,8 +967,10 @@ class VirtualGrid{
             //TODO: Maybe don't update global object, yet
             bot = this.turn_90(bot_id, bot_index);
         }
+        // console.log(`bot after turning ${angle}`)
+        // console.log(bot);
         this.drawBoard(this.print_board());
-        // TODO: Under assumption of squae bots, turning should always be fine
+        // TODO: Under assumption of square bots, turning should always be fine
         // But might be better to check for other cases.
         return {bot, success: true, message:`Bot with id ${bot_id} turned ${angle} degrees`};
     }
@@ -989,9 +1040,9 @@ class VirtualGrid{
      */
     print_board(){
         let board = [];
-        for (let i = 0; i < this.rows; i++){
+        for (let j = 0; j < this.rows; j++){
             let row = [];
-            for (let j = 0; j < this.cols; j++){
+            for (let i = 0; i < this.cols; i++){
                 row.push("");
             }
             board.push(row);
@@ -1065,10 +1116,10 @@ class VirtualGrid{
         // console.log("Current state of board: ");
         //Finally, print everything!
         //Starting from last to 0 so that it appears correctly
-        for (let i = this.rows-1; i >= 0; i--){
-            let row = `Row ${i}: `;
-            for (let j = 0; j < this.cols; j++){
-                row += (" | " + board[i][j]);
+        for (let j = this.rows-1; j >= 0; j--){
+            let row = `Row ${j}: `;
+            for (let i = 0; i < this.cols; i++){
+                row += (" | " + board[j][i]);
             }
             // console.log(row);
         }
@@ -1080,9 +1131,9 @@ class VirtualGrid{
      */
     binary_board(bot_id, bot_index=0){
         let board = [];
-        for (let i = 0; i < this.rows; i++){
+        for (let j = 0; j < this.rows; j++){
             let row = [];
-            for (let j = 0; j < this.cols; j++){
+            for (let i = 0; i < this.cols; i++){
                 row.push(false);
             }
             board.push(row);

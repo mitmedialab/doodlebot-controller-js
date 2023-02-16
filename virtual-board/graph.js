@@ -19,6 +19,8 @@ const shortestDistanceNode = (distances, visited) => {
 	}
 	return shortest;
 };
+let INFINITY = "Infinity";
+
 /**
  * 
  * @param {Object} graph Format is {node: {node2: {weight: <weight>, info: ..extra info..}}}
@@ -27,19 +29,27 @@ const shortestDistanceNode = (distances, visited) => {
  * @param {boolean} show_logs 
  * @returns 
  */
-const findShortestPath = (graph, startNode, endNode, show_logs=true) => {
+const findShortestPath = (graph, startNode, endNode, show_logs=false) => {
+    if (!(startNode in graph) | !(endNode in graph)){
+        // console.log(`Invalid nodes`)
+        return {
+            distance: null,
+            path_nodes: null,
+            path_edges: null,
+        }
+    }
     const log = show_logs ? (x)=>{console.log(x)}: (x)=>{};
 
 	// establish object for recording distances from the start node
 	let distances = {};
-	distances[endNode] = null;
+	distances[endNode] = INFINITY;
     for (let child in graph[startNode]){
         distances[child] = graph[startNode][child].weight
     }
 	// distances = Object.assign(distances, graph[startNode]);
 
 	// track paths
-	let parents = { endNode: null };
+	let parents = { [endNode]: null };
 	for (let child in graph[startNode]) {
 		parents[child] = startNode;
 	}
@@ -72,7 +82,7 @@ const findShortestPath = (graph, startNode, endNode, show_logs=true) => {
 				// or if the recorded distance is shorter than the previously stored distance from the start node to the child node
 				// save the distance to the object
 				// record the path
-				if (!distances[child] || distances[child] > newdistance) {
+				if (!(child in distances) || distances[child] > newdistance) {
 					distances[child] = newdistance;
 					parents[child] = node;
 					log("distance + parents updated");
@@ -89,7 +99,7 @@ const findShortestPath = (graph, startNode, endNode, show_logs=true) => {
 
 	// using the stored paths from start node to end node
 	// record the shortest path
-    if (distances[endNode] === null){
+    if (distances[endNode] === INFINITY){
         return {
             distance: null,
             path_nodes: null,
@@ -98,9 +108,11 @@ const findShortestPath = (graph, startNode, endNode, show_logs=true) => {
     }
 	let shortestPath = [endNode];
 	let parent = parents[endNode];
-	while (parent) {
+    let count = 0;
+	while (count < 100 && parent) {
 		shortestPath.push(parent);
 		parent = parents[parent];
+        count += 1;
 	}
 	shortestPath.reverse();
     let path_edges = [];
