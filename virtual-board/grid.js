@@ -522,7 +522,13 @@ class VirtualGrid{
         for (let coin_id in this.coins){
             for (let coin_index in this.coins[coin_id]){
                 let coin_obj = this.coins[coin_id][coin_index];
-                res = Math.min(res, this.distance_to_object(future_bot, coin_obj));
+                // let distance_response = this.distance_to_object(future_bot, coin_obj);
+                let distance_response = this.graphs[future_bot.id].shortest_path(future_bot, coin_obj);
+                if (distance_response){
+                    console.log("distance_response")
+                    console.log(distance_response)
+                    res = Math.min(res, distance_response.distance);
+                }
             }
         }
         return res;
@@ -674,6 +680,10 @@ class VirtualGrid{
      * @returns 
      */
     move_bot_using_get_coins(bot_id, bot_index=0, num_moves=1){
+        this.graphs = {
+            [bot_id]: new GridGraph(this, bot_id, bot_index),
+        }
+
         let bot = this.bots[bot_id][bot_index];
         let min_distance = Number.MAX_SAFE_INTEGER;
         let directions = [];

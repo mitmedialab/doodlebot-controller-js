@@ -610,3 +610,15 @@ function changeCheckbox_changeHandler(bot_id, key, evt){
     }
     grid.update_bot_policy(bot_id, key, evt.target.checked);
 }
+
+let graph;
+testGraphButton.addEventListener("click", (evt)=>{
+    console.log("test graph")
+    graph = new GridGraph(grid, 1, 0);
+    console.log(Object.keys(graph.graph.graph))
+    let bot = grid.bots[1][0];
+    let coin_obj = grid.coins[21][0];
+    console.log(bot);
+    console.log(coin_obj);
+    console.log(graph.shortest_path(bot, coin_obj));
+})

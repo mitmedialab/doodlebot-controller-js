@@ -27,7 +27,7 @@ const shortestDistanceNode = (distances, visited) => {
  * @param {boolean} show_logs 
  * @returns 
  */
-const findShortestPath = (graph, startNode, endNode, show_logs=false) => {
+const findShortestPath = (graph, startNode, endNode, show_logs=true) => {
     const log = show_logs ? (x)=>{console.log(x)}: (x)=>{};
 
 	// establish object for recording distances from the start node
