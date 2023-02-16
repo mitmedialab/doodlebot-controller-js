@@ -395,13 +395,13 @@ addCoinButton.addEventListener("click", (evt)=>{
     let coinId = grid.getNewCoinId();
     let row = Number(coinRowNumberInput.value);
     let col = Number(coinColNumberInput.value);
-    let width = Number(coinWidthInput.value);
-    let height = Number(coinColNumber.value);  
+    // let width = Number(coinWidthInput.value);
+    // let height = Number(coinColNumber.value);  
     let coin = {
         id: coinId,
         real_bottom_left: [col,row],
-        width: width,
-        height: height,
+        width: 1,
+        height: 1,
     }
     let {success, message} = grid.add_coin(coin);
     if (!success){

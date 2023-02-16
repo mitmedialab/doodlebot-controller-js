@@ -102,6 +102,12 @@ class VirtualGrid{
         this.drawBoard(this.print_board());
         return {success: true, message: `Succesfully added object with type ${type} and id ${id}`, object: newObject}
     }
+    /**
+     * 
+     * @param {*} future_bot 
+     * @param {*} look_ahead 
+     * @returns an Object representing 
+     */
     get_almost_crashes(future_bot, look_ahead=1){
         // console.log("Getting almost crashes for")
         // console.log(future_bot);
@@ -158,6 +164,13 @@ class VirtualGrid{
         return almost_crashes;
 
     }
+    /**
+     * 
+     * @param {*} bottom_left 
+     * @param {*} width 
+     * @param {*} height 
+     * @returns true if the block at bottm_left with [width, height] is fully inside the board 
+     */
     isInsideBoard(bottom_left, width, height){
         let [minBotX, minBotY] = bottom_left;
         let [maxBotX, maxBotY] = [minBotX + width - 1, minBotY + height - 1];
@@ -259,6 +272,18 @@ class VirtualGrid{
         }
     }
     /**
+     * If there are no obstacles, adds a random one. If there is at least one, 
+     * removes it and then adds a random one.
+     */
+    add_or_change_obstacle(){
+        if (Object.keys(this.obstacles).length > 0){
+            //delete an obstacle
+            let obstacle_id = Math.min(Object.keys(this.obstacles));
+            this.remove_obstacle(obstacle_id, 0);
+        }
+        this.add_random_obstacle();
+    }
+    /**
      * 
      * @param {*} bot_id 
      * @param {*} distance 
@@ -348,7 +373,8 @@ class VirtualGrid{
             for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]){
                 //TODO: Change bot state (e.g., give it more points)
                 this.remove_coin(coin_id, coin_index);
-                this.add_random_coin();
+                this.add_random_coin(); //TODO: just for fun
+                this.add_or_change_obstacle(); //TODO: just for fun
                 bot.coins.push([coin_id, coin_index])
                 coinsPicked.push([coin_id, coin_index]);
             }
@@ -732,7 +758,13 @@ class VirtualGrid{
         let message = `Moved succesfully`;
         return {success: true, coin: coin, message: message};
     }
-
+    /**
+     * 
+     * @param {*} bot 
+     * @param {*} obstacle 
+     * @param {*} look_ahead 
+     * @returns true iff the bot after `look_ahead` steps and the obstacle are crashing 
+     */
     almost_crash(bot, obstacle, look_ahead){
         let obs_pos = obstacle.real_bottom_left;
         let dx = 0;
@@ -1031,6 +1063,39 @@ class VirtualGrid{
             // console.log(row);
         }
 
+        return board;
+    }
+    /**
+     * Adding obstacles and bots to true, except with the given bot
+     */
+    binary_board(bot_id, bot_index=0){
+        let board = [];
+        for (let i = 0; i < this.rows; i++){
+            let row = [];
+            for (let j = 0; j < this.cols; j++){
+                row.push(false);
+            }
+            board.push(row);
+        }
+        let all_objects = Object.assign({}, this.bots, this.obstacles);
+
+        //Adding bots
+        for (let obj_id in all_objects){
+            for (let [obj_index, obj] of Object.entries(all_objects[obj_id])){
+                if (bot_id === obj_id && bot_index === obj_index){
+                    continue;
+                }
+                //Setting everything covered by 
+                let [a, b] = obj.real_bottom_left;
+                for (let i = 0; i < obj.width; i++){
+                    for (let j = 0; j < obj.height; j++){
+                        if ( 0 <= b + j && b+j < this.rows && 0 <= a + i && a+i < this.cols){
+                            board[b+j][a+i] = true;
+                        }
+                    }
+                }
+            }
+        }
         return board;
     }
 }
