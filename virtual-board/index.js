@@ -335,9 +335,22 @@ function create_bot_options(bot){
     policyContainer.appendChild(policyCheckboxGroupDiv);
     policyContainer.appendChild(changeMovingButton);
 
+    let otherOptionsContainer = document.createElement('div');
+    otherOptionsContainer.classList.add("bot-other-options-container");
+    let otherOptionsHeader = document.createElement('h2');
+    otherOptionsHeader.innerText = "Other options"
+    let otherOptionsSelect = createSelect(`distanceSelect-${bot_id}`, `Select a type of distance: `, Object.values(DISTANCE_VALUES), [
+        {
+            key: "change",
+            handler: (evt)=>{distanceSelect_ChangeHandler(bot_id, evt)}
+        }
+    ]);
+    otherOptionsContainer.appendChild(otherOptionsHeader);
+    otherOptionsContainer.appendChild(otherOptionsSelect);
 
     div.appendChild(controlsDiv);
-    div.appendChild(policyContainer)
+    div.appendChild(policyContainer);
+    div.appendChild(otherOptionsContainer);
     botControlsContainer.appendChild(div);
 }
 addBotButton.addEventListener("click", (evt)=>{
@@ -604,6 +617,10 @@ function stopMovingButton_ClickHandler(bot_id, evt){
 //     let newPolicy = evt.target.value;
 //     grid.update_bot_policy(bot_id, newPolicy);
 // }
+function distanceSelect_ChangeHandler(bot_id, evt){
+    let newDistance = evt.target.value;
+    grid.update_bot_distance(bot_id, newDistance);
+}
 function changeCheckbox_changeHandler(bot_id, key, evt){
     if (key === "GET_COINS"){
         document.getElementById(`container-coins-policy-turns-${bot_id}`).classList.toggle("coin-hide")

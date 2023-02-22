@@ -32,6 +32,16 @@ const BOT_POLICIES = {
     }
 }
 
+const DISTANCE_VALUES = {
+    EUCLIDEAN: {
+        value: "Euclidean",
+        text: "Euclidean"
+    },
+    MANHATTAN: {
+        value: "Manhattan",
+        text: "Manhattan"
+    }
+}
 class VirtualGrid{
     constructor(m, n, drawBoard, bots=[], obstacles=[], coins=[]){
         this.rows = m;
@@ -96,7 +106,13 @@ class VirtualGrid{
         let id_index = Math.max(-1, ...Object.keys(objects[id])) + 1; 
         let newObject = {...obj, type, id_index};
         if (type === BOT_TYPE){
-            newObject = {...newObject, coins: [], policies: new Set(), targets:[]};
+            newObject = {
+                ...newObject, 
+                coins: [], 
+                policies: new Set(), 
+                distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
+                targets:[]
+            };
         }
         objects[id][id_index] = newObject;
         // objects[id].push(newObject);
@@ -450,6 +466,10 @@ class VirtualGrid{
         console.log(`Updated bot ${bot_id} and now new policies are ${Array.from(bot.policies)}`);
         // this.bots[bot_id][bot_index] = bot;
     }
+    update_bot_distance(bot_id, distance_value, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        bot.distance_type = distance_value;
+    }
     /**
      * Either moves the bot forward, backward or turns 90 degrees 
      * @param {*} bot_id 
@@ -485,13 +505,32 @@ class VirtualGrid{
         return object_position;
     }
     /**
+     * Distance between 2D coordinates, according to a given distance
+     * @param {*} obj1 
+     * @param {*} obj2 
+     * @param {*} distance_type 
+     * @returns 
+     */
+    distance_according_policy(obj1, obj2, distance_type){
+        let dx = obj1[0] - obj2[0];
+        let dy = obj1[1] - obj2[1];
+        switch (distance_type){
+            case DISTANCE_VALUES.EUCLIDEAN.value:
+                return Math.sqrt(dx*dx+dy*dy)
+            case DISTANCE_VALUES.MANHATTAN.value:
+                return Math.abs(dx) + Math.abs(dy);
+            default:
+                console.log(`Unkown distance_type: ${distance_type}`);
+        }
+    }
+    /**
      * 
      * @param {*} board_position 
      * @param {*} bot_id 
      * @param {*} bot_index 
-     * @returns 2D distance between bot and board position
+     * @returns 2D distance between bot and board position, according to bot's selected distance type
      */
-    distance_to_object(future_bot, obj){
+    distance_to_object(future_bot, obj, bot_index=0){
         let object_position = this.get_object_center(obj);
         // TODO: Use another distance function? Maybe Euclidean?
         // Make this part of the policy??
@@ -500,12 +539,10 @@ class VirtualGrid{
         //     future_bot.real_bottom_left[0] + future_bot.relative_anchor[0],
         //     future_bot.real_bottom_left[1] + future_bot.relative_anchor[1]
         // ]
-        let dx = future_position[0] - object_position[0];
-        let dy = future_position[1] - object_position[1];
-        // console.log(`dx=${dx}, dy=${dy}`);
-        // let result = Math.abs(dx) + Math.abs(dy);
-        let result = Math.sqrt(dx*dx+dy*dy); //much better
-        // console.log(result)
+        //Not reading from future_bot because it might not get the distance information, but only parts of it
+        let {distance_type} = this.bots[future_bot.id][bot_index];
+        let result =  this.distance_according_policy(future_position, object_position, distance_type);
+        console.log(`Calculated distance = ${result}`)
         return result;
     }
     /**
