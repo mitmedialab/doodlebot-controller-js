@@ -168,6 +168,21 @@ function createSelect(id, labelText, options, listeners=[]){
     div.appendChild(select);
     return div;
 }
+function createCheckbox(container_id, labelText, listeners){
+    let container = document.createElement('div');
+    container.setAttribute('id', container_id);
+    let label = document.createElement('label');
+    label.innerText = labelText;
+    let checkbox = document.createElement('input');
+    checkbox.setAttribute('type', 'checkbox');
+    for (let listener of listeners){
+        let {key, handler} = listener;
+        checkbox.addEventListener(key, handler);
+    }
+    container.appendChild(label);
+    container.appendChild(checkbox);
+    return container;
+}
 /**
  * 
  * @param {*} bot_id 
@@ -339,14 +354,21 @@ function create_bot_options(bot){
     otherOptionsContainer.classList.add("bot-other-options-container");
     let otherOptionsHeader = document.createElement('h2');
     otherOptionsHeader.innerText = "Other options"
-    let otherOptionsSelect = createSelect(`distanceSelect-${bot_id}`, `Select a type of distance: `, Object.values(DISTANCE_VALUES), [
+    let distanceSelect = createSelect(`distanceSelect-${bot_id}`, `Select a type of distance: `, Object.values(DISTANCE_VALUES), [
         {
             key: "change",
             handler: (evt)=>{distanceSelect_ChangeHandler(bot_id, evt)}
         }
     ]);
+    let onlyReachableCheckbox = createCheckbox(`onlyReachable-${bot_id}`, `Only consider reachable points`, [
+        {
+            key: "change",
+            handler: (evt) => {onlyReachableCheckbox_ChangeHandler(bot_id, evt)}
+        }
+    ])
     otherOptionsContainer.appendChild(otherOptionsHeader);
-    otherOptionsContainer.appendChild(otherOptionsSelect);
+    otherOptionsContainer.appendChild(distanceSelect);
+    otherOptionsContainer.appendChild(onlyReachableCheckbox);
 
     div.appendChild(controlsDiv);
     div.appendChild(policyContainer);
@@ -627,7 +649,9 @@ function changeCheckbox_changeHandler(bot_id, key, evt){
     }
     grid.update_bot_policy(bot_id, key, evt.target.checked);
 }
-
+function onlyReachableCheckbox_ChangeHandler(bot_id, evt){
+    grid.update_only_reachable(bot_id, evt.target.checked);
+}
 let graph;
 testGraphButton.addEventListener("click", (evt)=>{
     console.log("test graph")

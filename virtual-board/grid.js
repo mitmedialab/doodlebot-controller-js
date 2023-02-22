@@ -62,6 +62,7 @@ class VirtualGrid{
         this.obstacles = {};
         this.coins = {};
         this.drawBoard = drawBoard;
+        this.graphs = {} // bot_id => Reachability graph
     }
     get_bot_angle(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
@@ -111,6 +112,7 @@ class VirtualGrid{
                 coins: [], 
                 policies: new Set(), 
                 distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
+                only_reachable: false, //Whether to only calculate distance to reachable points
                 targets:[]
             };
         }
@@ -585,8 +587,8 @@ class VirtualGrid{
         for (let coin_id in this.coins){
             for (let coin_index in this.coins[coin_id]){
                 let coin_obj = this.coins[coin_id][coin_index];
-                // let distance_response = this.distance_to_object(future_bot, coin_obj);
-                if (this.is_reachable_from(future_bot, coin_obj)){
+                // if it's reachable (or if it doesnt matter), consider this coin
+                if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin_obj)){
                     if (res === null){
                         res = this.distance_to_object(future_bot, coin_obj);
                     } else {
@@ -745,11 +747,12 @@ class VirtualGrid{
      * @returns 
      */
     move_bot_using_get_coins(bot_id, bot_index=0, num_moves=1){
-        this.graphs = {
-            [bot_id]: new GridGraph(this, bot_id, bot_index),
-        }
 
         let bot = this.bots[bot_id][bot_index];
+        //Only relevant if we want to know whether coins are reachable
+        if (bot.only_reachable){
+            this.graphs[bot_id] = new GridGraph(this, bot_id, bot_index);
+        }
         let min_distance = Number.MAX_SAFE_INTEGER;
         let directions = [];
         let list_of_turns = this.get_multiple_turns(num_moves);
@@ -850,6 +853,9 @@ class VirtualGrid{
         }
         let message = `Moved succesfully`;
         return {success: true, coin: coin, message: message};
+    }
+    update_only_reachable(bot_id, only_reachable, bot_index = 0){
+        this.bots[bot_id][bot_index].only_reachable = only_reachable;
     }
     /**
      * 
