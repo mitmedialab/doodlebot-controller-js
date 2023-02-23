@@ -303,9 +303,12 @@ class VirtualGrid{
      * removes it and then adds a random one.
      */
     add_or_change_obstacle(){
+        console.log(this.obstacles);
+        console.log(Object.keys(this.obstacles))
         if (Object.keys(this.obstacles).length > 0){
             //delete an obstacle
-            let obstacle_id = Math.min(Object.keys(this.obstacles));
+            let obstacle_id = Math.min(...Object.keys(this.obstacles));
+            console.log(`About to delete obstacle ${obstacle_id}`)
             this.remove_obstacle(obstacle_id, 0);
         }
         this.add_random_obstacle();
@@ -576,7 +579,25 @@ class VirtualGrid{
      */
     is_reachable_from(future_bot, obj){
         //Not the most efficient way. TODO: Try the "bleed" method
-        return this.graphs[future_bot.id].is_reachable_from(future_bot, obj);
+        // return this.graphs[future_bot.id].is_reachable_from(future_bot, obj);
+        let binary_crashing_board = this.binary_crashing_board(future_bot.id);
+        let reachable_board = this.reachable_board(binary_crashing_board, future_bot.real_bottom_left); 
+        //Check if any the bot can move to pick any part of the object
+        let [x1, y1, x2, y2]= this.get_crashing_bounds(future_bot, obj); 
+        const getValueAtPosition = (pos) => reachable_board[pos[1]][pos[0]];
+        const isReachable = (pos) => {
+            //should be a number
+            let val = getValueAtPosition(pos);
+            return val !== true && val !== false;
+        }
+        for (let i = x1; i <= x2; i++){
+            for (let j = y1; j <= y2; j++){
+                if (isReachable([i, j])){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     /**
      * @param {*} future_bot 
@@ -750,9 +771,6 @@ class VirtualGrid{
 
         let bot = this.bots[bot_id][bot_index];
         //Only relevant if we want to know whether coins are reachable
-        if (bot.only_reachable){
-            this.graphs[bot_id] = new GridGraph(this, bot_id, bot_index);
-        }
         let min_distance = Number.MAX_SAFE_INTEGER;
         let directions = [];
         let list_of_turns = this.get_multiple_turns(num_moves);
@@ -1201,5 +1219,117 @@ class VirtualGrid{
             }
         }
         return board;
+    }
+    //Returns [x1, y1, x2, y2]
+    //which means that any bot in that range
+    //will crash with the object
+    get_crashing_bounds(bot, obj){
+        let [obj_x, obj_y] = obj.real_bottom_left;
+        let obj_width = obj.width;
+        let obj_height = obj.height;
+        let w = bot.width;
+        let h = bot.height;
+
+        let min_bot_x = Math.max(0, obj_x-w+1);
+        let max_bot_x = Math.min(grid.cols-w, obj_x+obj_width-1);
+        let min_bot_y = Math.max(0, obj_y-h+1);
+        let max_bot_y = Math.min(grid.rows-h, obj_y+obj_height-1);
+        return [min_bot_x, min_bot_y, max_bot_x, max_bot_y]
+    }
+    /**
+     * Binary board, where a cell is true iff the real_bottom_left of the
+     * given bot *will* crash with any other bot or obstacle
+     */
+    binary_crashing_board(bot_id, bot_index=0){
+        let bot = this.bots[bot_id][bot_index];
+        let numRows = this.rows - bot.width + 1;
+        let numCols = this.cols - bot.height + 1;
+        let crashing_board = [];
+        for (let j = 0; j < numRows; j++){
+            let row = [];
+            for (let i = 0; i < numCols; i++){
+                row.push(false);
+            }
+            crashing_board.push(row);
+        }
+        let all_objects = Object.assign({}, this.bots, this.obstacles);
+
+        //Adding objects
+        for (let obj_id in all_objects){
+            obj_id = Number(obj_id)
+            for (let [obj_index, obj] of Object.entries(all_objects[obj_id])){
+                obj_index = Number(obj_index)
+                // console.log(`Checking ${obj_id} (${typeof obj_id})/${obj_index} (${typeof obj_index})`)
+                // console.log(`Against ${bot_id} (${typeof bot_id})/${bot_index} (${typeof bot_index})`)
+                if (bot_id === obj_id && bot_index === obj_index){
+                    // console.log("skipping")
+                    continue;
+                }
+                let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = this.get_crashing_bounds(bot, obj);
+                for (let i = min_bot_x; i <= max_bot_x; i++){
+                    for (let j = min_bot_y; j <= max_bot_y; j++){
+                        crashing_board[j][i] = true;
+                    }
+                }
+                // //Setting everything covered by 
+                // let [a, b] = obj.real_bottom_left;
+                // for (let i = 0; i < obj.width; i++){
+                //     for (let j = 0; j < obj.height; j++){
+                //         if ( 0 <= b + j && b+j < this.rows && 0 <= a + i && a+i < this.cols){
+                //             board[b+j][a+i] = true;
+                //         }
+                //     }
+                // }
+            }
+        }
+        return crashing_board;
+    }
+    /**   
+    Performs BFS. This does `not` take into consideration rotation as a movement. It assumes
+    you can freely go from one place to the other and rotatins has a weight of 0. Might need to change later.
+
+    returns a board where every value is either:
+        true, if it cannot be reached because otherwise it would crash with an obstacle
+        false, if it cannot be reached because its not reachable
+        an integer representing the shortest length to get to that place 
+    */
+    reachable_board(crashing_board, initial_position){
+        crashing_board = [...crashing_board];
+
+        let [start_x, start_y] = initial_position;
+        const getValueAtPosition = (pos) => crashing_board[pos[1]][pos[0]];
+        const isInsidePosition = (pos) => 0 <= pos[0] && pos[0] < crashing_board[0].length && 0 <= pos[1] && pos[1] < crashing_board.length;
+        const setValueAtPosition = (pos, val) => {
+            crashing_board[pos[1]][pos[0]] = val;
+        }
+        if (!isInsidePosition(initial_position)){
+            console.log("The starting coordinates is not valid");
+            console.log(initial_position)
+            return crashing_board;
+        }
+        setValueAtPosition(initial_position, 0);
+        let positions = [initial_position]
+        let movements = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        while (positions.length > 0){
+            let new_positions = []
+            for (let position of positions){
+                for (let [dx, dy] of movements){
+                    let new_position = [position[0]+dx, position[1]+dy];
+                    if (!isInsidePosition(new_position)){
+                        continue;
+                    }
+                    let prev = getValueAtPosition(new_position);
+                    // Only consider the ones that have not been visited
+                    if (prev === false){
+                        //1 step extra because of move
+                        setValueAtPosition(new_position, getValueAtPosition(position) + 1);
+                        new_positions.push(new_position);
+                    } 
+
+                }
+            }
+            positions = new_positions;
+        }
+        return crashing_board;
     }
 }

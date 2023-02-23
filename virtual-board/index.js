@@ -2,7 +2,7 @@ let grid;
 let boardDrawing;
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
-    let cols = 10;
+    let cols = 20;
     grid = new VirtualGrid(rows, cols, ()=>{});
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
@@ -654,14 +654,21 @@ function onlyReachableCheckbox_ChangeHandler(bot_id, evt){
 }
 let graph;
 testGraphButton.addEventListener("click", (evt)=>{
-    console.log("test graph")
-    graph = new GridGraph(grid, 1, 0);
-    console.log(graph.graph)
+    // console.log("test graph")
+    // graph = new GridGraph(grid, 1, 0);
+    // console.log(graph.graph)
+    // let bot = grid.bots[1][0];
+    // let coin_obj = grid.coins[21][0];
+    // console.log(bot);
+    // console.log(coin_obj);
+    // console.log(graph.shortest_path(bot, coin_obj));
+
+    board = grid.binary_crashing_board(1);
     let bot = grid.bots[1][0];
-    let coin_obj = grid.coins[21][0];
-    console.log(bot);
-    console.log(coin_obj);
-    console.log(graph.shortest_path(bot, coin_obj));
+    board = grid.reachable_board(board, bot.real_bottom_left);
+    for (let i = board.length -1; i >= 0; i--){
+        console.log(board[i]);
+    }
 })
 
 testLogicButton.addEventListener("click", (evt)=>{
