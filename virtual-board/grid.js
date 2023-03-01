@@ -12,7 +12,10 @@ const MIN_BOT_ID = 1;
 const MIN_OBSTACLE_ID = 11;
 const MIN_COIN_ID = 21;
 const MIN_OTHER_ID = 31;
-
+const BOT_DIMENSIONS = {
+    width: 3, 
+    height: 3
+}
 const BOT_POLICIES = {
     RANDOM: {
         value: "random",
@@ -74,6 +77,7 @@ class VirtualGrid{
         this.coins = {};
         this.drawBoard = drawBoard;
         this.graphs = {} // bot_id => Reachability graph
+        this.coin_graphs = {}; //coin_id -> Minimum distance graph
     }
     get_bot_angle(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
@@ -634,23 +638,33 @@ class VirtualGrid{
                 } 
                 //TODO: add when is faster
                 else {
-                    console.log("creating grid graph")
-                    let gg = new GridGraph(this, future_bot.id);
-                    let path = gg.shortest_path(future_bot, coin_obj);
-                    console.log(path);
-                    console.log(path)
-                    if (!path.distance){
-                        continue;
-                    } 
-                    if (res == null){
-                        res = path.distance;
-                    } else {
-                        res = Math.min(res, path.distance);
+                    let distance = this.coin_graphs[coin_id].shortest_distance_from_obj(future_bot);
+                    if (distance){
+                        if (res == null){
+                            res = distance;
+                        } else {
+                            res = Math.min(res, distance);
+                        }
                     }
-                    console.log(`new distance = ${res}`);
+                    // console.log("creating grid graph")
+                    // let gg = new GridGraph(this, future_bot.id);
+                    // let path = gg.shortest_path(future_bot, coin_obj);
+                    // console.log(path);
+                    // console.log(path)
+                    // if (!path.distance){
+                    //     continue;
+                    // } 
+                    // if (res == null){
+                    //     res = path.distance;
+                    // } else {
+                    //     res = Math.min(res, path.distance);
+                    // }
+                    // console.log(`new distance = ${res}`);
                 }
             }
         }
+        // console.log(this.coin_graphs)
+        // console.log(`Min distance to coins = ${res}`)
         return res;
     }
     /*
@@ -1098,13 +1112,22 @@ class VirtualGrid{
             let obstacle = result.object;
             delete result.object;
             result.obstacle = obstacle;
+            this.update_all_coin_graphs()
             return result;
+        }
+    }
+    update_all_coin_graphs(){
+        //When obstacles change
+        for (let coin_id in this.coins){
+            let coin_index = 0;
+            let coin = this.coins[coin_id][coin_index];
+            this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
         }
     }
     remove_obstacle(obstacle_id, obstacle_index=0){
         delete this.obstacles[obstacle_id][obstacle_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
-
+        this.update_all_coin_graphs()
         if (Object.keys(this.obstacles[obstacle_id]).length === 0){
             delete this.obstacles[obstacle_id];
         }
@@ -1117,6 +1140,7 @@ class VirtualGrid{
             let coin = result.object;
             delete result.object;
             result.coin = coin;
+            this.coin_graphs[coin.id] = new GridGraph(this, coin, BOT_DIMENSIONS);
             return result;
         }
     }
@@ -1126,6 +1150,7 @@ class VirtualGrid{
 
         if (Object.keys(this.coins[coin_id]).length === 0){
             delete this.coins[coin_id];
+            delete this.coin_graphs[coin_id];
         }
     }
     /**
@@ -1255,6 +1280,12 @@ class VirtualGrid{
     //Returns [x1, y1, x2, y2]
     //which means that any bot in that range
     //will crash with the object
+    /**
+     * 
+     * @param {*} bot {width:, height:} 
+     * @param {*} obj {real_bottom_left, width: , height:}
+     * @returns [x1, y1, x2, y2] which means that any bot in that range will crash with the object
+     */
     get_crashing_bounds(bot, obj){
         let [obj_x, obj_y] = obj.real_bottom_left;
         let obj_width = obj.width;
@@ -1269,13 +1300,19 @@ class VirtualGrid{
         return [min_bot_x, min_bot_y, max_bot_x, max_bot_y]
     }
     /**
-     * Binary board, where a cell is true iff the real_bottom_left of the
-     * given bot *will* crash with any other bot or obstacle
+     * Binary board, where a cell is true iff the real_bottom_left of a bot with the given dimensions
+     *  *will* crash with an obstacle (or a bot, if count_other_bots is true)
+     * 
+     * @param bot_dimensions {width: , height:}
+     * @param {boolean} count_bots whether to include bots as obstacles
+     * @param {Number} skip_bot_id id of bots to not count as obstacles (only relevant if count_bots is true)
      */
-    binary_crashing_board(bot_id, bot_index=0){
-        let bot = this.bots[bot_id][bot_index];
-        let numRows = this.rows - bot.width + 1;
-        let numCols = this.cols - bot.height + 1;
+    binary_crashing_board(bot_dimensions, count_bots=true, skip_bot_id=null){
+        let bot_width = bot_dimensions.width;
+        let bot_height = bot_dimensions.height;
+
+        let numRows = this.rows - bot_width + 1;
+        let numCols = this.cols - bot_height + 1;
         let crashing_board = [];
         for (let j = 0; j < this.rows; j++){
             let row = [];
@@ -1289,7 +1326,7 @@ class VirtualGrid{
             }
             crashing_board.push(row);
         }
-        let all_objects = Object.assign({}, this.bots, this.obstacles);
+        let all_objects = count_bots ? Object.assign({}, this.bots, this.obstacles) : this.obstacles;
 
         //Adding objects
         for (let obj_id in all_objects){
@@ -1298,11 +1335,14 @@ class VirtualGrid{
                 obj_index = Number(obj_index)
                 // console.log(`Checking ${obj_id} (${typeof obj_id})/${obj_index} (${typeof obj_index})`)
                 // console.log(`Against ${bot_id} (${typeof bot_id})/${bot_index} (${typeof bot_index})`)
-                if (bot_id === obj_id && bot_index === obj_index){
-                    // console.log("skipping")
-                    continue;
+                if (skip_bot_id !== null){
+                    skip_bot_id = Number(skip_bot_id);
+                    if (skip_bot_id === obj_id){
+                        // console.log("skipping")
+                        continue;
+                    }
                 }
-                let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = this.get_crashing_bounds(bot, obj);
+                let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = this.get_crashing_bounds(bot_dimensions, obj);
                 for (let i = min_bot_x; i <= max_bot_x; i++){
                     for (let j = min_bot_y; j <= max_bot_y; j++){
                         crashing_board[j][i] = true;

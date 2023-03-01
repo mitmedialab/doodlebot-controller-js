@@ -101,17 +101,87 @@ class GridGraph{
      * 
      * @param {*} graph 
      */
-    constructor(grid, bot_id, bot_index=0){
+    constructor(grid, coin, bot_dimensions){
         this.grid = grid;
         this.graph = new Graph();
+        this.distances = {}; //node -> distance
+
         // this.update_values_from_grid(grid, bot_id, bot_index);
-        this.update_values_from_grid_binary_board(grid, bot_id, bot_index);
+        // this.update_values_from_grid_binary_board(grid, bot_id, bot_index);
+        this.update_graph(grid, bot_dimensions);
+        this.update_distances_to_crash(grid, bot_dimensions, coin)
     }
     get_node_from_position(i, j, angle){
         return interpolate(NODE_BREAKPOINTS, [i, j, angle]);
     }
     get_position_from_node(node){
         return getStringParts(node, NODE_BREAKPOINTS).map(Number);
+    }
+    update_graph(grid, bot_dimensions){
+        let crashing_board = grid.binary_crashing_board(bot_dimensions, false);
+        const isValidPosition = (i, j) => 0 <= i && i < grid.cols && 0 <= j && j < grid.rows && !crashing_board[j][i];
+        for (let j = 0; j < grid.rows; j++){
+            for (let i = 0; i < grid.cols; i++){
+                if (!isValidPosition(i, j)){
+                    continue;
+                }
+                for (let angle of [0, 90, 180, 270]){
+                    let start_node = this.get_node_from_position(i, j, angle);
+                    let start_bot = {
+                        angle: angle,
+                        real_bottom_left: [i, j]
+                    }
+                    let possible_moves = [
+                        {info: ['move', 1], weight: 1, end_position: this.future_position_after_move(start_bot, 1)},
+                        {info: ['turn', 90], weight: 1, end_position: this.future_position_after_turn(start_bot, 90)},
+                        {info: ['turn', -90], weight: 1, end_position: this.future_position_after_turn(start_bot, -90)},
+                    ]
+                    for (let {info, weight, end_position} of possible_moves){
+                        let [end_i, end_j] = end_position.real_bottom_left;
+                        let end_angle = end_position.angle
+                        if (!isValidPosition(end_i, end_j)){
+                            continue;
+                        }
+                        let end_node = this.get_node_from_position(end_i, end_j, end_angle);
+                        // From end to start because we will start with the coin
+                        this.graph.addDirectedEdge(end_node, start_node, weight, info);
+                    }
+                }
+            }
+        } 
+    }
+    update_distance_values(distances){
+        if (Object.keys(this.distances) == 0){
+            this.distances = distances;
+            return;
+        }
+        //Update distances as the minimum of all possibilities
+        let newDistances = {};
+        for (let key in this.distances){
+            newDistances[key] = Math.min(newDistances[key], distances[key])
+        }
+        this.newDistances = newDistances;
+    }
+    update_distances_to_crash(grid, bot_dimensions, coin){
+        //boundaries to crash
+        let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = grid.get_crashing_bounds(bot_dimensions, coin);
+        // coin has no angle and so should be added
+        for (let new_x = min_bot_x; new_x <= max_bot_x; new_x++){
+            for (let new_y = min_bot_y; new_y <= max_bot_y; new_y++){
+                for (let coin_angle of [0, 90, 180, 270]){
+                    let start_node = this.get_node_from_position(new_x, new_y, coin_angle);
+                    let {distances} = findShortestPathDistances(this.graph.graph, start_node);
+                    this.update_distance_values(distances);
+                }
+            }
+        }
+    }
+    //Object requires real_bottom_left and angle
+    shortest_distance_from_obj(obj){
+        let {angle, real_bottom_left} = obj;
+        let [i, j] = real_bottom_left;
+        let node = this.get_node_from_position(i, j, angle);
+        return this.distances[node]; 
     }
     update_values_from_grid_binary_board(grid, bot_id, bot_index=0){
         let crashing_board = grid.binary_crashing_board(bot_id, bot_index);
