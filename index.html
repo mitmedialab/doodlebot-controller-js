@@ -1,262 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <style>
-      #gridDiv {
-        /* display:grid; */
-        /* column-gap: 50px;
-                      row-gap: 50px;
-                      grid-template-columns: 10 10; */
-      }
-    
-      /* #grid > * {
-                      background-color: rgba(255, 255, 255, 0.8);
-                      text-align: center;
-                      padding: 20px 0;
-                      font-size: 30px;
-                  } */
-      .row {
-        display: flex;
-      }
-    
-      .column {
-        display: flex;
-        height: 60px;
-        width: 60px;
-        background-color: rgb(88, 84, 84);
-        margin: 10px;
-        text-align: center;
-        align-items: center;
-        justify-content: center;
-        color: white;
-      }
-    
-      .cell-row-text,
-      .cell-column-text {
-        margin: 10px;
-        display: flex;
-        height: 60px;
-        width: 60px;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-      }
-    
-      .cell-bot {
-        background-color: yellowgreen;
-      }
-    
-      .cell-bot-edge {
-        background-color: blue;
-      }
-    
-      .cell-obstacle {
-        background-color: red;
-      }
-    
-      .cell-coin {
-        background-color: yellow;
-        color: black;
-      }
-    
-      section {
-        /* display: flex;
-                      flex-direction: column; */
-        width: "100%";
-        margin: 20px;
-        padding: 20px;
-        border: black solid 2px;
-      }
-    </style>
-  </head>
-  <body>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <style>
+            #gridDiv {
+                /* display:grid; */
+                /* column-gap: 50px;
+            row-gap: 50px;
+            grid-template-columns: 10 10; */
+            }
+
+            #editingContainer {
+                display: flex;
+                flex: 1;
+                align-items: center;
+                flex-direction: center;
+            }
+
+            #editingContainer>* {
+                flex: 1;
+            }
+
+            /* #grid > * {
+            background-color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            padding: 20px 0;
+            font-size: 30px;
+        } */
+            .row {
+                display: flex;
+            }
+
+            .column {
+                display: flex;
+                height: 60px;
+                width: 60px;
+                background-color: rgb(88, 84, 84);
+                margin: 10px;
+                text-align: center;
+                align-items: center;
+                justify-content: center;
+                color: white;
+            }
+
+            .cell-row-text,
+            .cell-column-text {
+                margin: 10px;
+                display: flex;
+                height: 60px;
+                width: 60px;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+            }
+
+            .cell-bot {
+                background-color: yellowgreen;
+            }
+
+            .cell-bot-edge {
+                background-color: blue;
+            }
+
+            .cell-obstacle {
+                background-color: red;
+            }
+
+            .cell-coin {
+                background-color: yellow;
+                color: black;
+            }
+
+            section {
+                /* display: flex;
+            flex-direction: column; */
+                width: "100%";
+                margin: 20px;
+                padding: 20px;
+                border: black solid 2px;
+            }
+
+            #botControlsContainer {
+                display: flex;
+                flex-wrap: wrap;
+                /* background-color: red; */
+                /* flex: 1; */
+            }
+
+            .bot-options {
+                display: flex;
+                flex-direction: row;
+                /* flex:1; */
+                /* align-items: center; */
+                justify-content: center;
+                border: black solid 5px;
+                border-radius: 10px;
+                padding: 10px;
+                margin: 10px;
+                /* width: "40vw"; */
+                /* max-width: "40vw"; */
+                /* background-color: blue; */
+            }
+
+            .bot-options>* {
+                margin: 5px;
+            }
+
+            .left-header-right {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .bot-moving-btn {
+                border: 0;
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+                cursor: pointer;
+            }
+
+            .bot-start {
+                background-color: green;
+            }
+
+            .bot-stop {
+                background-color: red;
+            }
+
+            .bot-policy-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-evenly;
+                text-align: center;
+                flex: 1;
+            }
+
+            .bot-other-options-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-evenly;
+                text-align: center;
+                /* flex:1; */
+            }
+
+            .bot-moving-controls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                flex: 1;
+            }
+
+            .move-button-selected {
+                background-color: black;
+                color: white;
+            }
+
+            .bot-moving-controls-down {}
+
+            .bot-moving-controls h1 {
+                margin: 10px;
+            }
+
+            .checkbox-group {
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* .bot-moving-controls  */
+            .editor-hide {
+                display: none;
+            }
+
+            .coin-hide {
+                display: none;
+            }
+        </style>
+    </head>
+
     <body>
-      <p id="errorMessage"></p>
-      <p>
-        <button id="requestBluetoothDevice">Request Bluetooth Device</button>
-      </p>
-
-      <p>
-        <select id="devicesSelect"></select>
-        <button id="forgetBluetoothDevice">Forget Bluetooth Device</button>
-      </p>
-      <div>
-        <textarea id="botCommand"></textarea>
-        <button id="sendCommandButton">Send command!</button>
-      </div>
-      <textarea id="logBox" rows="10" cols="100"></textarea>
-      <select id="selectCorners"></select>
-      <button id="moveToTargetButton"> Move to target!</button>
-      <button id="connectInternetButton">Connect to PRG-MIT WiFi!</button>
-      <div id="summary">
-
-      </div>
-      <h1>Coin summary:</h1>
-      <table>
-        <thead>
-          <tr>
-            <td>Coin</td>
-            <td>Seen</td>
-            <td>%</td>
-            <td>Decision</td>
-          </tr>
-        </thead>
-        <tbody id="coinsSummary">
-        </tbody>
-      </table>
-      <button disabled id="activateCameraButton">
-        Activate camera
-      </button>
-      <button disabled id="deactivateCameraButton">Deactivate camera</button>
-      <button id="updateBoard">Update Corners</button>
-      <button id="switchViewButton">Switch view</button>
-      <button id="lengthTestButton">Test length!</button>
-      <button id="multipleCommandsTestButton">Multiple Commands Test</button>
-      <button id="multipleRobotsTestButton">Multiple Robots Test</button>
-      <button id="moveRobot1">Move robot 1</button>
-      <button id="moveRobot2">Move robot 2</button>
-      <p>Camera:</p>
-      <video id="videoId" autoplay width="640" height="640"></video>
-      <canvas id="arucoCanvasOutput" width="640" height="640"></canvas>
-      <!-- <canvas id="arucoCanvasOutput2"></canvas> -->
-      <canvas id="arucoCanvasOutputGrid" width="640" height="640"></canvas>
-      <section>
-        <h1>Virtual grid:</h1>
+        <button id="create_grid_button">Create grid</button>
+        <h1>Directions of bots: </h1>
+        <div id="botDirectionsDiv"></div>
+        <section>
+            <textarea id="botScoresDiv" rows="10" cols="100"></textarea>
+        </section>
+        <section>
+            <textarea id="logDiv" rows="10" cols="100"></textarea>
+        </section>
+        <h1>Virtual Grid: </h1>
         <div id="gridDiv">
         </div>
-      </section>
-      <button id="create_grid_button">Create grid</button>
-      <h1>Directions of bots: </h1>
-      <div id="botDirectionsDiv"></div>
-      <section>
-        <textarea id="botScoresDiv" rows="10" cols="100"></textarea>
-      </section>
-      <section>
-        <textarea id="logDiv" rows="10" cols="100"></textarea>
-      </section>
-          <section>
+        <p id="recordingStatusDiv">
+        </p>
+        <p id="historyMovesDiv"></p>
+        <button id="initializeRandomGridButton">New Random button</button>
+        <button id="startRecordingStepsButton">Start recording moves</button>
+        <button id="resetHistoryButton">Reset History</button>
+        <!-- <button id="testGraphButton">Test graph</button> -->
+        <!-- <button id="testLogicButton">Test Logic</button> -->
+        <section>
             <h1>Select bot:</h1>
-            <select id="botSelect"></select>
-            <button id="moveButton">Move</button>
-            <button id="moveBackwardsButton">Go back</button>
-            <button id="turn90Button">Turn 90deg</button>
-            <button id="generateRandomMovesButton">Generate random moves!</button>
-            <button id="stopButton">Stop random moves!</button>
-            <textarea id="botCrashLog" rows="10" cols="100"></textarea>
-          </section>
-          <section>
-            <h1>Editing part:</h1>
-            <div>
-              <h3>Creating bots</h3>
-              <br />
-              <button id="addBotButton">Add bot</button>
-            </div>
-            <div>
-              <h3>Creating obstacles</h3>
-              Col number (bottom left)
-              <input type="number" id="obstacleColNumberInput" min="0" />
-              <br />
-              Row number (bottom left)
-              <input type="number" id="obstacleRowNumberInput" min="0">
-              <br />
-              Width
-              <input type="number" id="obstacleWidthInput" min="1" />
-              <br />
-              Height
-              <input type="number" id="obstacleColNumber" min="1" />
-              <br />
-              <button id="addObstacleButton">Add obstacle</button>
-            </div>
-            <div>
-              <h3>Creating Coins</h3>
-              Col number (bottom left)
-              <input type="number" id="coinColNumberInput" min="0" />
-              <br />
-              Row number (bottom left)
-              <input type="number" id="coinRowNumberInput" min="0">
-              <br />
-              Width
-              <input type="number" id="coinWidthInput" min="1" />
-              <br />
-              Height
-              <input type="number" id="coinColNumber" min="1" />
-              <br />
-              <button id="addCoinButton">Add coin</button>
-            </div>
-          </section>
-    </body>
-  </body>
-  <script
-  async
-  src="marker_detector/opencv_compiled.js"
-  id="opencvjs"
-  type="text/javascript"
-></script>
-  <script src="doodlebot_control/promise-queue.js"></script>
-  <script src="doodlebot_control/doodlebot.js"></script>
-  <script src="marker_detector/constants.js"></script>
-  <script src="marker_detector/camera-controller.js"></script>
-  <script src="virtual-board/grid.js"></script>
-  <script src="grid-handler.js"></script>
-  <script src="index.js"></script> 
-  <script>
-    if (navigator.bluetooth) {
-      errorMessage.innerText = "Bluetooth is available!";
-      document
-        .querySelector("#requestBluetoothDevice")
-        .addEventListener("click", function () {
-          onRequestBluetoothDeviceButtonClick();
-        });
-      document
-        .querySelector("#forgetBluetoothDevice")
-        .addEventListener("click", function () {
-          onForgetBluetoothDeviceButtonClick();
-        });
-    } else {
-      errorMessage.innerText = "Bluetooth is not enabled :(";
-    }
-  </script>
-  <style>
-    table{
-      padding: 10
-    }
-    thead{
-      font-weight: bold;
-    }
-    table, th, td{
-      border: 1px solid black;
-      border-collapse: collapse;
-      padding: 10px;
-    }
-  </style>
+            <div id="botControlsContainer">
 
-  <!-- <script>
-    async function openCvReady() {
-      cv = await cv;
-      console.log("OpenCV.js is ready");
-      console.log(cv);
-      // console.log(cv.Mat);
-      console.log(cv.CV_64F);
-      let cameraMatrix = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    [
-      1181.1162112265451, 0.0, 948.8233981926403, 0.0, 1181.6472180982591,
-      541.2092582739663, 0.0, 0.0, 1.0,
-    ]
-  );
-      console.log(cameraMatrix);
-      console.log("end!");
-    }
-  
-    var Module = {
-      onRuntimeInitialized() { openCvReady(); }
-    };
-  </script> -->
+            </div>
+            <!-- <select id="botSelect"></select> -->
+            <textarea id="botCrashLog" rows="10" cols="100"></textarea>
+
+        </section>
+        <section>
+            <!-- <h1>Editing part:</h1> -->
+            <div id="editingContainer">
+                <div>
+                    <h2>Creating bots</h2>
+                    <button id="addRandomBotButton">Add random bot</button>
+                    <br />
+                    <button id="openEditorBot">Toggle editor</button>
+                    <div id="botEditorDiv" class="editor editor-hide">
+                        Col number (bottom left)
+                        <input type="number" id="botColNumberInput" min="0" />
+                        <br />
+                        Row number (bottom left)
+                        <input type="number" id="botRowNumberInput" min="0">
+                        <br />
+                        <!-- Width
+                    <input type="number" id="botWidthInput" min="1" />
+                    <br />
+                    Height
+                    <input type="number" id="botColNumber" min="1" /> -->
+                        <br />
+                        <button id="addBotButton">Add bot</button>
+                    </div>
+                </div>
+                <div>
+                    <h2>Creating obstacles</h2>
+                    <button id="addRandomObstacleButton">Add random Obstacle</button>
+                    <br />
+                    <button id="openEditorObstacle">Toggle editor</button>
+
+                    <div id="obstacleEditorDiv" class="editor editor-hide">
+                        Col number (bottom left)
+                        <input type="number" id="obstacleColNumberInput" min="0" />
+                        <br />
+                        Row number (bottom left)
+                        <input type="number" id="obstacleRowNumberInput" min="0">
+                        <br />
+                        Width
+                        <input type="number" id="obstacleWidthInput" min="1" />
+                        <br />
+                        Height
+                        <input type="number" id="obstacleColNumber" min="1" />
+                        <br />
+                        <button id="addObstacleButton">Add obstacle</button>
+                    </div>
+                </div>
+                <div>
+                    <h2>Creating Coins</h2>
+                    <button id="addRandomCoinButton">Add random coin</button>
+                    <br />
+                    <button id="openEditorCoin">Toggle editor</button>
+                    <div id="coinEditorDiv" class="editor editor-hide">
+                        Col number (bottom left)
+                        <input type="number" id="coinColNumberInput" min="0" />
+                        <br />
+                        Row number (bottom left)
+                        <input type="number" id="coinRowNumberInput" min="0">
+                        <br />
+                        <!-- Width
+                    <input type="number" id="coinWidthInput" min="1"/>
+                    <br />
+                    Height
+                    <input type="number" id="coinColNumber" min="1"/>
+                    <br /> -->
+                        <button id="addCoinButton">Add coin</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <script type="text/javascript" src="virtual-board/graph.js"></script>
+        <script type="text/javascript" src="virtual-board/grid-graph.js"></script>
+        <script type="text/javascript" src="virtual-board/grid.js"></script>
+        <script type="text/javascript" src="virtual-board/html-helpers.js"></script>
+        <script type="text/javascript" src="virtual-board-training/index.js"></script>
+        <!-- <script type="text/javascript" src="virtual-board/virtual-board-worker.js"></script> -->
+    </body>
 
 </html>

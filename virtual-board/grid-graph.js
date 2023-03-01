@@ -91,7 +91,7 @@ function getStringParts(string, breakpoints){
   }
   return output;
 }
-const NODE_BREAKPOINTS = ["i-", "j-", "angle-"];
+const NODE_BREAKPOINTS = ["i->", ", j->", ", angle->"];
 /**
  * Representation of the graph related with a given grid from a bot's point of view. Anything different than the bot
  * is considered an "obstacle", meaning that one can't pass through that.
@@ -104,13 +104,87 @@ class GridGraph{
     constructor(grid, bot_id, bot_index=0){
         this.grid = grid;
         this.graph = new Graph();
-        this.update_values_from_grid(grid, bot_id, bot_index);
+        // this.update_values_from_grid(grid, bot_id, bot_index);
+        this.update_values_from_grid_binary_board(grid, bot_id, bot_index);
     }
     get_node_from_position(i, j, angle){
         return interpolate(NODE_BREAKPOINTS, [i, j, angle]);
     }
     get_position_from_node(node){
         return getStringParts(node, NODE_BREAKPOINTS).map(Number);
+    }
+    update_values_from_grid_binary_board(grid, bot_id, bot_index=0){
+        let crashing_board = grid.binary_crashing_board(bot_id, bot_index);
+        // console.log(crashing_board);
+        //Now we need to make edges from false -> false
+        const isValidPosition = (i, j) => 0 <= i && i < grid.cols && 0 <= j && j < grid.rows && !crashing_board[j][i];
+        for (let j = 0; j < grid.rows; j++){
+            for (let i = 0; i < grid.cols; i++){
+                for (let angle of [0, 90, 180, 270]){
+                    if (!isValidPosition(i, j)){
+                        continue;
+                    }   
+                    // console.log("Checking node...")
+                    let start_node = this.get_node_from_position(i, j, angle);
+                    // console.log(`checking start_node ${start_node}`)
+                    //Three possible moves: Keep moving, turn 90 right, or turn 90 left
+                    let start_bot = {
+                        angle: angle,
+                        real_bottom_left: [i, j]
+                    }
+                    let possible_moves = [
+                        {info: ['move', 1], weight: 1, end_position: this.future_position_after_move(start_bot, 1)},
+                        {info: ['turn', 90], weight: 1, end_position: this.future_position_after_turn(start_bot, 90)},
+                        {info: ['turn', -90], weight: 1, end_position: this.future_position_after_turn(start_bot, -90)},
+                    ]
+                    for (let {info, weight, end_position} of possible_moves){
+                        let [end_i, end_j] = end_position.real_bottom_left;
+                        let end_angle = end_position.angle
+                        if (!isValidPosition(end_i, end_j)){
+                            continue;
+                        }
+                        let end_node = this.get_node_from_position(end_i, end_j, end_angle);
+                        // console.log(`Adding end_node ${end_node}`)
+                        this.graph.addDirectedEdge(start_node, end_node, weight, info);
+                    }
+
+                }
+            }
+        }
+
+    }
+    future_position_after_move(prev_bot, distance){
+        let {angle, real_bottom_left} = prev_bot;
+        let dx, dy;
+        switch(angle){
+            case ANGLE_DIRS.RIGHT:
+                dx = distance;
+                dy = 0;
+                break;
+            case ANGLE_DIRS.LEFT:
+                dx = -distance;
+                dy = 0;
+                break;
+            case ANGLE_DIRS.UP:
+                dx = 0;
+                dy = distance;
+                break;
+            case ANGLE_DIRS.DOWN:
+                dx = 0;
+                dy = -distance;
+                break;
+            default:
+                console.log(`Incorrect ANGLE : ${angle}`)
+        }
+        //TODO: Check for out-of-board cases
+        let new_bottom_left = [real_bottom_left[0]+dx, real_bottom_left[1]+dy];
+        return {angle, real_bottom_left: new_bottom_left}
+    }
+    future_position_after_turn(prev_bot, angle){
+        let new_angle = (prev_bot.angle + angle) % 360;
+        if (new_angle < 0){new_angle += 360;}
+
+        return {real_bottom_left: prev_bot.real_bottom_left, angle: new_angle}
     }
     update_values_from_grid(grid, bot_id, bot_index=0){
         let binary_board = grid.binary_board(bot_id, bot_index);

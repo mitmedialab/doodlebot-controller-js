@@ -42,10 +42,21 @@ const DISTANCE_VALUES = {
         text: "Manhattan"
     }
 }
+let defaultOptions = {
+    drawBoard: () => {},
+    bots: [], 
+    obstacles: [],
+    coins: [],
+    onPickupCoin: (bot, coin) => {}
+}
 class VirtualGrid{
-    constructor(m, n, drawBoard, bots=[], obstacles=[], coins=[]){
+    constructor(m, n, options={}){
+        options = Object.assign(defaultOptions, options);
+        let {drawBoard, bots, obstacles, coins, onPickupCoin} = options;
+
         this.rows = m;
         this.cols = n;
+        this.onPickupCoin = onPickupCoin;
         for (let bot of bots){
             this.add_bot(bot);
         }
@@ -231,12 +242,14 @@ class VirtualGrid{
             }
         }
     }
-    //min = inclusive, max = exclusive
-    random_number_between(min, max){
+    /**
+     * min = inclusive, max = exclusive
+    */
+    static random_number_between(min, max){
         return min + Math.floor(Math.random() * max-min);
     }
     random_from(arr){
-        return arr[this.random_number_between(0, arr.length)]
+        return arr[this.constructor.random_number_between(0, arr.length)]
     }
     /**
      * For now hardcodes it as a 3x3 with a central pivot. It randomly chooses 
@@ -248,8 +261,8 @@ class VirtualGrid{
         let attempt = 0;
         while(attempt < MAX_ATTEMPTS){
             attempt++;
-            let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
-            let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
+            let col = this.constructor.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
+            let row = this.constructor.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
             let botId = this.getNewBotId();
             //For now hardcode it
             let [width, height] = [3, 3];
@@ -274,8 +287,8 @@ class VirtualGrid{
         let MAX_ATTEMPTS = 10;
         let attempt = 0;
         while (attempt < MAX_ATTEMPTS){
-            let col = this.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
-            let row = this.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
+            let col = this.constructor.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
+            let row = this.constructor.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
             let possible_sizes = [
                 [1, 2],
                 [1, 3],
@@ -403,9 +416,9 @@ class VirtualGrid{
             //If crashed with coins then pick them up
             for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]){
                 //TODO: Change bot state (e.g., give it more points)
-                this.remove_coin(coin_id, coin_index);
                 bot.coins.push([coin_id, coin_index])
-                coinsPicked.push([coin_id, coin_index]);
+                coinsPicked.push(this.coins[coin_id, coin_index]);
+                this.remove_coin(coin_id, coin_index);
             }
         }
         let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
@@ -418,11 +431,12 @@ class VirtualGrid{
         this.drawBoard(this.print_board());
 
         //Now that the bot has moved, we can add stuff
-        for (let _ of coinsPicked){
+        for (let coin of coinsPicked){
             //If crashed with coins then pick them up
             //TODO: Change bot state (e.g., give it more points)
-            this.add_random_coin(); //TODO: just for fun
-            this.add_or_change_obstacle(); //TODO: just for fun
+            this.onPickupCoin(bot, coin);
+            // this.add_random_coin(); //TODO: just for fun
+            // this.add_or_change_obstacle(); //TODO: just for fun
         }
         return {success: true, bot: bot, message: message};
     }
@@ -609,13 +623,31 @@ class VirtualGrid{
             for (let coin_index in this.coins[coin_id]){
                 let coin_obj = this.coins[coin_id][coin_index];
                 // if it's reachable (or if it doesnt matter), consider this coin
-                if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin_obj)){
+                // if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin_obj)){
+                if (!future_bot.only_reachable){
                     if (res === null){
                         res = this.distance_to_object(future_bot, coin_obj);
                     } else {
                         res = Math.min(res, this.distance_to_object(future_bot, coin_obj));
                         // res = Math.min(res, distance_response.distance);
                     }
+                } 
+                //TODO: add when is faster
+                else {
+                    console.log("creating grid graph")
+                    let gg = new GridGraph(this, future_bot.id);
+                    let path = gg.shortest_path(future_bot, coin_obj);
+                    console.log(path);
+                    console.log(path)
+                    if (!path.distance){
+                        continue;
+                    } 
+                    if (res == null){
+                        res = path.distance;
+                    } else {
+                        res = Math.min(res, path.distance);
+                    }
+                    console.log(`new distance = ${res}`);
                 }
             }
         }
@@ -1245,10 +1277,15 @@ class VirtualGrid{
         let numRows = this.rows - bot.width + 1;
         let numCols = this.cols - bot.height + 1;
         let crashing_board = [];
-        for (let j = 0; j < numRows; j++){
+        for (let j = 0; j < this.rows; j++){
             let row = [];
-            for (let i = 0; i < numCols; i++){
-                row.push(false);
+            for (let i = 0; i < this.cols; i++){
+                if (j >= numRows || i >= numCols){
+                    //If too up or right, it will go outside the board
+                    row.push(true)
+                } else {
+                    row.push(false);
+                }
             }
             crashing_board.push(row);
         }

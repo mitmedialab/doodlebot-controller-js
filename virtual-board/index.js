@@ -3,7 +3,9 @@ let boardDrawing;
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
     let cols = 20;
-    grid = new VirtualGrid(rows, cols, ()=>{});
+    grid = new VirtualGrid(rows, cols, {
+        onPickupCoin: (bot, coin) => {grid.add_random_coin()}
+    });
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
     // setTimeout(function a() {
@@ -119,7 +121,7 @@ function drawBoard(board){
 create_grid_button.addEventListener("click", (evt)=>{
     let rows = 10;
     let cols = 12;
-    grid = new VirtualGrid(rows, cols);
+    grid = new VirtualGrid(rows, cols)
     // drawBoard();
 })
 /**
@@ -135,60 +137,13 @@ create_grid_button.addEventListener("click", (evt)=>{
         </select>
         <button id="stopButton">Stop moving!</button>
  */
-function createButton(id, text, listeners=[]){
-    let button = document.createElement('button');
-    button.innerText = text;
-    button.setAttribute('id', id);
-    for (let listener of listeners){
-        let {key, handler} = listener;
-        button.addEventListener(key, handler);
-    }
-    return button;
-}
-//options is an array of {value:, text:} objects
-function createSelect(id, labelText, options, listeners=[]){
-    let div = document.createElement('div');
-    div.setAttribute('id', `container-${id}`)
-    let label = document.createElement('label');
-    label.innerText = labelText;
-    let select = document.createElement('select');
-    select.setAttribute('id', id);
-    for (let option of options){
-        let {value, text} = option;
-        let newOption = document.createElement('option');
-        newOption.setAttribute('value', value);
-        newOption.innerText = text;
-        select.appendChild(newOption);
-    }
-    for (let listener of listeners){
-        let {key, handler} = listener;
-        select.addEventListener(key, handler);
-    }
-    div.appendChild(label);
-    div.appendChild(select);
-    return div;
-}
-function createCheckbox(container_id, labelText, listeners){
-    let container = document.createElement('div');
-    container.setAttribute('id', container_id);
-    let label = document.createElement('label');
-    label.innerText = labelText;
-    let checkbox = document.createElement('input');
-    checkbox.setAttribute('type', 'checkbox');
-    for (let listener of listeners){
-        let {key, handler} = listener;
-        checkbox.addEventListener(key, handler);
-    }
-    container.appendChild(label);
-    container.appendChild(checkbox);
-    return container;
-}
+
 /**
  * 
  * @param {*} bot_id 
  * @param {*} container_id 
  * @param {*} options {key: {value: "value", text:"text value"}}
- * @returns 
+ * @returns multiple checkbox
  */
 function createCheckboxGroup(bot_id, container_id, options){
     let container = document.createElement('div');
@@ -220,53 +175,16 @@ function createCheckboxGroup(bot_id, container_id, options){
             ], [])
             select.classList.add("coin-hide");
             subContainer.appendChild(select);
-
-            // let countInput = document.createElement('input');
-            // countInput.setAttribute('type', 'number');
-            // countInput.setAttribute('id', countId)
-            // countInput.setAttribute('min', 1);
-            // countInput.setAttribute('max', 4);
-            // countInput.setAttribute('value', 1); //default
-            // let countLabel = document.createElement('label');
-            // countLabel.innerText = "How far ahead?"
-            // countLabel.setAttribute('for', countId);
-
-            // subContainer.appendChild(countLabel);
-            // subContainer.appendChild(countInput);
         }
         container.appendChild(subContainer);
     }
     return container;
 }
+
 function moveButton(bot_id){
     return document.getElementById(`moveButton-${bot_id}`);
 }
-// let POLICY_SELECT_OPTIONS = [
-//     {
-//         value: "none",
-//         text: "None"
-//     },
-//     {
-//         value: "random",
-//         text: "Random moves"
-//     }
-// ]
 
-// 'value' should match the values of BOT_POLICIES in grid.js
-// let POLICY_CHECKBOX_OPTIONS = [
-//     {
-//         value: "random",
-//         text: "Random moves"
-//     },
-//     {
-//         value: "Get closer",
-//         text: "Get closer"
-//     },
-//     {
-//         value: "Get farther",
-//         text: "Get farther"
-//     }
-// ]
 function create_bot_options(bot){
     let bot_id = bot.id;
     let div = document.createElement('div');
@@ -567,15 +485,7 @@ function changeMoving_ClickHandler(bot_id, evt){
         evt.target.classList.add("bot-stop");
     }
 }
-// function setTimeOutMultiple(functions, duration){
-//     if (functions.length === 0){
-//         return;
-//     }
-//     functions[0]();
-//     setTimeout(()=>{
-//         setTimeOutMultiple(functions.slice(1, functions.length))
-//     }, duration);
-// }
+
 let i = 0;
 let x;
 let drawQueue = {} //bot id -> queue
@@ -672,9 +582,20 @@ testGraphButton.addEventListener("click", (evt)=>{
 })
 
 testLogicButton.addEventListener("click", (evt)=>{
-    let coin = {id: 21, real_bottom_left: [0, 2], width: 1, height: 1, type: 'coin'};
-    let bot = {id: 1, real_bottom_left: [0, 0], width: 3, height: 3, relative_anchor: [1, 1], type:"bot", angle: 180}
+    let coin = {id: 21, real_bottom_left: [4, 3], width: 1, height: 1, type: 'coin'};
+    let bot = {id: 1, real_bottom_left: [0, 0], width: 3, height: 3, relative_anchor: [1, 1], type:"bot", angle: 90}
     console.log(`Do they crash?`)
     console.log(grid.almost_crash(coin, bot, 0));
     console.log("done!")
+    console.log()
+    grid.add_coin(coin);
+    grid.add_bot(bot);
+    drawBoard();
+    let gg = new GridGraph(grid, bot.id);
+    console.log(gg);
+    console.log(gg.future_position_after_move(bot, 1));
+    console.log(gg.future_position_after_turn(bot, 90));
+    console.log(gg.future_position_after_turn(bot, -90));
+
+    console.log(gg.shortest_path(bot, coin));
 })
