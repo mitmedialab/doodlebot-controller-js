@@ -1248,6 +1248,7 @@ class VirtualGrid{
      * Adding obstacles and bots to true, except with the given bot
      */
     binary_board(bot_id, bot_index=0){
+        bot_id = Number(bot_id);
         let board = [];
         for (let j = 0; j < this.rows; j++){
             let row = [];
@@ -1260,6 +1261,7 @@ class VirtualGrid{
 
         //Adding bots
         for (let obj_id in all_objects){
+            obj_id = Number(obj_id)
             for (let [obj_index, obj] of Object.entries(all_objects[obj_id])){
                 if (bot_id === obj_id && bot_index === obj_index){
                     continue;

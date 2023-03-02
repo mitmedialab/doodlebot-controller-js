@@ -1,3 +1,4 @@
+const {train} = require("./train.js")
 const express = require("express")
 const cors = require("cors");
 const bodyParser = require("body-parser")
@@ -23,6 +24,11 @@ app.post('/record', function (req, res) {
   console.log(history);
   addHistoryToFile(history);
   res.send({success: true})
+})
+app.get("/train", (req, res) => {
+    let json_file = "data.json";
+    let output_file = "model.h5";
+    train(json_file, output_file);
 })
 app.get('/', function (req, res) {
   res.send('GET reques to homepage')
