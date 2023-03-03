@@ -50,16 +50,44 @@ let defaultOptions = {
     bots: [], 
     obstacles: [],
     coins: [],
-    onPickupCoin: (bot, coin) => {}
+    onPickupCoin: (bot, coin) => {},
+    onAddBot: (bot) => {},
+    onAddObstacle: (obstacle) => {},
+    onAddCoin: (obstacle) => {},
+    onRemoveBot: (removedBot) => {},
+    onRemoveObstacle: (removedObstacle) => {},
+    onRemoveCoin: (removedCoin) => {}
 }
+let defaultBot = {
+
+}
+
 class VirtualGrid{
     constructor(m, n, options={}){
         options = Object.assign(defaultOptions, options);
-        let {drawBoard, bots, obstacles, coins, onPickupCoin} = options;
+        let {
+            drawBoard, 
+            bots, 
+            obstacles, 
+            coins, 
+            onPickupCoin,
+            onAddBot,
+            onAddObstacle,
+            onAddCoin,
+            onRemoveBot,
+            onRemoveObstacle,
+            onRemoveCoin
+        } = options;
 
         this.rows = m;
         this.cols = n;
         this.onPickupCoin = onPickupCoin;
+        this.onAddBot = onAddBot;
+        this.onAddObstacle = onAddObstacle;
+        this.onAddCoin = onAddCoin;
+        this.onRemoveBot = onRemoveBot;
+        this.onRemoveObstacle = onRemoveObstacle;
+        this.onRemoveCoin = onRemoveCoin;
         for (let bot of bots){
             this.add_bot(bot);
         }
@@ -128,7 +156,8 @@ class VirtualGrid{
                 policies: new Set(), 
                 distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
                 only_reachable: false, //Whether to only calculate distance to reachable points
-                targets:[]
+                targets:[],
+                isMoving: false,
             };
         }
         objects[id][id_index] = newObject;
@@ -198,6 +227,23 @@ class VirtualGrid{
         return almost_crashes;
 
     }
+    change_moving_status(bot_id){
+        let bot_index = 0;
+        this.bots[bot_id][bot_index].isMoving = !this.bots[bot_id][bot_index].isMoving;
+    }
+    /**
+     * Moves the bots that have `isMoving` set to true. It won't do anything to the ones
+     * that do not
+     */
+    // move_bots(){
+    //     for (let bot_id in this.bots){
+    //         let bot_index = 0;
+    //         let bot = this.bots[bot_id][bot_index];
+    //         if (bot.isMoving){
+    //             grid.move_bot_using_policies(bot_id,)
+    //         }
+    //     }
+    // }
     /**
      * 
      * @param {*} bottom_left 
@@ -403,15 +449,20 @@ class VirtualGrid{
      * @param {*} is_fake If true, this would only return the expected response but only after making a deep copy of it, so no actual changes
      */
     move_bot(bot_id, distance, bot_index=0, is_fake = false){
-        // console.log("moving bot!")
-        let bot = this.bots[bot_id][bot_index]
+        console.log("moving bot!")
+        let bot = this.bots[bot_id][bot_index];
+        console.log(bot)
         let future_bot = this.future_position_after_move(bot, distance);
+        console.log("Future bot position");
+        console.log(future_bot);
         let new_bottom_left = future_bot.real_bottom_left;
         //TODO: Why this if almost_crashes will be defined later
         let potential_crashes = this.get_almost_crashes({...future_bot,type: BOT_TYPE}, 0);
 
         let valid_position_response = this.is_valid_bot_position(future_bot);
         if (!valid_position_response.valid){
+            console.log("it was not valid :(");
+
             return {bot: bot, ...valid_position_response, success: valid_position_response.valid};
         }
 
@@ -442,6 +493,8 @@ class VirtualGrid{
             // this.add_random_coin(); //TODO: just for fun
             // this.add_or_change_obstacle(); //TODO: just for fun
         }
+        console.log("It was succesful!")
+        console.log(bot);
         return {success: true, bot: bot, message: message};
     }
     /**
@@ -886,6 +939,13 @@ class VirtualGrid{
             return {bot: bot}
         }
     }
+    /**
+     * 
+     * @param {*} obstacle_id 
+     * @param {*} update if has {new_anchor} then it will only update that, else it will add all the update on the obstacle
+     * @param {*} obstacle_index 
+     * @returns 
+     */
     update_obstacle(obstacle_id, update, obstacle_index=0){
         let {new_anchor} = update;
 
@@ -897,11 +957,35 @@ class VirtualGrid{
             let [anchor_x, anchor_y] = obstacle.relative_anchor;
             let dx =  new_anchor[0] - (x + anchor_x);
             let dy =  new_anchor[1] - (y + anchor_y);
-            obstacle.real_bottom_left = [x+dx, y+dy];
+            let real_bottom_left = [x+dx, y+dy];
+            if (!this.isInsideBoard(real_bottom_left, obstacle.width, obstacle.height)){
+                return {success: false, obstacle: obstacle, message: "Outside board, no good!"};
+            }
+            obstacle.real_bottom_left = real_bottom_left;
+        } else {
+            let potentialWidth = update.width || obstacle.width;
+            let potentialHeight = update.height || obstacle.height;
+            let potentialBottomLeft = update.real_bottom_left || obstacle.real_bottom_left; 
+            if (!this.isInsideBoard(potentialBottomLeft, potentialWidth, potentialHeight)){
+                return {success: false, obstacle: obstacle, message: "Outside board, no good!"};
+            }
+            if (potentialWidth < 0 || potentialHeight < 0){
+                return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
+            }
+            obstacle.width = potentialWidth;
+            obstacle.height = potentialHeight;
+            obstacle.real_bottom_left = potentialBottomLeft;
         }
         let message = `Moved succesfully`;
         return {success: true, obstacle: obstacle, message: message};
     }
+    /**
+     * 
+     * @param {*} obstacle_id 
+     * @param {*} update if has {new_anchor} then it will only update that, else it will add all the update on the coin
+     * @param {*} obstacle_index 
+     * @returns 
+     */
     update_coin(coin_id, update, coin_index=0){
         let {new_anchor} = update;
 
@@ -913,7 +997,24 @@ class VirtualGrid{
             let [anchor_x, anchor_y] = coin.relative_anchor;
             let dx =  new_anchor[0] - (x + anchor_x);
             let dy =  new_anchor[1] - (y + anchor_y);
-            coin.real_bottom_left = [x+dx, y+dy];
+            let real_bottom_left = [x+dx, y+dy];
+            if (!this.isInsideBoard(real_bottom_left, coin.width, coin.height)){
+                return {success: false, coin: coin, message: "Outside board, no good!"};
+            }
+            coin.real_bottom_left = real_bottom_left;
+        } else {
+            let potentialWidth = update.width || coin.width;
+            let potentialHeight = update.height || coin.height;
+            let potentialBottomLeft = update.real_bottom_left || coin.real_bottom_left; 
+            if (!this.isInsideBoard(potentialBottomLeft, potentialWidth, potentialHeight)){
+                return {success: false, coin: coin, message: "Outside board, no good!"};
+            }
+            if (potentialWidth < 0 || potentialHeight < 0){
+                return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
+            }
+            coin.width = potentialWidth;
+            coin.height = potentialHeight;
+            coin.real_bottom_left = potentialBottomLeft;
         }
         let message = `Moved succesfully`;
         return {success: true, coin: coin, message: message};
@@ -1093,10 +1194,12 @@ class VirtualGrid{
             let bot = result.object;
             delete result.object;
             result.bot = bot;
+            this.onAddBot(bot);
             return result;
         }
     }
     remove_bot(bot_id, bot_index=0){
+        this.onRemoveBot(this.bots[bot_id][bot_index]);
         delete this.bots[bot_id][bot_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
@@ -1113,6 +1216,7 @@ class VirtualGrid{
             delete result.object;
             result.obstacle = obstacle;
             this.update_all_coin_graphs()
+            this.onAddObstacle(obstacle);
             return result;
         }
     }
@@ -1125,6 +1229,7 @@ class VirtualGrid{
         }
     }
     remove_obstacle(obstacle_id, obstacle_index=0){
+        this.onRemoveObstacle(this.obstacles[obstacle_id][obstacle_index]);
         delete this.obstacles[obstacle_id][obstacle_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
         this.update_all_coin_graphs()
@@ -1141,10 +1246,12 @@ class VirtualGrid{
             delete result.object;
             result.coin = coin;
             this.coin_graphs[coin.id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+            this.onAddCoin(coin);
             return result;
         }
     }
     remove_coin(coin_id, coin_index=0){
+        this.onRemoveCoin(this.coins[coin_id][coin_index]);
         delete this.coins[coin_id][coin_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 

@@ -23,6 +23,16 @@ IGNORE_IDS = []; // ids for which we wont keep track of the aruco data (rvec, tv
 
 // Number of frames to check to figure out whether a marker is still on the board
 let numFrames = 20; 
+//RECORDING Reading from the video stream and checking which aruco ids are being picked up
+//SETUP if still making sure the bot, obstacles, coins are detected correctly (also in rotation)
+//LOCKED if the original virtual position and rotations are locked
+let STATES = {
+  RECORDING: "RECORDING",
+  SETUP: "SETUP",
+  LOCKED: "LOCKED"
+}
+let positionState = STATES.RECORDING;
+let foundArucoIds = new Set(); //ids of objects found in the RECORDING state
 
 //id -> {type, width: , height: }
 const OBJECT_SIZES = {
@@ -33,11 +43,11 @@ const OBJECT_SIZES = {
   4: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
   5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
   // obstacles
-  11: {type: OBSTACLE_TYPE, width: 2, height: 1},
-  12: {type: OBSTACLE_TYPE, width: 2, height: 1},
-  13: {type: OBSTACLE_TYPE, width: 2, height: 1},
-  14: {type: OBSTACLE_TYPE, width: 2, height: 1},
-  15: {type: OBSTACLE_TYPE, width: 2, height: 1},
+  11: {type: OBSTACLE_TYPE, width: 1, height: 1},
+  12: {type: OBSTACLE_TYPE, width: 1, height: 1},
+  13: {type: OBSTACLE_TYPE, width: 1, height: 1},
+  14: {type: OBSTACLE_TYPE, width: 1, height: 1},
+  15: {type: OBSTACLE_TYPE, width: 1, height: 1},
   // coins
   21: {type: COIN_TYPE, width: 1, height: 1},
   22: {type: COIN_TYPE, width: 1, height: 1},
@@ -89,8 +99,39 @@ deactivateCameraButton.addEventListener("click", (evt) => {
 activateCameraButton.addEventListener("click", async (evt) => {
   let stream = await cameraController.activateCamera();
   videoObj.srcObject = stream;
+  //create grid
   processVideo();
+  grid = new VirtualGrid(rows, cols, {
+      onAddBot,
+      onAddObstacle: onAddObject,
+      onAddCoin: onAddObject
+  });
+  drawBoard();
 });
+changeStateButton.addEventListener("click", (evt)=>{
+  if (positionState === STATES.RECORDING){
+    //Adding all objects seen so far to the grid, to allow 
+    positionState = STATES.SETUP;
+    stateTextSpan.innerHTML = "Currently fixing any problem from the video stream"
+  } else if (positionState === STATES.SETUP){
+    positionState = STATES.LOCKED;
+    stateTextSpan.innerHTML = "Positions and sizes of objects are locked"
+  } else if (positionState === STATES.LOCKED){
+    positionState = STATES.RECORDING;
+    stateTextSpan.innerHTML = "Currently reading the video stream"
+  } else {
+    console.log(`positionState ${positionState} is not a valid state`);
+  }
+})
+startBotsButton.addEventListener("click", (evt)=>{
+  let wasMoving;
+  for (let bot_id in grid.bots){
+    let bot_index = 0;
+    wasMoving = grid.bots[bot_id][bot_index].isMoving;
+    grid.change_moving_status(bot_id);
+  }
+  startBotsButton.innerText = wasMoving ? "Start bots": "Stop bots"
+})
 updateBoard.addEventListener("click", findHomographicMatrix);
 let markerSize = 0.1;
 
@@ -179,6 +220,7 @@ function getGridPosition(id){
  * 
  * @param {*} realAngle 
  * @returns get angle from 0, 90, 180, 270 that is closest to realAngle
+ * Might be broken, since angles calculated from camera are funky
  */
 function getClosestAngle(realAngle){
   let possibilities = Object.values(ANGLE_DIRS).sort((a, b) => Math.abs(a-realAngle) - Math.abs(b-realAngle));
@@ -209,7 +251,7 @@ function updateVirtualBot(id){
       if (!(id in OBJECT_SIZES)){
         console.log(`Couldnt find size information for id = ${id} `)
       }
-      let {relative_anchor, width, height } = OBJECT_SIZES[id];
+      let {relative_anchor, width, height} = OBJECT_SIZES[id];
       let [anchor_x, anchor_y] = relative_anchor;
       //virtual bot doesnt exist, so create one
       grid.add_bot({
@@ -221,8 +263,10 @@ function updateVirtualBot(id){
         angle: gridAngle
       })
     } else{
-      //If it already exists, just update position and angle
-      grid.update_bot(id, {new_angle: gridAngle, new_anchor: [gridX, gridY]})
+      //If it already exists, just update position and angle. Only update in the first state
+      if (positionState === STATES.RECORDING){
+        grid.update_bot(id, {new_angle: gridAngle, new_anchor: [gridX, gridY]})
+      }
     }
 }
 /**
@@ -245,7 +289,9 @@ function updateVirtualObstacle(id){
         height: height,
       })
     } else {
-      grid.update_obstacle(id, {new_anchor: [gridX, gridY]})
+      if (positionState === STATES.RECORDING){
+        grid.update_obstacle(id, {new_anchor: [gridX, gridY]})
+      }
     }
 }
 /**
@@ -254,27 +300,33 @@ function updateVirtualObstacle(id){
  * @param {*} id aruco marker
  */
 function updateVirtualCoin(id){
-    let [gridX, gridY] = getGridPosition(id);
-    if (!grid.coins[id]){
-      if (!(id in OBJECT_SIZES)){
-        console.log(`Couldnt find size information for id =${id} `)
-      }
-      let {width, height} = OBJECT_SIZES[id];
-      grid.add_coin({
-        id: id,
-        real_bottom_left:[gridX, gridY],
-        relative_anchor: [0,0], //All obstacles will be created this way
-        width: width,
-        height: height,
-      })
-    } else {
-      grid.update_coin(id, {new_anchor: [gridX, gridY]})
+  let [gridX, gridY] = getGridPosition(id);
+  if (!grid.coins[id]){
+    if (!(id in OBJECT_SIZES)){
+      console.log(`Couldnt find size information for id =${id} `)
     }
+    let {width, height} = OBJECT_SIZES[id];
+    grid.add_coin({
+      id: id,
+      real_bottom_left:[gridX, gridY],
+      relative_anchor: [0,0], //All obstacles will be created this way
+      width: width,
+      height: height,
+    })
+  } else {
+    grid.update_coin(id, {new_anchor: [gridX, gridY]})
+  }
 }
 /**
  * Updates virtual positions of all aruco markers found in currentVectors
  */
 function updateVirtualObjects(){
+  if (positionState !== STATES.RECORDING){
+    return;
+  }
+  if (!homographicMatrix){
+    return;
+  }
   if (!grid){
     return;
   }
@@ -283,6 +335,7 @@ function updateVirtualObjects(){
     if (!typeObj){
       continue;
     }
+    id = Number(id); //otherwise itll be a string
     if (typeObj === BOT_TYPE){
       updateVirtualBot(id);
     } else if (typeObj === OBSTACLE_TYPE){
@@ -383,8 +436,8 @@ function getTranslationAngleDiff(tvecSource, tvecTarget) {
  */
 function getAngleBetweenMarkers(sourceId, targetId) {
   if (!currentVectors[sourceId] || !currentVectors[targetId]) {
-    console.log(`Both source (id = ${sourceId}) and target (id = ${targetId}) should be present in currentVectors!`);
-    console.log(currentVectors);
+    // console.log(`Both source (id = ${sourceId}) and target (id = ${targetId}) should be present in currentVectors!`);
+    // console.log(currentVectors);
     return;
   }
   let infoSource = currentVectors[sourceId];
@@ -525,6 +578,22 @@ function updateCoinInfo(coin_id){
   div.appendChild(td_decision);
 }
 /**
+ * Goes through all the bots and move them according to their policy (also assuming)
+ * 
+ * TODO: This only moves the virtual bots. Need to move the real bot!
+ */
+function move_bots(){
+  for (let bot_id in grid.bots){
+      let bot_index = 0;
+      let bot = grid.bots[bot_id][bot_index];
+      if (bot.isMoving){
+          //TODO: This info should be stored in the grid object
+          let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
+          grid.move_bot_using_policies(bot_id, bot_index, num_turns)
+      }
+  }
+}
+/**
  * Most important method. This will be grabbing a frame from the video stream according to FPS
  * It's responsible for detecting aruco codes, show the 2d projection and keeping track of the virtual grid
  */
@@ -540,48 +609,65 @@ function processVideo() {
   if (context) {
     cv.imshow("arucoCanvasOutput", cameraController.dst); // canvasOutput is the id of another <canvas>;
     show2dProjection();
-    if (grid){
-      updateVirtualObjects();
-      drawBoard();
-    }
     if (!markersInfo) {
       console.log("No markers detected");
     } else {
       if (allCornersFound() && !homographicMatrix) {
         findHomographicMatrix();
       }
-      
+      if (positionState === STATES.RECORDING){
+        //Just add the marker ids to the set
+        for (let marker_id in markersInfo){
+          foundArucoIds.add(marker_id);
+          currentVectors[marker_id] = markersInfo[marker_id];
+        }
+      } else if (positionState === STATES.SETUP){
+
+      } else if (positionState === STATES.LOCKED){
+
+      } else {
+        console.log(`Invalid position state = ${positionState}`);
+      }
+      //To keep track of whether the bots are considered in the board
       for (let possible_marker_id in OBJECT_SIZES){
         let appeared = markersInfo[possible_marker_id] ? 1: 0;
         updateMarkerAppear(possible_marker_id, appeared);
-        if (!isInBoard(possible_marker_id)){
-          if (possible_marker_id in currentVectors){
-            console.log(`Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`)
-            delete currentVectors[possible_marker_id];
-          }
-          delete MARKERS_INFO[possible_marker_id].appear; // delete previous appear history
-          if (!grid){continue};
-          // If not in board anymore, delete it from the virtual grid
-          if (possible_marker_id in grid.bots){
-            grid.remove_bot(possible_marker_id);
-          } else if (possible_marker_id in grid.obstacles){
-            grid.remove_obstacle(possible_marker_id)
-          } else if (possible_marker_id in grid.coins){
-            grid.remove_coin(possible_marker_id);
-          }
-        } else {
-          //It's still in board
-          if (grid && possible_marker_id in grid.coins){
-            updateCoinInfo(possible_marker_id);
-          }
-        }
       }
-      for (let id in markersInfo) {
-        id = Number(id);
-        if (IGNORE_IDS.indexOf(id) !== -1) continue;
-        currentVectors[id] = markersInfo[id];
-        updateDistanceInfo(id);
-      }
+      //TODO: Check what part of this deserves to stay
+      // for (let possible_marker_id in OBJECT_SIZES){
+      //   if (!isInBoard(possible_marker_id)){
+      //     if (possible_marker_id in currentVectors){
+      //       console.log(`Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`)
+      //       delete currentVectors[possible_marker_id];
+      //     }
+      //     delete MARKERS_INFO[possible_marker_id].appear; // delete previous appear history
+      //     if (!grid){continue};
+      //     // If not in board anymore, delete it from the virtual grid
+      //     if (possible_marker_id in grid.bots){
+      //       grid.remove_bot(possible_marker_id);
+      //     } else if (possible_marker_id in grid.obstacles){
+      //       grid.remove_obstacle(possible_marker_id)
+      //     } else if (possible_marker_id in grid.coins){
+      //       grid.remove_coin(possible_marker_id);
+      //     }
+      //   } else {
+      //     //It's still in board
+      //     if (grid && possible_marker_id in grid.coins){
+      //       updateCoinInfo(possible_marker_id);
+      //     }
+      //   }
+      // }
+      // for (let id in markersInfo) {
+      //   id = Number(id);
+      //   if (IGNORE_IDS.indexOf(id) !== -1) continue;
+      //   currentVectors[id] = markersInfo[id];
+      //   updateDistanceInfo(id);
+      // }
+      if (grid){
+        updateVirtualObjects();
+        move_bots();
+        drawBoard();
+    }
     }
   }
   // schedule next one.
@@ -647,10 +733,8 @@ function getReal2dPosition(id){
   let point = get2D(currentVectors[id].tvec.data64F);
   let point3D = cv.matFromArray(3, 1, cv.CV_64F, [point[0], point[1], 1]);
   let outPoint3D = new cv.Mat();
-
   let useless = new cv.Mat(); //to be multiplied by 0
   cv.gemm(homographicMatrix, point3D, 1, useless, 0, outPoint3D);//-rot^t * tvec 
-
   let [tx, ty, t] = outPoint3D.data64F;
   let outPoint2D = [tx / t, ty / t];
   return outPoint2D;

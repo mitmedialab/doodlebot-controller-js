@@ -48,16 +48,17 @@ function createSelect(id, labelText, options, listeners=[]){
  * 
  * @param {*} container_id id of container
  * @param {*} labelText label of checkbox
+ * @param {*} type `checkbox`, `number`
  * @param {*} listeners array of listeners
  * @returns 
  */
-function createCheckbox(container_id, labelText, listeners){
+function createInput(container_id, labelText, type, listeners){
     let container = document.createElement('div');
     container.setAttribute('id', container_id);
     let label = document.createElement('label');
     label.innerText = labelText;
     let checkbox = document.createElement('input');
-    checkbox.setAttribute('type', 'checkbox');
+    checkbox.setAttribute('type', type);
     for (let listener of listeners){
         let {key, handler} = listener;
         checkbox.addEventListener(key, handler);
@@ -67,3 +68,53 @@ function createCheckbox(container_id, labelText, listeners){
     return container;
 }
 
+//TODO: Add these 2 methods somewhere else
+function changeCheckbox_changeHandler(bot_id, key, evt){
+    if (key === "GET_COINS"){
+        document.getElementById(`container-coins-policy-turns-${bot_id}`).classList.toggle("coin-hide")
+    }
+    grid.update_bot_policy(bot_id, key, evt.target.checked);
+}
+
+/**
+ * 
+ * @param {*} bot_id 
+ * @param {*} container_id 
+ * @param {*} options {key: {value: "value", text:"text value"}}
+ * @returns multiple checkbox. Not general but specifically for the bots
+ */
+function createCheckboxGroup(bot_id, container_id, options){
+    let container = document.createElement('div');
+    container.classList.add('checkbox-group');
+    container.setAttribute('id', container_id);
+    for (let [key, {value, text}] of Object.entries(options)){
+        let input = document.createElement('input');
+        let inputId = `${container_id}-value-${value}`
+        input.setAttribute('type', 'checkbox');
+        input.setAttribute('id', inputId);
+        let label = document.createElement('label');
+        label.setAttribute('for', inputId);
+        label.innerText = text;
+        input.addEventListener('change', (evt)=>{
+            changeCheckbox_changeHandler(bot_id, key, evt);
+        })
+        let subContainer = document.createElement('div');
+        subContainer.appendChild(label);
+        subContainer.appendChild(input);
+        if (key === "GET_COINS"){
+            // Add a count input for how long to look ahead
+            
+            let countId = `coins-policy-turns-${bot_id}`;
+            let select = createSelect(countId, "How far ahead?", [
+                {value: 1, text: 1},
+                {value: 2, text: 2},
+                {value: 3, text: 3},
+                {value: 4, text: 4},
+            ], [])
+            select.classList.add("coin-hide");
+            subContainer.appendChild(select);
+        }
+        container.appendChild(subContainer);
+    }
+    return container;
+}

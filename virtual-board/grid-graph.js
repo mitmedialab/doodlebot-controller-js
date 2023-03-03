@@ -176,7 +176,10 @@ class GridGraph{
             }
         }
     }
-    //Object requires real_bottom_left and angle
+    /**
+     * Object requires `real_bottom_left` and `angle`
+     *
+     */
     shortest_distance_from_obj(obj){
         let {angle, real_bottom_left} = obj;
         let [i, j] = real_bottom_left;
