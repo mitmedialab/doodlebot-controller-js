@@ -129,6 +129,20 @@ class Doodlebot {
     }
     this.customOnReceiveValue(evt);
   }
+  async apply_next_move_to_bot(move){
+    console.log(`Tyring to apply move ${move} to (real) bot`)
+    let GRID_TO_PHYSICAL_COORDS = 227 / 8;
+    if (move[0] === 'move'){
+        console.log("moving!")
+        return await this.drive({NUM: move[1] * GRID_TO_PHYSICAL_COORDS});
+    } else if (move[0] === 'turn'){
+        console.log("Turning!")
+        return await this.turn({NUM: move[1], DIR:"left"});
+    } else {
+        console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
+        return null;
+    }
+  }
   // async init() {
   //   // First add this to the bluetooth device list
   //   await this.request_device();

@@ -19,6 +19,21 @@ let BORDER_IDS = {
   TOP_RIGHT: 33, //top right
   TOP_LEFT: 34 //top left
 }
+/*
+  Mapping between doodlebot BLE ids to aruco ids
+  This allows the connection between physical bots and virtual bots
+*/
+let DOODLEBOT_ID_TO_ARUCO_ID = {
+  "Xcuis/UrHNMN+oXjCB5Ldg==": 1
+}
+/*
+  Mapping between doodlebot BLE ids to aruco ids
+  This allows the connection between physical bots and virtual bots
+*/
+let ARUCO_ID_TO_DOODLEBOT_ID = {
+  1: "Xcuis/UrHNMN+oXjCB5Ldg=="
+}
+
 IGNORE_IDS = []; // ids for which we wont keep track of the aruco data (rvec, tvec)
 
 // Number of frames to check to figure out whether a marker is still on the board
@@ -577,27 +592,53 @@ function updateCoinInfo(coin_id){
   div.appendChild(td_percentage);
   div.appendChild(td_decision);
 }
+function isRealBotMoving(aruco_bot_id){
+  let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
+  let realBot = allDoodlebots[doodlebot_id];
+  if (!realBot){
+    //The doodlebot hasnt even been connected yet!
+    return false; 
+  }  
+  return realBot.isMoving;
+}
+async function applyMoveToRealBot(aruco_bot_id, move){
+  let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
+  console.log(`Id found = ${doodlebot_id}`)
+  let realBot = allDoodlebots[doodlebot_id];
+  return await realBot.apply_next_move_to_bot(move)
+}
 /**
  * Goes through all the bots and move them according to their policy (also assuming)
  * 
  * TODO: This only moves the virtual bots. Need to move the real bot!
  */
-function move_bots(){
+async function move_bots(){
   for (let bot_id in grid.bots){
-      let bot_index = 0;
-      let bot = grid.bots[bot_id][bot_index];
-      if (bot.isMoving){
-          //TODO: This info should be stored in the grid object
-          let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
-          grid.move_bot_using_policies(bot_id, bot_index, num_turns)
-      }
+    // Don't calculate next steps until bot has finished moving
+    if (isRealBotMoving(bot_id)){
+      console.log(`Bot ${bot_id} already moving (real life), so dont move`)
+      continue;
+    }
+    console.log(`Bot ${bot_id} is not moving (real life), so find next move`)
+    let bot_index = 0;
+    let bot = grid.bots[bot_id][bot_index];
+    if (bot.isMoving){
+        //TODO: This info should be stored in the grid object
+        let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
+        let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
+        console.log(`Move to make = ${next_move}`)
+        if (next_move){
+          grid.apply_next_move_to_bot(bot_id, next_move);
+          await applyMoveToRealBot(bot_id, next_move)
+        } 
+    }
   }
 }
 /**
  * Most important method. This will be grabbing a frame from the video stream according to FPS
  * It's responsible for detecting aruco codes, show the 2d projection and keeping track of the virtual grid
  */
-function processVideo() {
+async function processVideo() {
   if (!cameraController.isCameraActive) {
     return;
   }
@@ -665,7 +706,7 @@ function processVideo() {
       // }
       if (grid){
         updateVirtualObjects();
-        move_bots();
+        await move_bots();
         drawBoard();
     }
     }
@@ -869,12 +910,12 @@ multipleCommandsTestButton.addEventListener("click", async (evt) => {
   // await doodlebot.turn({NUM: 90, DIR:"right"})
   await doodlebot.drive({ NUM: nStepsWidth });
   await doodlebot.turn({ NUM: 90, DIR: "left" })
-  await doodlebot.drive({ NUM: nStepsHeight })
-  await doodlebot.turn({ NUM: 90, DIR: "left" })
-  await doodlebot.drive({ NUM: nStepsWidth })
-  await doodlebot.turn({ NUM: 90, DIR: "left" })
-  await doodlebot.drive({ NUM: nStepsHeight })
-  await doodlebot.turn({ NUM: 180, DIR: "left" })
+  // await doodlebot.drive({ NUM: nStepsHeight })
+  // await doodlebot.turn({ NUM: 90, DIR: "left" })
+  // await doodlebot.drive({ NUM: nStepsWidth })
+  // await doodlebot.turn({ NUM: 90, DIR: "left" })
+  // await doodlebot.drive({ NUM: nStepsHeight })
+  // await doodlebot.turn({ NUM: 180, DIR: "left" })
 
 })
 /**
@@ -923,7 +964,6 @@ moveRobot2.addEventListener("click", async() =>{
   let id2 = "UJJh1Y3QIudHi3g9PkXhBg=="; //hardcoded
   await allDoodlebots[id2].drive({NUM:200});
   await allDoodlebots[id2].drive({NUM:100});
-
 })
 multipleRobotsTestButton.addEventListener("click", async () => {
   for (let key in allDoodlebots) {

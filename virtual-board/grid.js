@@ -566,6 +566,14 @@ class VirtualGrid{
                 console.log(`Invalid randomMove = ${randomMove}`);
         }
     }
+    get_next_move_randomly(bot_id){
+        let possible_moves = [
+            ['move', 1],  //move straight
+            ['turn', 90], //turn left
+            ['turn', -90] //turn right
+        ]
+        return this.random_from(possible_moves);
+    }
     get_object_center(obj){
         //If bot, calculate position in terms of the anchor
         // Otherwise, calculate position as the center
@@ -781,6 +789,72 @@ class VirtualGrid{
 
         return response_move;
     }
+    get_next_move_closer_or_farther(bot_id, is_closer){
+        let bot_index = 0;
+        if (is_closer){
+            console.log("------------------------[next move] CLOSER-------------------------------------")
+        } else{
+            console.log("------------------------[next move] FARTHER-------------------------------------")
+        }
+        let bot = this.bots[bot_id][bot_index];
+        //TODO: Get this bots from bot.targets array
+        let other_bots = Object.keys(this.bots).filter(other_bot_id => other_bot_id!== bot_id);
+        let extreme_distance = is_closer ? Number.MAX_SAFE_INTEGER: -Number.MAX_SAFE_INTEGER;
+        // let extreme_distance_move = null;
+        //Gonna go through all turns (and moving 1 on that direction)
+        let extreme_directions = [];
+        for (let direction in ANGLE_DIRS) {
+            let turn_angle = ANGLE_DIRS[direction];
+            console.log(`Trying angle ${turn_angle} for bot ${bot_id}`);
+            let future_bot = this.future_position_after_turn(bot, turn_angle)
+            console.log(`Future bot after turning ${turn_angle} is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping")
+                continue;
+            }
+            future_bot = this.future_position_after_move(future_bot, 1);
+            console.log(`Future bot after turning ${turn_angle} and moving 1 is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping again")
+                continue;
+            }
+            let distance = this.distance_to_bots(future_bot, other_bots);
+            console.log(`Future distance = ${distance}`);
+
+            if (distance === extreme_distance){
+                extreme_directions.push(direction);
+            } else {
+                if (is_closer === (distance < extreme_distance)){
+                    console.log(`Found new extreme_distance = ${distance} with diection = ${direction}`);
+                    extreme_distance = distance;
+                    // extreme_distance_move = direction;
+                    extreme_directions = [direction];
+                }
+            }
+        }   
+        // If there was a tie, pick one direction at random
+        let extreme_distance_move = this.random_from(extreme_directions);
+        console.log(`[Move bot closer] Moved bot ${bot_id} ${extreme_distance} deg`);
+
+        // If the angle is the same, is a move. If not, it's a turn
+        if (extreme_distance_move === 0){
+            return ['move', 1];
+        } else {
+            return ['turn', extreme_distance_move];
+        }
+
+        //Now that we know which direction to move, we can move the bot for real
+        let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
+        if (!response_turn.success){
+            //If not successful, just return what happened
+            return response_turn;
+        }
+        let response_move = this.move_bot(bot_id, 1, bot_index);
+
+        return response_move;
+    }
     /**
      * 
      * @param {*} num_turns 
@@ -855,9 +929,58 @@ class VirtualGrid{
                 continue;
             }
             success = true;
-            history.push({...response_move, bot: {...response_move.bot}, board: this.print_board()}); //TODO: Do deepCopy
+            history.push({
+                ...response_move, 
+                bot: {...response_move.bot},
+                move: turns[0], //TODO: Assuming there is only one move 
+                board: this.print_board()
+            }); //TODO: Do deepCopy
         }
         return history;
+    }
+    /**
+     * Chooses a next move according to the bot's policies
+     * 
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     * @param {*} num_moves 
+     * @returns object of the form ['move', 1] or ['turn', 90]
+     */
+    get_next_move_using_policies(bot_id, num_turns=1){
+        let bot_index = 0;
+        let bot = this.bots[bot_id][bot_index];
+        if (bot.policies.has(BOT_POLICIES.GET_COINS.value)){
+            //Only do this if there are coins to move to
+            if (Object.keys(this.coins).length !== 0){
+                return this.get_next_move_using_get_coins(bot_id, num_turns);
+            }
+        }
+        
+        if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)){
+            return this.get_next_move_closer_or_farther(bot_id, false);
+        } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER.value)){
+            // Default is to move rand
+            return this.get_next_move_closer_or_farther(bot_id, true);
+        } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)){
+            return this.get_next_move_randomly(bot_id, bot_index);
+        } else {
+            return null;
+        }
+    }
+    /**
+     * 
+     * @param {*} bot_id 
+     * @param {*} move of the form ['move', 1] or ['turn', 180]
+     */
+    apply_next_move_to_bot(bot_id, move){
+        if (move[0] === 'move'){
+            return this.move_bot(bot_id, move[1]);
+        } else if (move[0] === 'turn'){
+            return this.turn_bot(bot_id, move[1]);
+        } else {
+            console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
+            return null;
+        }
     }
     /**
      *
@@ -907,6 +1030,59 @@ class VirtualGrid{
         }
         //If there was a tie, pick randomly
         let chosen_turns = this.random_from(directions);
+        console.log(`Chosen = ${chosen_turns} with distance ${min_distance}`)
+        //IMPORTANT Only move the first step!
+        chosen_turns = [chosen_turns[0]] 
+        return this.move_bot_multiple_turns(bot_id, bot_index, chosen_turns);
+    }
+    get_next_move_using_get_coins(bot_id, num_moves=1){
+        let bot_index = 0;
+        let bot = this.bots[bot_id][bot_index];
+        //Only relevant if we want to know whether coins are reachable
+        let min_distance = Number.MAX_SAFE_INTEGER;
+        let directions = [];
+        let list_of_turns = this.get_multiple_turns(num_moves);
+        for (let turns of list_of_turns){
+            let future_bot = this.future_position_after_turns(bot, turns);
+            if (!future_bot.valid_move){
+                //didnt move at all, dont take into consideration
+                continue;
+            }
+            let distance;
+            if (future_bot.future_crashes[COIN_TYPE]){
+                //While moving it potentially will crash with a coin, that's good!
+                distance = 0;
+            } else {
+                distance = this.min_distance_to_coins(future_bot);
+                if (distance === null){
+                    //No coin is within reach
+                    continue;
+                }
+            }
+            if (distance === min_distance){
+                directions.push(turns);
+            } else if (distance < min_distance){
+                min_distance = distance;
+                directions = [turns];
+            }
+        }
+        if (directions.length === 0){
+            //If no position let to a reachable place
+            return {
+                bot: bot,
+                success: false,
+                message: "No moves leaves coin within reach"
+            }
+        }
+        //If there was a tie, pick randomly
+        let chosen_turns = this.random_from(directions);
+        let chosen_angle = ANGLE_DIRS[chosen_turns[0]];
+        if (chosen_angle === 0){
+            return ['move', 1];
+        } else {
+            return ['turn', chosen_angle];
+        }
+
         console.log(`Chosen = ${chosen_turns} with distance ${min_distance}`)
         //IMPORTANT Only move the first step!
         chosen_turns = [chosen_turns[0]] 
@@ -1111,6 +1287,12 @@ class VirtualGrid{
         let future_crashes = this.get_almost_crashes(future_bot, 0)
         return {...future_bot, valid_position, future_crashes: future_crashes};
     }
+    /**
+     * 
+     * @param {*} prev_bot 
+     * @param {*} turn_angle 
+     * @returns Future position of the bot after turning `turn_angle`
+     */
     future_position_after_turn(prev_bot, turn_angle){
         //cast the angle to 0, 360
         turn_angle = turn_angle % 360;
@@ -1159,7 +1341,7 @@ class VirtualGrid{
      * Returns bot and success
      * 
      * @param {*} bot_id 
-     * @param {*} angle in counterclowise
+     * @param {*} angle in counterclowise, how many angles to turn
      * @param {*} bot_index 
      */
     turn_bot(bot_id, angle, bot_index=0){
