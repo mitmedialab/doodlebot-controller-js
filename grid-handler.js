@@ -5,7 +5,7 @@ let [rows, cols] = [8, 8];
 function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
 }
-// aruco id -> {widthRight, widthLeft, heightTop, heightBottom, real_anchor}
+// aruco id -> {width, height, real_bottom_left}
 let CURRENT_SIZES = {
 
 }
@@ -110,46 +110,38 @@ let min_coin_id = 21;
 function updateObj_ClickHandler(obj_id, type, deltas, evt){
     if (positionState !== STATES.SETUP){
         if (positionState === STATES.RECORDING){
-            alert("Can't update the info yet. Make sure you pressed 'Change State' button");
+            alert("Can't update the info yet. Make sure you pressed 'Next step' button");
         } else {
             alert("You can't change the sizes now. Need to restart the process.")
         }
         return;
     }
     let defaultDeltas = {
-        dWidthRight: 0,
-        dWidthLeft: 0,
-        dHeightUp: 0,
-        dHeightDown: 0,
+        dWidth: 0,
+        dHeight: 0,
         dx: 0,
         dy: 0
     }
     deltas = Object.assign(defaultDeltas, deltas);
     let prevSize = {...CURRENT_SIZES[obj_id]}; //save how it was before in case the update didnt work
-    CURRENT_SIZES[obj_id].widthRight += deltas.dWidthRight;
-    CURRENT_SIZES[obj_id].widthLeft += deltas.dWidthLeft;
-    CURRENT_SIZES[obj_id].heightUp += deltas.dHeightUp;
-    CURRENT_SIZES[obj_id].heightDown += deltas.dHeightDown;
-    let prev_real_anchor = CURRENT_SIZES[obj_id].real_anchor;
-    console.log("prev_real_anchor");
-    console.log(prev_real_anchor);
-    CURRENT_SIZES[obj_id].real_anchor = [prev_real_anchor[0]+deltas.dx, prev_real_anchor[1]+deltas.dy];
+    CURRENT_SIZES[obj_id].width += deltas.dWidth;
+    CURRENT_SIZES[obj_id].height += deltas.dHeight;
+    let prev_real_bottom_left = CURRENT_SIZES[obj_id].real_bottom_left;
+    CURRENT_SIZES[obj_id].real_bottom_left = [prev_real_bottom_left[0]+deltas.dx, prev_real_bottom_left[1]+deltas.dy];
     let {
-        widthRight,
-        widthLeft,
-        heightUp,
-        heightDown,
-        real_anchor
+        width,
+        height,
+        real_bottom_left
     } = CURRENT_SIZES[obj_id];
-    if (widthRight < 0 || widthLeft < 0 || heightUp < 0 || heightDown < 0){
-        console.log(`None of the widthRight, widthLeft, heightUp, heightDown should be negative`);
+    if (width < 1 || height < 1){
+        console.log(`None of the width or height can be < 1`);
         CURRENT_SIZES[obj_id] = prevSize;
         return;
     }
     let update = {
-        width: widthRight + widthLeft + 1,
-        height: heightUp + heightDown + 1,
-        real_bottom_left: [real_anchor[0]-widthLeft, real_anchor[1]-heightDown]
+        width: width,
+        height: height,
+        real_bottom_left: real_bottom_left
     }
     let success;
     if (type === OBSTACLE_TYPE){
@@ -178,17 +170,14 @@ function onAddObject(obj){
     let obj_id = obj.id;
     //Storing current sizes
     CURRENT_SIZES[obj_id] = {
-        widthRight: Number(obj.width)-1,
-        widthLeft: 0,
-        heightUp: Number(obj.height)-1,
-        heightDown: 0,
-        real_anchor: obj.real_bottom_left,
+        width: Number(obj.width),
+        height: Number(obj.height),
+        real_bottom_left: obj.real_bottom_left,
       }
     let div = document.createElement("div");
     div.classList.add("bot-moving-controls");
     // controlsDiv.classList.add("bot-moving-controls")
 
-    console.log(CURRENT_SIZES);
     div.setAttribute('id', `${type}-update-container-${obj_id}`);
     let header = document.createElement('h1');
     header.innerText = `${type}: ${obj_id}`;
@@ -229,129 +218,65 @@ function onAddObject(obj){
         {
             key: "click",
             handler: (evt) => {updateObj_ClickHandler(obj_id, type, {
-                dWidthLeft: - CURRENT_SIZES[obj_id].widthLeft,
-                dWidthRight: - CURRENT_SIZES[obj_id].widthRight,
-                dHeightUp: -CURRENT_SIZES[obj_id].heightUp,
-                dHeightDown: -CURRENT_SIZES[obj_id].heightDown
+                dWidth:  1 - CURRENT_SIZES[obj_id].width,
+                dHeight: 1 - CURRENT_SIZES[obj_id].height,
             }), evt}
         }
     ])
-    // let widthRightInput = createInput(`widthRightInput-${obj_id}`, "Width right ⮕", 'number', [
-    //     {
-    //         key: "change",
-    //         handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-    //             dWidthRight: Number(evt.target.value) - CURRENT_SIZES[obj_id].widthRight
-    //         },evt)}
-    //     }
-    // ]);
-    let widthRightIncreaseButton = createButton(`widthRightIncreaseButton-${obj_id}`, "+", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dWidthRight: 1
-            },evt)}
-        }
-    ]);
-    let widthRightDecreaseButton = createButton(`widthRightDecreaseButton-${obj_id}`, "-", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dWidthRight: -1
-            },evt)}
-        }
-    ]);
-    let widthLeftIncreaseButton = createButton(`widthLeftIncreaseButton-${obj_id}`, "+", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dWidthLeft: 1
-            },evt)}
-        }
-    ]);
-    let widthLeftDecreaseButton = createButton(`widthLeftDecreaseButton-${obj_id}`, "-", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dWidthLeft: -1
-            },evt)}
-        }
-    ]);
-    let heightUpIncreaseButton = createButton(`heightUpIncreaseButton-${obj_id}`, "+", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dHeightUp: 1
-            },evt)}
-        }
-    ]);
-    let heightUpDecreaseButton = createButton(`heightUpDecreaseButton-${obj_id}`, "-", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dHeightUp: -1
-            },evt)}
-        }
-    ]);
-    let heightDownIncreaseButton = createButton(`heightDownIncreaseButton-${obj_id}`, "+", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dHeightDown: 1
-            },evt)}
-        }
-    ]);
-    let heightDownDecreaseButton = createButton(`heightDownDecreaseButton-${obj_id}`, "-", [
-        {
-            key: "click",
-            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-                dHeightDown: -1
-            },evt)}
-        }
-    ]);
-    // let widthLeftInput = createInput(`widthLeftInput-${obj_id}`, "Width left ⬅", 'number', [
-    //     {
-    //         key: "change",
-    //         handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-    //             dWidthLeft: Number(evt.target.value) - CURRENT_SIZES[obj_id].widthLeft
-    //         },evt)}
-    //     }
-    // ]);
-    // let heightUpInput = createInput(`heightUpInput-${obj_id}`, "Height up ⬆", 'number', [
-    //     {
-    //         key: "change",
-    //         handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-    //             dHeightUp: Number(evt.target.value) - CURRENT_SIZES[obj_id].heightUp
-    //         },evt)}
-    //     }
-    // ]);
-    // let heightDownInput = createInput(`heightDownInput-${obj_id}`, "Height down ⬇", 'number', [
-    //     {
-    //         key: "change",
-    //         handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
-    //             dHeightDown: Number(evt.target.value) - CURRENT_SIZES[obj_id].heightDown
-    //         },evt)}
-    //     }
-    // ]);
 
-    div.appendChild(header)
+    let widthIncreaseButton = createButton(`widthIncreaseButton-${obj_id}`, "+", [
+        {
+            key: "click",
+            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
+                dWidth: 1
+            },evt)}
+        }
+    ]);
+    let widthDecreaseButton = createButton(`widthDecreaseButton-${obj_id}`, "-", [
+        {
+            key: "click",
+            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
+                dWidth: -1
+            },evt)}
+        }
+    ]);
+    let heightIncreaseButton = createButton(`heightIncreaseButton-${obj_id}`, "+", [
+        {
+            key: "click",
+            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
+                dHeight: 1
+            },evt)}
+        }
+    ]);
+    let heightDecreaseButton = createButton(`heightDecreaseButton-${obj_id}`, "-", [
+        {
+            key: "click",
+            handler: (evt)=>{updateObj_ClickHandler(obj_id, type, {
+                dHeight: -1
+            },evt)}
+        }
+    ]);
+
     div.appendChild(moveUpButton)
+    let temp = document.createElement('div');
+    temp.classList.add('inline')
+    temp.appendChild(moveLeftButton)
+    temp.appendChild(header)
+    temp.appendChild(moveRightButton)
+    div.appendChild(temp);
     div.appendChild(moveDownButton)
-    div.appendChild(moveLeftButton)
-    div.appendChild(moveRightButton)
+    
     let groups = [
-        {text:"Right width: ", buttons: [widthRightIncreaseButton, widthRightDecreaseButton]},
-        {text:"Left width: ", buttons: [widthLeftIncreaseButton, widthLeftDecreaseButton]},
-        {text:"Up height: ", buttons: [heightUpIncreaseButton, heightUpDecreaseButton]},
-        {text:"Down height: ", buttons: [heightDownIncreaseButton, heightDownDecreaseButton]},
+        {text:"Width: ", buttons: [widthDecreaseButton, widthIncreaseButton]},
+        {text:"Height: ", buttons: [heightDecreaseButton, heightIncreaseButton]},
     ]
     for (let {text, buttons} of groups){
         let miniContainer = document.createElement('div');
         let label = document.createElement('label');
         label.innerText = text;
+        miniContainer.appendChild(buttons[0]);
         miniContainer.appendChild(label);
-        for (let button of buttons){
-            miniContainer.appendChild(button);
-        }
+        miniContainer.appendChild(buttons[1])
         div.appendChild(miniContainer)
     }
     div.appendChild(resetSizeButton);
