@@ -157,6 +157,13 @@ function updateObj_ClickHandler(obj_id, type, deltas, evt){
         CURRENT_SIZES[obj_id] = prevSize; //Go back to how it was
     }
 }
+function onUpdateObject(obj){
+    CURRENT_SIZES[obj.id] = {
+        width: Number(obj.width),
+        height: Number(obj.height),
+        real_bottom_left: obj.real_bottom_left,
+    }
+}
 /**
  * Adds controls to change the space to the right, left, top and bottom 
  * as well as translate the object right, left, up and down
@@ -173,7 +180,7 @@ function onAddObject(obj){
         width: Number(obj.width),
         height: Number(obj.height),
         real_bottom_left: obj.real_bottom_left,
-      }
+    }
     let div = document.createElement("div");
     div.classList.add("bot-moving-controls");
     // controlsDiv.classList.add("bot-moving-controls")

@@ -56,13 +56,13 @@ const OBJECT_SIZES = {
   2: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
   3: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
   4: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
-  5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
+  // 5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]}, //TODO: Put back when obstacle's other_corner is set to another id
   // obstacles
-  11: {type: OBSTACLE_TYPE, width: 1, height: 1},
-  12: {type: OBSTACLE_TYPE, width: 1, height: 1},
-  13: {type: OBSTACLE_TYPE, width: 1, height: 1},
-  14: {type: OBSTACLE_TYPE, width: 1, height: 1},
-  15: {type: OBSTACLE_TYPE, width: 1, height: 1},
+  11: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 61},
+  12: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 62},
+  13: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 63},
+  14: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 64},
+  15: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 65},
   // coins
   21: {type: COIN_TYPE, width: 1, height: 1},
   22: {type: COIN_TYPE, width: 1, height: 1},
@@ -119,7 +119,8 @@ activateCameraButton.addEventListener("click", async (evt) => {
   grid = new VirtualGrid(rows, cols, {
       onAddBot,
       onAddObstacle: onAddObject,
-      onAddCoin: onAddObject
+      onAddCoin: onAddObject,
+      onUpdateObject: onUpdateObject
   });
   drawBoard();
 });
@@ -253,6 +254,38 @@ function getTypeObject(id){
   return OBJECT_SIZES[id].type;
 }
 /**
+ * 
+ * @param {*} id aruco id
+ * @returns {object} {width, height, real_bottom_left}, that either come form OBJECT_SIZES 
+ * or, if object has another corner detected, uses that info
+ */
+function getObjectPositionInfo(id){
+  if (!(id in OBJECT_SIZES)){
+    console.log(`Couldnt find size information for id =${id} `);
+    return {}
+  }
+  let {other_corner_id, width, height} = OBJECT_SIZES[id];
+  let [x1, y1] = getGridPosition(id);
+  if (!other_corner_id || !currentVectors[other_corner_id]){
+    //If there is no set other corner, or it hasn't been detected
+    return {
+      width, height, real_bottom_left: [x1, y1]
+    }
+  } else {
+    let [x2, y2] = getGridPosition(other_corner_id)
+    let minX = Math.min(x1, x2);
+    let maxX = Math.max(x1, x2);
+    let minY = Math.min(y1, y2);
+    let maxY = Math.max(y1, y2);
+    return {
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+      real_bottom_left: [minX, minY]
+    }
+  }
+
+}
+/**
  * Updates position of a given bot in the virtual grid. If the bot is not there then it
  * will create one
  * @param {*} id aruco marker
@@ -290,46 +323,59 @@ function updateVirtualBot(id){
  * @param {*} id aruco marker
  */
 function updateVirtualObstacle(id){
-    let [gridX, gridY] = getGridPosition(id);
+    let {
+      width, height, real_bottom_left 
+    } = getObjectPositionInfo(id)
+    // let [gridX, gridY] = getGridPosition(id);
     if (!grid.obstacles[id]){
       if (!(id in OBJECT_SIZES)){
         console.log(`Couldnt find size information for id =${id} `)
       }
-      let {width, height} = OBJECT_SIZES[id];
+
+      // let {width, height} = OBJECT_SIZES[id];
       grid.add_obstacle({
         id: id,
-        real_bottom_left:[gridX, gridY],
+        // real_bottom_left:[gridX, gridY],
+        real_bottom_left: real_bottom_left,
         relative_anchor: [0,0], //All obstacles will be created this way
         width: width,
         height: height,
       })
     } else {
       if (positionState === STATES.RECORDING){
-        grid.update_obstacle(id, {new_anchor: [gridX, gridY]})
+        grid.update_obstacle(id, {width, height, real_bottom_left})
       }
     }
 }
+function random_from(arr){
+      return arr[Math.floor(Math.random() * arr.length)]
+  }
 /**
  * Updates position of a given coin in the virtual grid. If the coin is not there then it
  * will create one
  * @param {*} id aruco marker
  */
 function updateVirtualCoin(id){
-  let [gridX, gridY] = getGridPosition(id);
+  let {
+    width, height, real_bottom_left 
+  } = getObjectPositionInfo(id)
   if (!grid.coins[id]){
     if (!(id in OBJECT_SIZES)){
       console.log(`Couldnt find size information for id =${id} `)
     }
-    let {width, height} = OBJECT_SIZES[id];
+
+    // let [gridX, gridY] = getGridPosition(id);
+    // let {width, height} = OBJECT_SIZES[id];
     grid.add_coin({
       id: id,
-      real_bottom_left:[gridX, gridY],
+      // real_bottom_left:[gridX, gridY],
+      real_bottom_left: real_bottom_left,
       relative_anchor: [0,0], //All obstacles will be created this way
       width: width,
       height: height,
     })
   } else {
-    grid.update_coin(id, {new_anchor: [gridX, gridY]})
+    grid.update_coin(id, {width, height, real_bottom_left})
   }
 }
 /**
@@ -360,11 +406,73 @@ function updateVirtualObjects(){
     }
   }
 }
+function getColorFromType(obj_type){
+  switch (obj_type){
+    case BOT_TYPE:
+      return [0, 255, 0, 255] // [154, 205, 50]; //light green
+    case OBSTACLE_TYPE:
+      return [255, 0, 0, 255] // red
+    case COIN_TYPE:
+      return [255, 255, 0, 255]//[255, 255, 0] //yellow
+    default:
+      console.log(`Invalid type = ${obj_type}`);
+      return
+  }
+}
+function drawObjectOnCanvas(obj){
+    let grid_i_to_canvas_x = (i) => Math.floor((width-1) / cols * i)
+    let grid_j_to_canvas_y = (j) => Math.floor((height-1) / rows * j);
+
+    //Paint cell: 
+    let [min_x, min_y] = obj.real_bottom_left;
+    let [max_x, max_y] = [min_x + obj.width, min_y + obj.height];
+    let bottom_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(min_y))
+    let upper_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(max_y))
+    let color = getColorFromType(obj.type)
+    cv.rectangle(canvasProjectionOut, bottom_left, upper_right, color, 3)
+
+    if (obj.type === BOT_TYPE){
+      //Add the line to show which direction the bot is looking at
+      let bottom_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(min_y))
+      let upper_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(max_y))
+      let edgeColor = [0, 0, 255, 255];
+      switch (obj.angle){
+        case ANGLE_DIRS.RIGHT:
+          cv.rectangle(canvasProjectionOut, bottom_right, upper_right, edgeColor, 5)
+          break;
+        case ANGLE_DIRS.UP:
+          cv.rectangle(canvasProjectionOut, upper_left, upper_right, edgeColor, 5)
+          break;
+        case ANGLE_DIRS.LEFT:
+          cv.rectangle(canvasProjectionOut, bottom_left, upper_left, edgeColor, 5)
+          break;
+        case ANGLE_DIRS.DOWN:
+          cv.rectangle(canvasProjectionOut, bottom_left, bottom_right, edgeColor, 5)
+          break;
+        default:
+          console.log(`Wrong angle direction of bot ${obj.id} = ${obj.angle}`)
+      }
+    }
+}
+/**
+ * Goes through the objects in the grid, and paint every element
+ */
+function drawGridObjectsOnCanvas(){
+  if (!grid){
+    return;
+  }
+  let allObjects = Object.assign({}, grid.bots, grid.coins, grid.obstacles);
+  for (let objects of Object.values(allObjects)){
+    let id_index = 0;
+    let object = objects[id_index]
+    drawObjectOnCanvas(object);
+  }
+}
 /**
  * Draws horizontal and vertical lines in the canvas (just for visualization)
  */
 function drawGrid(){
-    let color = [0, 0, 255, 255];
+    let color = [0, 0, 255, 128];
     let thickness = 1;
     let p1;
     let p2;
@@ -392,6 +500,13 @@ function drawGrid(){
       
       cv.line(canvasProjectionOut, p1, p2, color, thickness);
     }
+    drawGridObjectsOnCanvas();
+
+
+    //cleanup
+    // points.delete(); squarePoints.delete(); pts.delete(); 
+    // bottom_left.delete(); upper_right.delete()
+
     //TODO: Figure out why is this necessary, maybe because the camera coefficients
     //TODO 2: Maybe create a copy before moving
     cv.flip(canvasProjectionOut, canvasProjectionOut, 0)
@@ -605,7 +720,9 @@ async function applyMoveToRealBot(aruco_bot_id, move){
   let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
   console.log(`Id found = ${doodlebot_id}`)
   let realBot = allDoodlebots[doodlebot_id];
-  return await realBot.apply_next_move_to_bot(move)
+  if (realBot){
+    return await realBot.apply_next_move_to_bot(move)
+  }
 }
 /**
  * Goes through all the bots and move them according to their policy (also assuming)

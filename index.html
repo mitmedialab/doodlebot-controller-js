@@ -74,6 +74,11 @@
         padding: 20px;
         border: black solid 2px;
       }
+      .virtual-and-grid-container{
+        display: flex;
+        flex-direction: row;
+        margin-left: 100px;
+      }
     </style>
     <link rel="stylesheet" href="virtual-board/virtual-board-style.css">
   </head>
@@ -123,18 +128,23 @@
       <button id="multipleRobotsTestButton">Multiple Robots Test</button>
       <button id="moveRobot1">Move robot 1</button>
       <button id="moveRobot2">Move robot 2</button>
-      <p>Camera:</p>
+      <h1>Camera:</h1>
       <video id="videoId" autoplay width="640" height="640"></video>
       <canvas id="arucoCanvasOutput" width="640" height="640"></canvas>
+      <h1>Virtual grid:</h1>
+      <div class="virtual-and-grid-container">
+
       <!-- <canvas id="arucoCanvasOutput2"></canvas> -->
-      <canvas id="arucoCanvasOutputGrid" width="640" height="640"></canvas>
-      <section>
-        <h1>Virtual grid:</h1>
-        <div id="gridDiv">
+        <div>
+        <canvas id="arucoCanvasOutputGrid" width="640" height="640"></canvas>
         </div>
-        <button id="changeStateButton">Next step</button>
-        <span id="stateTextSpan">Currently reading the video stream</span>
-      </section>
+        <div>
+          <div id="gridDiv">
+          </div>
+          <button id="changeStateButton">Next step</button>
+          <span id="stateTextSpan">Currently reading the video stream</span>
+        </div>
+      </div>
       <!-- <button id="create_grid_button">Create grid</button> -->
       <button id="startBotsButton">Start moving bots</button>
       <div id="botControlsContainer">

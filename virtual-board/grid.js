@@ -56,7 +56,8 @@ let defaultOptions = {
     onAddCoin: (obstacle) => {},
     onRemoveBot: (removedBot) => {},
     onRemoveObstacle: (removedObstacle) => {},
-    onRemoveCoin: (removedCoin) => {}
+    onRemoveCoin: (removedCoin) => {},
+    onUpdateObject: (updatedObject) => {},
 }
 let defaultBot = {
 
@@ -76,7 +77,8 @@ class VirtualGrid{
             onAddCoin,
             onRemoveBot,
             onRemoveObstacle,
-            onRemoveCoin
+            onRemoveCoin,
+            onUpdateObject
         } = options;
 
         this.rows = m;
@@ -88,6 +90,7 @@ class VirtualGrid{
         this.onRemoveBot = onRemoveBot;
         this.onRemoveObstacle = onRemoveObstacle;
         this.onRemoveCoin = onRemoveCoin;
+        this.onUpdateObject = onUpdateObject;
         for (let bot of bots){
             this.add_bot(bot);
         }
@@ -521,6 +524,7 @@ class VirtualGrid{
             bot.angle = new_angle;
         }
         let message = `Moved succesfully`;
+        this.onUpdateObject(bot);
         return {success: true, bot: bot, message: message};
     }
     /**
@@ -1153,6 +1157,7 @@ class VirtualGrid{
             obstacle.real_bottom_left = potentialBottomLeft;
         }
         let message = `Moved succesfully`;
+        this.onUpdateObject(obstacle);
         return {success: true, obstacle: obstacle, message: message};
     }
     /**
@@ -1193,6 +1198,7 @@ class VirtualGrid{
             coin.real_bottom_left = potentialBottomLeft;
         }
         let message = `Moved succesfully`;
+        this.onUpdateObject(coin);
         return {success: true, coin: coin, message: message};
     }
     update_only_reachable(bot_id, only_reachable, bot_index = 0){
