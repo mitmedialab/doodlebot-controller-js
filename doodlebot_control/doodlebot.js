@@ -129,6 +129,11 @@ class Doodlebot {
     }
     this.customOnReceiveValue(evt);
   }
+  /**
+   * 
+   * @param {*} move ['move', x] where x > 0, or ['turn', angle]
+   * @returns 
+   */
   async apply_next_move_to_bot(move){
     console.log(`Tyring to apply move ${move} to (real) bot`)
     let GRID_TO_PHYSICAL_COORDS = 227 / 8;
