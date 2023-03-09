@@ -138,48 +138,6 @@ create_grid_button.addEventListener("click", (evt)=>{
         <button id="stopButton">Stop moving!</button>
  */
 
-/**
- * 
- * @param {*} bot_id 
- * @param {*} container_id 
- * @param {*} options {key: {value: "value", text:"text value"}}
- * @returns multiple checkbox
- */
-function createCheckboxGroup(bot_id, container_id, options){
-    let container = document.createElement('div');
-    container.classList.add('checkbox-group');
-    container.setAttribute('id', container_id);
-    for (let [key, {value, text}] of Object.entries(options)){
-        let input = document.createElement('input');
-        let inputId = `${container_id}-value-${value}`
-        input.setAttribute('type', 'checkbox');
-        input.setAttribute('id', inputId);
-        let label = document.createElement('label');
-        label.setAttribute('for', inputId);
-        label.innerText = text;
-        input.addEventListener('change', (evt)=>{
-            changeCheckbox_changeHandler(bot_id, key, evt);
-        })
-        let subContainer = document.createElement('div');
-        subContainer.appendChild(label);
-        subContainer.appendChild(input);
-        if (key === "GET_COINS"){
-            // Add a count input for how long to look ahead
-            
-            let countId = `coins-policy-turns-${bot_id}`;
-            let select = createSelect(countId, "How far ahead?", [
-                {value: 1, text: 1},
-                {value: 2, text: 2},
-                {value: 3, text: 3},
-                {value: 4, text: 4},
-            ], [])
-            select.classList.add("coin-hide");
-            subContainer.appendChild(select);
-        }
-        container.appendChild(subContainer);
-    }
-    return container;
-}
 
 function moveButton(bot_id){
     return document.getElementById(`moveButton-${bot_id}`);
@@ -278,7 +236,7 @@ function create_bot_options(bot){
             handler: (evt)=>{distanceSelect_ChangeHandler(bot_id, evt)}
         }
     ]);
-    let onlyReachableCheckbox = createCheckbox(`onlyReachable-${bot_id}`, `Only consider reachable points`, [
+    let onlyReachableCheckbox = createInput(`onlyReachable-${bot_id}`, `Only consider reachable points`, 'checkbox', [
         {
             key: "change",
             handler: (evt) => {onlyReachableCheckbox_ChangeHandler(bot_id, evt)}
@@ -552,12 +510,6 @@ function stopMovingButton_ClickHandler(bot_id, evt){
 function distanceSelect_ChangeHandler(bot_id, evt){
     let newDistance = evt.target.value;
     grid.update_bot_distance(bot_id, newDistance);
-}
-function changeCheckbox_changeHandler(bot_id, key, evt){
-    if (key === "GET_COINS"){
-        document.getElementById(`container-coins-policy-turns-${bot_id}`).classList.toggle("coin-hide")
-    }
-    grid.update_bot_policy(bot_id, key, evt.target.checked);
 }
 function onlyReachableCheckbox_ChangeHandler(bot_id, evt){
     grid.update_only_reachable(bot_id, evt.target.checked);

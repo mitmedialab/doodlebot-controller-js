@@ -27,7 +27,7 @@ let INFINITY = "Infinity";
  * @param {string} startNode 
  * @param {string} endNode 
  * @param {boolean} show_logs 
- * @returns {Object} {distance: Number || null,  path_nodes: Array || null, path_edges: array || null}
+ * @returns {Object} {distances: {node: Number || null},  parents: {node: node || null}}
  */
 const findShortestPathDistances = (graph, startNode, endNode, show_logs=false) => {
     // if (!(startNode in graph) | !(endNode in graph)){

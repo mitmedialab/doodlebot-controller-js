@@ -117,8 +117,16 @@ class GridGraph{
     get_position_from_node(node){
         return getStringParts(node, NODE_BREAKPOINTS).map(Number);
     }
+    /**
+     * Adds nodes and edges taking into account reachability and not being on top of obstacles
+     * 
+     * @param {*} grid 
+     * @param {*} bot_dimensions 
+     */
     update_graph(grid, bot_dimensions){
         let crashing_board = grid.binary_crashing_board(bot_dimensions, false);
+        // const isInsideBoard = (i, j) => 0 <= i && i < grid.cols && 0 <= j && j < grid.rows;
+        // const isValidPosition = (i, j) => !isInsideBoard(i, j) || !crashing_board[j][i];
         const isValidPosition = (i, j) => 0 <= i && i < grid.cols && 0 <= j && j < grid.rows && !crashing_board[j][i];
         for (let j = 0; j < grid.rows; j++){
             for (let i = 0; i < grid.cols; i++){
@@ -150,6 +158,13 @@ class GridGraph{
             }
         } 
     }
+    /**
+     * For every node, get the minimum distance between the one that is already computed
+     * and the one that comes from `distances`
+     * 
+     * @param {*} distances {node: Number}
+     * @returns 
+     */
     update_distance_values(distances){
         if (Object.keys(this.distances) == 0){
             this.distances = distances;
@@ -162,6 +177,14 @@ class GridGraph{
         }
         this.newDistances = newDistances;
     }
+    /**
+     * Store minimum distances from each cell to crash with coin, by finding the minimum
+     * distance it takes for a cell to go to any cell that will make it crash with the coin
+     * 
+     * @param {*} grid grid object
+     * @param {*} bot_dimensions {width: , height}
+     * @param {*} coin 
+     */
     update_distances_to_crash(grid, bot_dimensions, coin){
         //boundaries to crash
         let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = grid.get_crashing_bounds(bot_dimensions, coin);
@@ -176,7 +199,10 @@ class GridGraph{
             }
         }
     }
-    //Object requires real_bottom_left and angle
+    /**
+     * Object requires `real_bottom_left` and `angle`
+     *
+     */
     shortest_distance_from_obj(obj){
         let {angle, real_bottom_left} = obj;
         let [i, j] = real_bottom_left;

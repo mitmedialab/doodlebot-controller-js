@@ -50,16 +50,47 @@ let defaultOptions = {
     bots: [], 
     obstacles: [],
     coins: [],
-    onPickupCoin: (bot, coin) => {}
+    onPickupCoin: (bot, coin) => {},
+    onAddBot: (bot) => {},
+    onAddObstacle: (obstacle) => {},
+    onAddCoin: (obstacle) => {},
+    onRemoveBot: (removedBot) => {},
+    onRemoveObstacle: (removedObstacle) => {},
+    onRemoveCoin: (removedCoin) => {},
+    onUpdateObject: (updatedObject) => {},
 }
+let defaultBot = {
+
+}
+
 class VirtualGrid{
     constructor(m, n, options={}){
         options = Object.assign(defaultOptions, options);
-        let {drawBoard, bots, obstacles, coins, onPickupCoin} = options;
+        let {
+            drawBoard, 
+            bots, 
+            obstacles, 
+            coins, 
+            onPickupCoin,
+            onAddBot,
+            onAddObstacle,
+            onAddCoin,
+            onRemoveBot,
+            onRemoveObstacle,
+            onRemoveCoin,
+            onUpdateObject
+        } = options;
 
         this.rows = m;
         this.cols = n;
         this.onPickupCoin = onPickupCoin;
+        this.onAddBot = onAddBot;
+        this.onAddObstacle = onAddObstacle;
+        this.onAddCoin = onAddCoin;
+        this.onRemoveBot = onRemoveBot;
+        this.onRemoveObstacle = onRemoveObstacle;
+        this.onRemoveCoin = onRemoveCoin;
+        this.onUpdateObject = onUpdateObject;
         for (let bot of bots){
             this.add_bot(bot);
         }
@@ -102,7 +133,9 @@ class VirtualGrid{
         if (BOT_TYPE in potential_crashes || OBSTACLE_TYPE in potential_crashes || COIN_TYPE in potential_crashes){
             return {success: false, message: `Error adding object with type ${type}: There is a crash`}
         }
-        if (!this.isInsideBoard(obj.real_bottom_left, obj.width, obj.height)){
+        //Bots are exempt as part of them could be outside
+        //TODO: Maybe just check that the real_bottom_left (or anchor for bots) is inside the board
+        if (type !== BOT_TYPE && !this.isInsideBoard(obj.real_bottom_left, obj.width, obj.height)){
             return {success: false, message: `Error adding object with type ${type}: Outside bounds`}
         }
         let {id, width, height} = obj;
@@ -128,7 +161,8 @@ class VirtualGrid{
                 policies: new Set(), 
                 distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
                 only_reachable: false, //Whether to only calculate distance to reachable points
-                targets:[]
+                targets:[],
+                isMoving: false,
             };
         }
         objects[id][id_index] = newObject;
@@ -198,6 +232,23 @@ class VirtualGrid{
         return almost_crashes;
 
     }
+    change_moving_status(bot_id){
+        let bot_index = 0;
+        this.bots[bot_id][bot_index].isMoving = !this.bots[bot_id][bot_index].isMoving;
+    }
+    /**
+     * Moves the bots that have `isMoving` set to true. It won't do anything to the ones
+     * that do not
+     */
+    // move_bots(){
+    //     for (let bot_id in this.bots){
+    //         let bot_index = 0;
+    //         let bot = this.bots[bot_id][bot_index];
+    //         if (bot.isMoving){
+    //             grid.move_bot_using_policies(bot_id,)
+    //         }
+    //     }
+    // }
     /**
      * 
      * @param {*} bottom_left 
@@ -371,17 +422,18 @@ class VirtualGrid{
     /**
      * 
      * @param {*} future_bot
-     * Checks that it's inside the board, and that it doesnt crash with other bots or obstacles 
+     * Checks that that it doesnt crash with other bots or obstacles (but allow being outside the board)
      */
     is_valid_bot_position(future_bot){
         // console.log(`Checking if the bot is valid:`);
         // console.log(future_bot);
         let new_bottom_left = future_bot.real_bottom_left;
-        if (!this.isInsideBoard(new_bottom_left, future_bot.width, future_bot.height)){
-            //TODO: Apply a policy here (i.e., change direction)
-            // console.log("It's not, it'd be outside the board!")
-            return {valid: false, message: "Cant move because it'd go outside the board"}
-        }
+        // Allow bots to go outside, as in real life thats fine
+        // if (!this.isInsideBoard(new_bottom_left, future_bot.width, future_bot.height)){
+        //     //TODO: Apply a policy here (i.e., change direction)
+        //     // console.log("It's not, it'd be outside the board!")
+        //     return {valid: false, message: "Cant move because it'd go outside the board"}
+        // }
         let potential_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE}, 0);
         // console.log("potential_crashes:");
         // console.log(potential_crashes)
@@ -404,14 +456,18 @@ class VirtualGrid{
      */
     move_bot(bot_id, distance, bot_index=0, is_fake = false){
         // console.log("moving bot!")
-        let bot = this.bots[bot_id][bot_index]
+        let bot = this.bots[bot_id][bot_index];
+        // console.log(bot)
         let future_bot = this.future_position_after_move(bot, distance);
+        // console.log("Future bot position");
+        // console.log(future_bot);
         let new_bottom_left = future_bot.real_bottom_left;
         //TODO: Why this if almost_crashes will be defined later
         let potential_crashes = this.get_almost_crashes({...future_bot,type: BOT_TYPE}, 0);
 
         let valid_position_response = this.is_valid_bot_position(future_bot);
         if (!valid_position_response.valid){
+            console.log("it was not valid :(");
             return {bot: bot, ...valid_position_response, success: valid_position_response.valid};
         }
 
@@ -427,7 +483,6 @@ class VirtualGrid{
         }
         let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
         bot.almost_crashes = almost_crashes;
-        console.log(`Updating position of bot ${bot_id} from ${bot.real_bottom_left} to ${new_bottom_left}`)
         bot.real_bottom_left = new_bottom_left;
         //Below might not be necessary because Javascript send objects by reference, not by copy
         this.bots[bot_id][bot_index] = bot;
@@ -447,27 +502,63 @@ class VirtualGrid{
     /**
      * 
      * @param {*} bot_id 
-     * @param {*} new_anchor ABSOLUTE position (i.e., with respect to the board)
-     * @param {*} needToAdd whether to add new policy or remove it
-     * @param {*} bot_index 
+     * @param {*} update currently accepts angle, realAngle, and real_bottom_left
      */
     update_bot(bot_id, update, bot_index=0){
         let {new_anchor, new_angle} = update;
 
         //TODO: This function does not take into considerations crashes
         let bot = this.bots[bot_id][bot_index];
+        // let potentialBottomLeft = update.real_bottom_left == null|| bot.real_bottom_left;
+        // let potentialAngle = update.angle == null || bot.angle;
+        // let potentialRealAngle = update.realAngle == null || bot.realAngle;
+        let potentialBot = Object.assign({}, bot, update);
+        // If it's outside is fine, as technically the real bot could be outside
+        // if (!this.isInsideBoard(potentialBot.real_bottom_left, potentialBot.width, potentialBot.height)){
+        //     return {success: false, bot: bot, message: "Outside board, no good!"};
+        // }
+        if (potentialBot.realAngle < 0 || potentialBot.realAngle >= 360){
+            return {success: false, bot: bot, message: "real angle has to be on [0, 360)!"};
+        }
+        if (!(Object.values(ANGLE_DIRS).includes(potentialBot.angle))){
+            return {success: false, bot: bot, message: "angle has to be one of [0, 90, 180, 270] !"};
+        }
+        bot.real_bottom_left = potentialBot.real_bottom_left;
+        bot.angle = potentialBot.angle;
+        bot.realAngle = potentialBot.realAngle
+        
+        //Check if it has picked up any coins
+        let potential_crashes = this.get_almost_crashes(bot, 0);
+        let coinsPicked = [];
+        if (COIN_TYPE in potential_crashes){
+            //If crashed with coins then pick them up
+            for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]){
+                //TODO: Change bot state (e.g., give it more points)
+                bot.coins.push([coin_id, coin_index])
+                coinsPicked.push(this.coins[coin_id][coin_index]);
+                this.remove_coin(coin_id, coin_index);
+            }
+        }
+        for (let coin of coinsPicked){
+            //If crashed with coins then pick them up
+            //TODO: Change bot state (e.g., give it more points)
+            this.onPickupCoin(bot, coin);
+            // this.add_random_coin(); //TODO: just for fun
+            // this.add_or_change_obstacle(); //TODO: just for fun
+        }
 
-        if (new_anchor){
-            let [x, y] = bot.real_bottom_left;
-            let [anchor_x, anchor_y] = bot.relative_anchor;
-            let dx =  new_anchor[0] - (x + anchor_x);
-            let dy =  new_anchor[1] - (y + anchor_y);
-            bot.real_bottom_left = [x+dx, y+dy];
-        }
-        if (new_angle){
-            bot.angle = new_angle;
-        }
+        // if (new_anchor){
+        //     let [x, y] = bot.real_bottom_left;
+        //     let [anchor_x, anchor_y] = bot.relative_anchor;
+        //     let dx =  new_anchor[0] - (x + anchor_x);
+        //     let dy =  new_anchor[1] - (y + anchor_y);
+        //     bot.real_bottom_left = [x+dx, y+dy];
+        // }
+        // if (new_angle){
+        //     bot.angle = new_angle;
+        // }
         let message = `Moved succesfully`;
+        this.onUpdateObject(bot);
         return {success: true, bot: bot, message: message};
     }
     /**
@@ -512,6 +603,14 @@ class VirtualGrid{
             default:
                 console.log(`Invalid randomMove = ${randomMove}`);
         }
+    }
+    get_next_move_randomly(bot_id){
+        let possible_moves = [
+            ['move', 1],  //move straight
+            ['turn', 90], //turn left
+            ['turn', -90] //turn right
+        ]
+        return this.random_from(possible_moves);
     }
     get_object_center(obj){
         //If bot, calculate position in terms of the anchor
@@ -728,6 +827,72 @@ class VirtualGrid{
 
         return response_move;
     }
+    get_next_move_closer_or_farther(bot_id, is_closer){
+        let bot_index = 0;
+        if (is_closer){
+            console.log("------------------------[next move] CLOSER-------------------------------------")
+        } else{
+            console.log("------------------------[next move] FARTHER-------------------------------------")
+        }
+        let bot = this.bots[bot_id][bot_index];
+        //TODO: Get this bots from bot.targets array
+        let other_bots = Object.keys(this.bots).filter(other_bot_id => other_bot_id!== bot_id);
+        let extreme_distance = is_closer ? Number.MAX_SAFE_INTEGER: -Number.MAX_SAFE_INTEGER;
+        // let extreme_distance_move = null;
+        //Gonna go through all turns (and moving 1 on that direction)
+        let extreme_directions = [];
+        for (let direction in ANGLE_DIRS) {
+            let turn_angle = ANGLE_DIRS[direction];
+            console.log(`Trying angle ${turn_angle} for bot ${bot_id}`);
+            let future_bot = this.future_position_after_turn(bot, turn_angle)
+            console.log(`Future bot after turning ${turn_angle} is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping")
+                continue;
+            }
+            future_bot = this.future_position_after_move(future_bot, 1);
+            console.log(`Future bot after turning ${turn_angle} and moving 1 is`);
+            console.log(future_bot)
+            if (!future_bot.valid_position){
+                console.log("skipping again")
+                continue;
+            }
+            let distance = this.distance_to_bots(future_bot, other_bots);
+            console.log(`Future distance = ${distance}`);
+
+            if (distance === extreme_distance){
+                extreme_directions.push(direction);
+            } else {
+                if (is_closer === (distance < extreme_distance)){
+                    console.log(`Found new extreme_distance = ${distance} with diection = ${direction}`);
+                    extreme_distance = distance;
+                    // extreme_distance_move = direction;
+                    extreme_directions = [direction];
+                }
+            }
+        }   
+        // If there was a tie, pick one direction at random
+        let extreme_distance_move = this.random_from(extreme_directions);
+        console.log(`[Move bot closer] Moved bot ${bot_id} ${extreme_distance} deg`);
+
+        // If the angle is the same, is a move. If not, it's a turn
+        if (extreme_distance_move === 0){
+            return ['move', 1];
+        } else {
+            return ['turn', extreme_distance_move];
+        }
+
+        //Now that we know which direction to move, we can move the bot for real
+        let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[extreme_distance_move], bot_index);
+        if (!response_turn.success){
+            //If not successful, just return what happened
+            return response_turn;
+        }
+        let response_move = this.move_bot(bot_id, 1, bot_index);
+
+        return response_move;
+    }
     /**
      * 
      * @param {*} num_turns 
@@ -802,9 +967,123 @@ class VirtualGrid{
                 continue;
             }
             success = true;
-            history.push({...response_move, bot: {...response_move.bot}, board: this.print_board()}); //TODO: Do deepCopy
+            history.push({
+                ...response_move, 
+                bot: {...response_move.bot},
+                move: turns[0], //TODO: Assuming there is only one move 
+                board: this.print_board()
+            }); //TODO: Do deepCopy
         }
         return history;
+    }
+    /**
+     * 
+     * @param {*} bot_id id of a bot that is (partially) outside. Assumes the bot is
+     * aligned to the axis
+     */
+    get_next_move_to_be_inside_board(bot_id){
+        let bot_index = 0;
+        let bot = this.bots[bot_id][bot_index];
+
+        //If it's looking inside, move 1. If looking outside, give turn of 180
+        let [x, y] = bot.real_bottom_left;
+        let w = bot.width;
+        let h = bot.height;
+        let corners = {
+            DOWN_LEFT: [x, y],
+            DOWN_RIGHT: [x+w-1, y],
+            UP_LEFT: [x, y+h-1],
+            UP_RIGHT: [x+w-1, y+h-1]
+        }
+        let inside = {}
+        for (let key in corners){
+            //Width and height of 1 so that it only ta
+            inside[key] = this.isInsideBoard(corners[key], 1, 1);
+        }
+        //Whether the side is fully inside
+        //has the same keys as ANGLE_DIRS
+        let sides = {
+            DOWN: inside.DOWN_LEFT && inside.DOWN_RIGHT,
+            RIGHT: inside.DOWN_RIGHT && inside.UP_RIGHT,
+            UP: inside.UP_LEFT && inside.UP_RIGHT,
+            LEFT: inside.DOWN_LEFT && inside.UP_LEFT
+        }
+        const move_to_angle = (targetAngle) => {
+            if (bot.angle === targetAngle){
+                return ['move', 1]
+            } else {
+                let diff = targetAngle - bot.angle;
+                return ['turn', diff]
+            }
+        }
+        for (let angle_type in ANGLE_DIRS){
+            //Side is fully inside, so move/turn towards that
+            if (sides[angle_type]){
+                return move_to_angle(ANGLE_DIRS[angle_type]);
+            }
+        }
+        // No side is fully in, turn towards the vertex that is inside
+        if (inside.DOWN_LEFT){
+            return move_to_angle(ANGLE_DIRS.DOWN)
+        } else if (inside.DOWN_RIGHT){
+            return move_to_angle(ANGLE_DIRS.DOWN)
+        } else if (inside.UP_LEFT){
+            return move_to_angle(ANGLE_DIRS.UP)
+        } else if (inside.UP_RIGHT){
+            return move_to_angle(ANGLE_DIRS.UP)
+        }
+        // No vertex is inside
+        // TODO: Figure out which side is it's on the board's left, up, down or right side
+        return null;
+    }
+    /**
+     * Chooses a next move according to the bot's policies. If the bot is outside the board, it will 
+     * choose a move to prevent that 
+     * 
+     * @param {*} bot_id 
+     * @param {*} bot_index 
+     * @param {*} num_moves 
+     * @returns object of the form ['move', 1] or ['turn', 90]
+     */
+    get_next_move_using_policies(bot_id, num_turns=1){
+        let bot_index = 0;
+        let bot = this.bots[bot_id][bot_index];
+        if (!this.isInsideBoard(bot.real_bottom_left, bot.width, bot.height)){
+            return this.get_next_move_to_be_inside_board(bot_id);
+        }
+        // return null; //TODO: get rid of this, testing
+        if (bot.policies.has(BOT_POLICIES.GET_COINS.value)){
+            //Only do this if there are coins to move to
+            if (Object.keys(this.coins).length !== 0){
+                return this.get_next_move_using_get_coins(bot_id, num_turns);
+            }
+        }
+        
+        if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)){
+            return this.get_next_move_closer_or_farther(bot_id, false);
+        } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER.value)){
+            // Default is to move rand
+            return this.get_next_move_closer_or_farther(bot_id, true);
+        } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)){
+            return this.get_next_move_randomly(bot_id, bot_index);
+        } else {
+            return null;
+        }
+    }
+    /**
+     * 
+     * @param {*} bot_id 
+     * @param {*} move of the form ['move', 1] or ['turn', 180]
+     */
+    apply_next_move_to_bot(bot_id, move){
+        if (move[0] === 'move'){
+            return this.move_bot(bot_id, move[1]);
+        } else if (move[0] === 'turn'){
+            return this.turn_bot(bot_id, move[1]);
+        } else {
+            console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
+            return null;
+        }
     }
     /**
      *
@@ -859,6 +1138,60 @@ class VirtualGrid{
         chosen_turns = [chosen_turns[0]] 
         return this.move_bot_multiple_turns(bot_id, bot_index, chosen_turns);
     }
+    get_next_move_using_get_coins(bot_id, num_moves=1){
+        let bot_index = 0;
+        let bot = this.bots[bot_id][bot_index];
+        //Only relevant if we want to know whether coins are reachable
+        let min_distance = Number.MAX_SAFE_INTEGER;
+        let directions = [];
+        let list_of_turns = this.get_multiple_turns(num_moves);
+        for (let turns of list_of_turns){
+            console.log(`Attempting: `);
+            console.log(turns);
+            let future_bot = this.future_position_after_turns(bot, turns);
+            if (!future_bot.valid_move){
+                //didnt move at all, dont take into consideration
+                console.log("not a valid move!")
+                continue;
+            }
+            let distance;
+            if (future_bot.future_crashes[COIN_TYPE]){
+                //While moving it potentially will crash with a coin, that's good!
+                distance = 0;
+            } else {
+                distance = this.min_distance_to_coins(future_bot);
+                if (distance === null){
+                    //No coin is within reach
+                    console.log("no coins within reach")
+                    continue;
+                }
+            }
+            if (distance === min_distance){
+                directions.push(turns);
+            } else if (distance < min_distance){
+                min_distance = distance;
+                directions = [turns];
+            }
+        }
+        if (directions.length === 0){
+            //If no position let to a reachable place
+            console.log("No position remained a reachable place")
+            return null;
+        }
+        //If there was a tie, pick randomly
+        let chosen_turns = this.random_from(directions);
+        let chosen_angle = ANGLE_DIRS[chosen_turns[0]];
+        if (chosen_angle === 0){
+            return ['move', 1];
+        } else {
+            return ['turn', chosen_angle];
+        }
+
+        console.log(`Chosen = ${chosen_turns} with distance ${min_distance}`)
+        //IMPORTANT Only move the first step!
+        chosen_turns = [chosen_turns[0]] 
+        return this.move_bot_multiple_turns(bot_id, bot_index, chosen_turns);
+    }
     /**
      * 
      * @param {} bot_id 
@@ -886,6 +1219,13 @@ class VirtualGrid{
             return {bot: bot}
         }
     }
+    /**
+     * 
+     * @param {*} obstacle_id 
+     * @param {*} update if has {new_anchor} then it will only update that, else it will add all the update on the obstacle
+     * @param {*} obstacle_index 
+     * @returns 
+     */
     update_obstacle(obstacle_id, update, obstacle_index=0){
         let {new_anchor} = update;
 
@@ -897,11 +1237,38 @@ class VirtualGrid{
             let [anchor_x, anchor_y] = obstacle.relative_anchor;
             let dx =  new_anchor[0] - (x + anchor_x);
             let dy =  new_anchor[1] - (y + anchor_y);
-            obstacle.real_bottom_left = [x+dx, y+dy];
+            let real_bottom_left = [x+dx, y+dy];
+            if (!this.isInsideBoard(real_bottom_left, obstacle.width, obstacle.height)){
+                return {success: false, obstacle: obstacle, message: "Outside board, no good!"};
+            }
+            obstacle.real_bottom_left = real_bottom_left;
+        } else {
+            let potentialObstacle = Object.assign({}, obstacle, update);
+
+            // let potentialWidth = update.width == null || obstacle.width;
+            // let potentialHeight = update.height == null || obstacle.height;
+            // let potentialBottomLeft = update.real_bottom_left == null || obstacle.real_bottom_left; 
+            if (!this.isInsideBoard(potentialObstacle.real_bottom_left, potentialObstacle.width, potentialObstacle.height)){
+                return {success: false, obstacle: obstacle, message: "Outside board, no good!"};
+            }
+            if (potentialObstacle.width < 0 || potentialObstacle.height < 0){
+                return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
+            }
+            obstacle.width = potentialObstacle.width;
+            obstacle.height = potentialObstacle.height;
+            obstacle.real_bottom_left = potentialObstacle.real_bottom_left;
         }
         let message = `Moved succesfully`;
+        this.onUpdateObject(obstacle);
         return {success: true, obstacle: obstacle, message: message};
     }
+    /**
+     * 
+     * @param {*} obstacle_id 
+     * @param {*} update if has {new_anchor} then it will only update that, else it will add all the update on the coin
+     * @param {*} obstacle_index 
+     * @returns 
+     */
     update_coin(coin_id, update, coin_index=0){
         let {new_anchor} = update;
 
@@ -913,9 +1280,29 @@ class VirtualGrid{
             let [anchor_x, anchor_y] = coin.relative_anchor;
             let dx =  new_anchor[0] - (x + anchor_x);
             let dy =  new_anchor[1] - (y + anchor_y);
-            coin.real_bottom_left = [x+dx, y+dy];
+            let real_bottom_left = [x+dx, y+dy];
+            if (!this.isInsideBoard(real_bottom_left, coin.width, coin.height)){
+                return {success: false, coin: coin, message: "Outside board, no good!"};
+            }
+            coin.real_bottom_left = real_bottom_left;
+        } else {
+            let potentialCoin = Object.assign({}, coin, update);
+
+            // let potentialWidth = update.width == null || coin.width;
+            // let potentialHeight = update.height == null || coin.height;
+            // let potentialBottomLeft = update.real_bottom_left == null || coin.real_bottom_left; 
+            if (!this.isInsideBoard(potentialCoin.real_bottom_left, potentialCoin.width, potentialCoin.height)){
+                return {success: false, coin: coin, message: "Outside board, no good!"};
+            }
+            if (potentialCoin.width < 0 || potentialCoin.height < 0){
+                return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
+            }
+            coin.width = potentialCoin.width;
+            coin.height = potentialCoin.height;
+            coin.real_bottom_left = potentialCoin.real_bottom_left;
         }
         let message = `Moved succesfully`;
+        this.onUpdateObject(coin);
         return {success: true, coin: coin, message: message};
     }
     update_only_reachable(bot_id, only_reachable, bot_index = 0){
@@ -1010,6 +1397,12 @@ class VirtualGrid{
         let future_crashes = this.get_almost_crashes(future_bot, 0)
         return {...future_bot, valid_position, future_crashes: future_crashes};
     }
+    /**
+     * 
+     * @param {*} prev_bot 
+     * @param {*} turn_angle 
+     * @returns Future position of the bot after turning `turn_angle`
+     */
     future_position_after_turn(prev_bot, turn_angle){
         //cast the angle to 0, 360
         turn_angle = turn_angle % 360;
@@ -1058,7 +1451,7 @@ class VirtualGrid{
      * Returns bot and success
      * 
      * @param {*} bot_id 
-     * @param {*} angle in counterclowise
+     * @param {*} angle in counterclowise, how many angles to turn
      * @param {*} bot_index 
      */
     turn_bot(bot_id, angle, bot_index=0){
@@ -1093,10 +1486,12 @@ class VirtualGrid{
             let bot = result.object;
             delete result.object;
             result.bot = bot;
+            this.onAddBot(bot);
             return result;
         }
     }
     remove_bot(bot_id, bot_index=0){
+        this.onRemoveBot(this.bots[bot_id][bot_index]);
         delete this.bots[bot_id][bot_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
@@ -1113,18 +1508,28 @@ class VirtualGrid{
             delete result.object;
             result.obstacle = obstacle;
             this.update_all_coin_graphs()
+            this.onAddObstacle(obstacle);
             return result;
         }
     }
     update_all_coin_graphs(){
         //When obstacles change
+        // Just get one bot's dimensions, assumes all bots are the same size
+        //TODO: What to do if there are no bots?
+        let bot_index = 0;
+        let random_bot = Object.values(this.bots)[0][bot_index];
+        let bot_dimensions = {
+            width: random_bot.width,
+            height: random_bot.height
+        }
         for (let coin_id in this.coins){
             let coin_index = 0;
             let coin = this.coins[coin_id][coin_index];
-            this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+            this.coin_graphs[coin_id] = new GridGraph(this, coin, bot_dimensions);
         }
     }
     remove_obstacle(obstacle_id, obstacle_index=0){
+        this.onRemoveObstacle(this.obstacles[obstacle_id][obstacle_index]);
         delete this.obstacles[obstacle_id][obstacle_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
         this.update_all_coin_graphs()
@@ -1141,10 +1546,12 @@ class VirtualGrid{
             delete result.object;
             result.coin = coin;
             this.coin_graphs[coin.id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+            this.onAddCoin(coin);
             return result;
         }
     }
     remove_coin(coin_id, coin_index=0){
+        this.onRemoveCoin(this.coins[coin_id][coin_index]);
         delete this.coins[coin_id][coin_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
@@ -1286,7 +1693,8 @@ class VirtualGrid{
      * 
      * @param {*} bot {width:, height:} 
      * @param {*} obj {real_bottom_left, width: , height:}
-     * @returns [x1, y1, x2, y2] which means that any bot in that range will crash with the object
+     * @returns [x1, y1, x2, y2] which means that any bot that has its real_bottom_left in that range will crash with the object AND
+     * stay within bounds of the board
      */
     get_crashing_bounds(bot, obj){
         let [obj_x, obj_y] = obj.real_bottom_left;
