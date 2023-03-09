@@ -116,6 +116,7 @@ async function onReady() {
 deactivateCameraButton.addEventListener("click", (evt) => {
   cameraController.deactivateCamera();
 });
+let removedObjects = [];
 
 activateCameraButton.addEventListener("click", async (evt) => {
   let stream = await cameraController.activateCamera();
@@ -126,7 +127,12 @@ activateCameraButton.addEventListener("click", async (evt) => {
       onAddBot,
       onAddObstacle: onAddObject,
       onAddCoin: onAddObject,
-      onUpdateObject: onUpdateObject
+      onUpdateObject: onUpdateObject,
+      onPickupCoin: (bot, coin)=>{
+        removedObjects.push(coin.id);
+        delete currentVectors[coin.id]
+        console.log(`Bot ${bot.id} picked coin with id ${coin.id}`)
+      }
   });
   drawBoard();
 });
@@ -348,7 +354,7 @@ function updateVirtualBot(id){
     //If its not there, create one
     if (!grid.bots[id]){
       //virtual bot doesnt exist, so create one
-      grid.add_bot({
+      let {success, message} = grid.add_bot({
         id: id,
         real_bottom_left: [gridX-anchor_x, gridY-anchor_y],
         angle: angle,
@@ -357,6 +363,9 @@ function updateVirtualBot(id){
         width: width, //wont change 
         height: height, //wont change
       })
+      if (!success){
+        console.log(`Couldn't add bot ${id}: ${message}`)
+      }
     } else{
       //If it already exists, just update accordingly
       if (positionState === STATES.RECORDING){
@@ -366,7 +375,7 @@ function updateVirtualBot(id){
           real_bottom_left: [gridX-anchor_x, gridY-anchor_y]
         });
         if (!success){
-          console.log(message)
+          console.log(`Couldn't update bot ${id}: ${message}`)
         }
       }
     }
@@ -787,6 +796,39 @@ async function applyMoveToRealBot(aruco_bot_id, move){
     return;
   }
 }
+const MAX_ATTEMPTS_TO_ALIGN_BOT = 1; //ideally at most 1 should be enough
+const BOT_ANGLE_ALIGNMENT_THRESHOLD = 10; //Withing 10 degrees of the axis is still considered align
+/**
+ * Adjusts angle of a (real) doodlebot, making it align to one of the axis
+ * 
+ * @param {*} aruco_bot_id 
+ * @returns 
+ */
+async function adjustAngleRealBot(aruco_bot_id){
+  console.log("Adjusting angle!")
+  let realBot = getRealBotFromArucoId(aruco_bot_id);
+  if (!realBot){return;}
+
+  for (let i = 1; i <= MAX_ATTEMPTS_TO_ALIGN_BOT; i++){
+    console.log(`Attempt ${i}/${MAX_ATTEMPTS_TO_ALIGN_BOT}`)
+    let bot_index = 0;
+    let bot = grid.bots[aruco_bot_id][bot_index];
+    let {angle, realAngle} = bot;
+    if (angle == 0 && realAngle > 270){
+      angle = 360;
+    }
+    let dAngle = Math.round(angle - realAngle);
+    if (Math.abs(dAngle) < BOT_ANGLE_ALIGNMENT_THRESHOLD){
+      //Already aligned, no need to keep going!
+      console.log("Done aligning!")
+      return;
+    }
+    //This method will turn right or left accordingly
+    console.log(`Adjusting an angle of ${dAngle}`)
+    await realBot.apply_next_move_to_bot(['turn', dAngle])
+  }
+
+}
 /**
  * Goes through all the bots and move them one step according to their policy
  * 
@@ -795,6 +837,10 @@ async function applyMoveToRealBot(aruco_bot_id, move){
 async function move_bots(){
   for (let bot_id in grid.bots){
     // Don't calculate next steps until bot has finished moving
+    //If the real bot is not connected then don't do anything
+    if (!getRealBotFromArucoId(bot_id)){
+      continue;
+    }
     if (isRealBotMoving(bot_id)){
       // console.log(`Bot ${bot_id} already moving (real life), so dont move`)
       continue;
@@ -802,15 +848,17 @@ async function move_bots(){
     // console.log(`Bot ${bot_id} is not moving (real life), so find next move`)
     let bot_index = 0;
     let bot = grid.bots[bot_id][bot_index];
-    if (bot.isMoving){
+    if (bot.isMoving){        
         //TODO: This info should be stored in the grid object
         let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
         let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
         console.log(`Move to make = `);
         console.log(next_move)
         if (next_move){
+          await adjustAngleRealBot(bot_id);
           await applyMoveToRealBot(bot_id, next_move);
-          grid.apply_next_move_to_bot(bot_id, next_move);
+          // The video stream will update the virtual grid
+          // grid.apply_next_move_to_bot(bot_id, next_move);
           console.log("---------------------------------------")
           console.log("Making next move!")
           await move_bots(); //keep moving
@@ -864,8 +912,14 @@ async function processVideo() {
       if (positionState === STATES.RECORDING){
         //Just add the marker ids to the set
         for (let marker_id in markersInfo){
-          foundArucoIds.add(marker_id);
-          currentVectors[marker_id] = markersInfo[marker_id];
+          marker_id = Number(marker_id);
+          if (removedObjects.includes(marker_id)){
+            //might not be necessary, just in case
+            delete currentVectors[marker_id]
+          } else {
+            foundArucoIds.add(marker_id);
+            currentVectors[marker_id] = markersInfo[marker_id];
+          }
         }
       } else if (positionState === STATES.SETUP){
 
