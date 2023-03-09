@@ -13,6 +13,12 @@ let homographicMatrix; // to transform camera stream into a "flat" 2D frame
 let canvasProjectionOut; //Opencv matrix to store projection of 2d - needs to be global variable because otherwise opencv complains after a few seconds
 let scalarProjection; //unclear if needed
 
+//To be used in the drawObjectOnCanvas method
+let bottom_left;
+let bottom_right;
+let top_left; 
+let top_right;
+
 let BORDER_IDS = {
   BOTTOM_LEFT: 31,  //bottom left
   BOTTOM_RIGHT: 32, // bottom righ
@@ -52,11 +58,11 @@ let foundArucoIds = new Set(); //ids of objects found in the RECORDING state
 //id -> {type, width: , height: }
 const OBJECT_SIZES = {
   //bots
-  1: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
-  2: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
-  3: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
-  4: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]},
-  // 5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2]}, //TODO: Put back when obstacle's other_corner is set to another id
+  1: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 51},
+  2: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 52},
+  3: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 53},
+  4: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 54},
+  5: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 55}, //TODO: Put back when obstacle's other_corner is set to another id
   // obstacles
   11: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 61},
   12: {type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 62},
@@ -154,7 +160,7 @@ let markerSize = 0.1;
 /**
  *
  * @param {*} rvec 
- * @returns  The 2d angle direction of the rotation vector
+ * @returns  The 2d angle direction of the rotation vector, in the [0, 360) range
  */
 function getRotation2DAngle(rvec) {
   let rot = new cv.Mat();
@@ -239,8 +245,9 @@ function getGridPosition(id){
  * Might be broken, since angles calculated from camera are funky
  */
 function getClosestAngle(realAngle){
-  let possibilities = Object.values(ANGLE_DIRS).sort((a, b) => Math.abs(a-realAngle) - Math.abs(b-realAngle));
-  return possibilities[0]; //the closes to realAngle
+  //Adding the 360 so that if its > 300 then it detects as close to 0
+  let possibilities = [...Object.values(ANGLE_DIRS), 360].sort((a, b) => Math.abs(a-realAngle) - Math.abs(b-realAngle));
+  return possibilities[0] % 360; //the closes to realAngle
 }
 /**
  * 
@@ -285,6 +292,44 @@ function getObjectPositionInfo(id){
   }
 
 }
+function getDirectionFrom(p1, p2){
+  let [x1, y1] = p1;
+  let [x2, y2] = p2;
+  let dx = x2-x1;
+  let dy = y2-y1;
+  let angle = Math.atan2(dy, dx);
+  angle = angle * 180 / Math.PI;
+  if (angle < 0) { angle += 360; } //Make sure angle is [0, 360), not [-180, 180)
+
+  return angle;
+}
+/**
+ * Assumes `aruco_bot_id` is part of `currentVectors`
+ * 
+ * returns {angle: , realAngle:} where angle is one of [0, 90, 180, 270] and realAngle is anything in [0, 360) range
+ */
+function getBotAngle(aruco_bot_id){
+    let {direction_id} = OBJECT_SIZES[aruco_bot_id];
+    let realAngle;
+
+    if (!currentVectors[direction_id]){
+      //If no direction, use the traditional way (somewhat broken sadly)
+      realAngle = getRotation2DAngle(currentVectors[aruco_bot_id].rvec);
+    } else {
+      //Find angle from unit vector bot_id -> direction_id
+      let [bot_x, bot_y] = getReal2dPosition(aruco_bot_id);
+      let [dir_x, dir_y] = getReal2dPosition(direction_id);
+      realAngle = getDirectionFrom([bot_x, bot_y], [dir_x, dir_y]);
+    }
+
+    let gridAngle = getClosestAngle(realAngle);
+    return {
+      angle: gridAngle,
+      realAngle: realAngle
+    }
+
+
+}
 /**
  * Updates position of a given bot in the virtual grid. If the bot is not there then it
  * will create one
@@ -292,28 +337,37 @@ function getObjectPositionInfo(id){
  */
 function updateVirtualBot(id){
     let [gridX, gridY] = getGridPosition(id);
-    let realAngle = getRotation2DAngle(currentVectors[id].rvec);
-    let gridAngle = getClosestAngle(realAngle);
+    let {angle, realAngle} = getBotAngle(id);
+    // console.log(`Found realAngle =${realAngle} but angle=${angle}`)
+    
+    if (!(id in OBJECT_SIZES)){
+      console.log(`Couldnt find size information for id = ${id} `)
+    }
+    let {relative_anchor, width, height} = OBJECT_SIZES[id];
+    let [anchor_x, anchor_y] = relative_anchor;
     //If its not there, create one
     if (!grid.bots[id]){
-      if (!(id in OBJECT_SIZES)){
-        console.log(`Couldnt find size information for id = ${id} `)
-      }
-      let {relative_anchor, width, height} = OBJECT_SIZES[id];
-      let [anchor_x, anchor_y] = relative_anchor;
       //virtual bot doesnt exist, so create one
       grid.add_bot({
         id: id,
         real_bottom_left: [gridX-anchor_x, gridY-anchor_y],
-        relative_anchor: [anchor_x, anchor_y],
-        width: width,
-        height: height,
-        angle: gridAngle
+        angle: angle,
+        realAngle: realAngle,
+        relative_anchor: [anchor_x, anchor_y], //wont change
+        width: width, //wont change 
+        height: height, //wont change
       })
     } else{
-      //If it already exists, just update position and angle. Only update in the first state
+      //If it already exists, just update accordingly
       if (positionState === STATES.RECORDING){
-        grid.update_bot(id, {new_angle: gridAngle, new_anchor: [gridX, gridY]})
+        let {success, message} = grid.update_bot(id, {
+          angle: angle,
+          realAngle: realAngle,
+          real_bottom_left: [gridX-anchor_x, gridY-anchor_y]
+        });
+        if (!success){
+          console.log(message)
+        }
       }
     }
 }
@@ -426,15 +480,15 @@ function drawObjectOnCanvas(obj){
     //Paint cell: 
     let [min_x, min_y] = obj.real_bottom_left;
     let [max_x, max_y] = [min_x + obj.width, min_y + obj.height];
-    let bottom_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(min_y))
-    let upper_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(max_y))
+    bottom_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(min_y))
+    upper_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(max_y))
     let color = getColorFromType(obj.type)
     cv.rectangle(canvasProjectionOut, bottom_left, upper_right, color, 3)
 
     if (obj.type === BOT_TYPE){
       //Add the line to show which direction the bot is looking at
-      let bottom_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(min_y))
-      let upper_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(max_y))
+      bottom_right = new cv.Point(grid_i_to_canvas_x(max_x), grid_j_to_canvas_y(min_y))
+      upper_left = new cv.Point(grid_i_to_canvas_x(min_x), grid_j_to_canvas_y(max_y))
       let edgeColor = [0, 0, 255, 255];
       switch (obj.angle){
         case ANGLE_DIRS.RIGHT:
@@ -452,7 +506,11 @@ function drawObjectOnCanvas(obj){
         default:
           console.log(`Wrong angle direction of bot ${obj.id} = ${obj.angle}`)
       }
+      //cleanup
+      // bottom_right.delete(); upper_left.delete();
     }
+    //cleanup
+    // bottom_left.delete(); upper_right.delete();
 }
 /**
  * Goes through the objects in the grid, and paint every element
@@ -707,6 +765,11 @@ function updateCoinInfo(coin_id){
   div.appendChild(td_percentage);
   div.appendChild(td_decision);
 }
+function getRealBotFromArucoId(aruco_bot_id){
+  let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
+  let realBot = allDoodlebots[doodlebot_id];
+  return realBot;
+}
 function isRealBotMoving(aruco_bot_id){
   let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
   let realBot = allDoodlebots[doodlebot_id];
@@ -718,14 +781,14 @@ function isRealBotMoving(aruco_bot_id){
 }
 async function applyMoveToRealBot(aruco_bot_id, move){
   let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
-  console.log(`Id found = ${doodlebot_id}`)
   let realBot = allDoodlebots[doodlebot_id];
   if (realBot){
-    return await realBot.apply_next_move_to_bot(move)
+    await realBot.apply_next_move_to_bot(move);
+    return;
   }
 }
 /**
- * Goes through all the bots and move them according to their policy (also assuming)
+ * Goes through all the bots and move them one step according to their policy
  * 
  * TODO: This only moves the virtual bots. Need to move the real bot!
  */
@@ -733,24 +796,49 @@ async function move_bots(){
   for (let bot_id in grid.bots){
     // Don't calculate next steps until bot has finished moving
     if (isRealBotMoving(bot_id)){
-      console.log(`Bot ${bot_id} already moving (real life), so dont move`)
+      // console.log(`Bot ${bot_id} already moving (real life), so dont move`)
       continue;
     }
-    console.log(`Bot ${bot_id} is not moving (real life), so find next move`)
+    // console.log(`Bot ${bot_id} is not moving (real life), so find next move`)
     let bot_index = 0;
     let bot = grid.bots[bot_id][bot_index];
     if (bot.isMoving){
         //TODO: This info should be stored in the grid object
         let num_turns = Number(document.getElementById(`coins-policy-turns-${bot_id}`).value);
         let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
-        console.log(`Move to make = ${next_move}`)
+        console.log(`Move to make = `);
+        console.log(next_move)
         if (next_move){
+          await applyMoveToRealBot(bot_id, next_move);
           grid.apply_next_move_to_bot(bot_id, next_move);
-          await applyMoveToRealBot(bot_id, next_move)
-        } 
+          console.log("---------------------------------------")
+          console.log("Making next move!")
+          await move_bots(); //keep moving
+        } else {
+          //If not then stop moving
+          bot.isMoving = false;
+
+          let realBot = getRealBotFromArucoId(bot_id);
+          if (realBot){
+            realBot.isMoving = false;
+          }
+        }
     }
   }
 }
+testNextMoveButton.addEventListener("click", async (e)=>{
+  console.log("---------------------------------------")
+  console.log("Making next move!")
+  let wasMoving;
+  for (let bot_id in grid.bots){
+    let bot_index = 0;
+    wasMoving = grid.bots[bot_id][bot_index].isMoving;
+    if (!wasMoving){
+      grid.change_moving_status(bot_id);
+    }
+  }
+  await move_bots();
+})
 /**
  * Most important method. This will be grabbing a frame from the video stream according to FPS
  * It's responsible for detecting aruco codes, show the 2d projection and keeping track of the virtual grid
@@ -823,7 +911,7 @@ async function processVideo() {
       // }
       if (grid){
         updateVirtualObjects();
-        await move_bots();
+        // await move_bots();
         drawBoard();
     }
     }
@@ -1085,7 +1173,7 @@ moveRobot2.addEventListener("click", async() =>{
 multipleRobotsTestButton.addEventListener("click", async () => {
   for (let key in allDoodlebots) {
     let bot = allDoodlebots[key];
-    await bot.drive({ NUM: 100 });
+    // await bot.drive({ NUM: 100 });
     await bot.turn({ NUM: 90 })
   }
 })

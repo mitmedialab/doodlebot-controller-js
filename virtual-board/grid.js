@@ -452,12 +452,12 @@ class VirtualGrid{
      * @param {*} is_fake If true, this would only return the expected response but only after making a deep copy of it, so no actual changes
      */
     move_bot(bot_id, distance, bot_index=0, is_fake = false){
-        console.log("moving bot!")
+        // console.log("moving bot!")
         let bot = this.bots[bot_id][bot_index];
-        console.log(bot)
+        // console.log(bot)
         let future_bot = this.future_position_after_move(bot, distance);
-        console.log("Future bot position");
-        console.log(future_bot);
+        // console.log("Future bot position");
+        // console.log(future_bot);
         let new_bottom_left = future_bot.real_bottom_left;
         //TODO: Why this if almost_crashes will be defined later
         let potential_crashes = this.get_almost_crashes({...future_bot,type: BOT_TYPE}, 0);
@@ -465,7 +465,6 @@ class VirtualGrid{
         let valid_position_response = this.is_valid_bot_position(future_bot);
         if (!valid_position_response.valid){
             console.log("it was not valid :(");
-
             return {bot: bot, ...valid_position_response, success: valid_position_response.valid};
         }
 
@@ -481,7 +480,6 @@ class VirtualGrid{
         }
         let almost_crashes = this.get_almost_crashes({...future_bot, type: BOT_TYPE})
         bot.almost_crashes = almost_crashes;
-        console.log(`Updating position of bot ${bot_id} from ${bot.real_bottom_left} to ${new_bottom_left}`)
         bot.real_bottom_left = new_bottom_left;
         //Below might not be necessary because Javascript send objects by reference, not by copy
         this.bots[bot_id][bot_index] = bot;
@@ -496,33 +494,44 @@ class VirtualGrid{
             // this.add_random_coin(); //TODO: just for fun
             // this.add_or_change_obstacle(); //TODO: just for fun
         }
-        console.log("It was succesful!")
-        console.log(bot);
         return {success: true, bot: bot, message: message};
     }
     /**
      * 
      * @param {*} bot_id 
-     * @param {*} new_anchor ABSOLUTE position (i.e., with respect to the board)
-     * @param {*} needToAdd whether to add new policy or remove it
-     * @param {*} bot_index 
+     * @param {*} update currently accepts angle, realAngle, and real_bottom_left
      */
     update_bot(bot_id, update, bot_index=0){
         let {new_anchor, new_angle} = update;
 
         //TODO: This function does not take into considerations crashes
         let bot = this.bots[bot_id][bot_index];
-
-        if (new_anchor){
-            let [x, y] = bot.real_bottom_left;
-            let [anchor_x, anchor_y] = bot.relative_anchor;
-            let dx =  new_anchor[0] - (x + anchor_x);
-            let dy =  new_anchor[1] - (y + anchor_y);
-            bot.real_bottom_left = [x+dx, y+dy];
+        // let potentialBottomLeft = update.real_bottom_left == null|| bot.real_bottom_left;
+        // let potentialAngle = update.angle == null || bot.angle;
+        // let potentialRealAngle = update.realAngle == null || bot.realAngle;
+        let potentialBot = Object.assign({}, bot, update);
+        if (!this.isInsideBoard(potentialBot.real_bottom_left, potentialBot.width, potentialBot.height)){
+            return {success: false, bot: bot, message: "Outside board, no good!"};
         }
-        if (new_angle){
-            bot.angle = new_angle;
+        if (potentialBot.realAngle < 0 || potentialBot.realAngle >= 360){
+            return {success: false, bot: bot, message: "real angle has to be on [0, 360)!"};
         }
+        if (!(Object.values(ANGLE_DIRS).includes(potentialBot.angle))){
+            return {success: false, bot: bot, message: "angle has to be one of [0, 90, 180, 270] !"};
+        }
+        bot.real_bottom_left = potentialBot.real_bottom_left;
+        bot.angle = potentialBot.angle;
+        bot.realAngle = potentialBot.realAngle
+        // if (new_anchor){
+        //     let [x, y] = bot.real_bottom_left;
+        //     let [anchor_x, anchor_y] = bot.relative_anchor;
+        //     let dx =  new_anchor[0] - (x + anchor_x);
+        //     let dy =  new_anchor[1] - (y + anchor_y);
+        //     bot.real_bottom_left = [x+dx, y+dy];
+        // }
+        // if (new_angle){
+        //     bot.angle = new_angle;
+        // }
         let message = `Moved succesfully`;
         this.onUpdateObject(bot);
         return {success: true, bot: bot, message: message};
@@ -1072,11 +1081,7 @@ class VirtualGrid{
         }
         if (directions.length === 0){
             //If no position let to a reachable place
-            return {
-                bot: bot,
-                success: false,
-                message: "No moves leaves coin within reach"
-            }
+            return null;
         }
         //If there was a tie, pick randomly
         let chosen_turns = this.random_from(directions);
@@ -1143,18 +1148,20 @@ class VirtualGrid{
             }
             obstacle.real_bottom_left = real_bottom_left;
         } else {
-            let potentialWidth = update.width || obstacle.width;
-            let potentialHeight = update.height || obstacle.height;
-            let potentialBottomLeft = update.real_bottom_left || obstacle.real_bottom_left; 
-            if (!this.isInsideBoard(potentialBottomLeft, potentialWidth, potentialHeight)){
+            let potentialObstacle = Object.assign({}, obstacle, update);
+
+            // let potentialWidth = update.width == null || obstacle.width;
+            // let potentialHeight = update.height == null || obstacle.height;
+            // let potentialBottomLeft = update.real_bottom_left == null || obstacle.real_bottom_left; 
+            if (!this.isInsideBoard(potentialObstacle.real_bottom_left, potentialObstacle.width, potentialObstacle.height)){
                 return {success: false, obstacle: obstacle, message: "Outside board, no good!"};
             }
-            if (potentialWidth < 0 || potentialHeight < 0){
+            if (potentialObstacle.width < 0 || potentialObstacle.height < 0){
                 return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
             }
-            obstacle.width = potentialWidth;
-            obstacle.height = potentialHeight;
-            obstacle.real_bottom_left = potentialBottomLeft;
+            obstacle.width = potentialObstacle.width;
+            obstacle.height = potentialObstacle.height;
+            obstacle.real_bottom_left = potentialObstacle.real_bottom_left;
         }
         let message = `Moved succesfully`;
         this.onUpdateObject(obstacle);
@@ -1184,18 +1191,20 @@ class VirtualGrid{
             }
             coin.real_bottom_left = real_bottom_left;
         } else {
-            let potentialWidth = update.width || coin.width;
-            let potentialHeight = update.height || coin.height;
-            let potentialBottomLeft = update.real_bottom_left || coin.real_bottom_left; 
-            if (!this.isInsideBoard(potentialBottomLeft, potentialWidth, potentialHeight)){
+            let potentialCoin = Object.assign({}, coin, update);
+
+            // let potentialWidth = update.width == null || coin.width;
+            // let potentialHeight = update.height == null || coin.height;
+            // let potentialBottomLeft = update.real_bottom_left == null || coin.real_bottom_left; 
+            if (!this.isInsideBoard(potentialCoin.real_bottom_left, potentialCoin.width, potentialCoin.height)){
                 return {success: false, coin: coin, message: "Outside board, no good!"};
             }
-            if (potentialWidth < 0 || potentialHeight < 0){
+            if (potentialCoin.width < 0 || potentialCoin.height < 0){
                 return {success: false, obstacle: obstacle, message: "Negative width or height, no good!"};
             }
-            coin.width = potentialWidth;
-            coin.height = potentialHeight;
-            coin.real_bottom_left = potentialBottomLeft;
+            coin.width = potentialCoin.width;
+            coin.height = potentialCoin.height;
+            coin.real_bottom_left = potentialCoin.real_bottom_left;
         }
         let message = `Moved succesfully`;
         this.onUpdateObject(coin);

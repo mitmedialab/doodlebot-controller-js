@@ -40,13 +40,13 @@ class PromiseQueue {
         if (this.running >= this.concurrent) {
             return;
         }
-        console.log(`Current length of queue = ${this.queue.length}`);
+        // console.log(`Current length of queue = ${this.queue.length}`);
         const promise = this.queue.shift();
 
         if (!promise) {
             return;
         }
-        console.log('Doing next!')
+        // console.log('Doing next!')
 
         this.running++;
 
@@ -63,7 +63,7 @@ class PromiseQueue {
     }
 
     add(fn) {
-        console.log("Adding function")
+        // console.log("Adding function")
         return new Promise((resolve, reject) => {
             this.queue.push({
                 fn,

@@ -133,11 +133,17 @@ class Doodlebot {
     console.log(`Tyring to apply move ${move} to (real) bot`)
     let GRID_TO_PHYSICAL_COORDS = 227 / 8;
     if (move[0] === 'move'){
-        console.log("moving!")
-        return await this.drive({NUM: move[1] * GRID_TO_PHYSICAL_COORDS});
+        await this.drive({NUM: move[1] * GRID_TO_PHYSICAL_COORDS});
+        return;
     } else if (move[0] === 'turn'){
-        console.log("Turning!")
-        return await this.turn({NUM: move[1], DIR:"left"});
+        let angle = move[1] % 360;
+        if (angle < 0){angle+=360;}
+        if (angle <= 180){
+          await this.turn({NUM: angle, DIR:"left"});
+        } else {
+          await this.turn({NUM: 360-angle, DIR:"right"});
+        }
+        return;
     } else {
         console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
         return null;
@@ -149,10 +155,10 @@ class Doodlebot {
   //   await this.connect();
   // }
   async drive(args){
-    // if (this.isMoving){
-    //   console.log("[Driving] It cannot be moving while already moving");
-    //   return;
-    // }
+    if (this.isMoving){
+      console.log("[Driving] It cannot be moving while already moving");
+      return;
+    }
     this.isMoving = true;
     let {NUM, DIR} = args;
     //For left and right motor
@@ -174,10 +180,10 @@ class Doodlebot {
     })
   }
   async turn(args){
-    // if (this.isMoving){
-    //   console.log("[turning] It cannot be moving while already moving");
-    //   return;
-    // }
+    if (this.isMoving){
+      console.log("[turning] It cannot be moving while already moving");
+      return;
+    }
     this.isMoving = true;
     let {NUM, DIR} = args;
     let nDegrees = NUM;
@@ -223,7 +229,6 @@ class Doodlebot {
           await this.commands_queue.add(async ()=>characteristic.writeValueWithoutResponse(value));
           // await characteristic.writeValueWithoutResponse(value);
           // let res = characteristic.writeValueWithResponse(value);
-          console.log("Command sent!")
         } else this.log("Robot not available");
         resolve();
       }, delayInMs);
