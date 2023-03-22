@@ -62,6 +62,7 @@ let defaultOptions = {
     onRemoveObstacle: (removedObstacle) => {},
     onRemoveCoin: (removedCoin) => {},
     onUpdateObject: (updatedObject) => {},
+    onApplyMoveToBot: (bot_id, move) => {}
 }
 let defaultBot = {
 
@@ -82,7 +83,8 @@ class VirtualGrid{
             onRemoveBot,
             onRemoveObstacle,
             onRemoveCoin,
-            onUpdateObject
+            onUpdateObject,
+            onApplyMoveToBot
         } = options;
 
         this.rows = m;
@@ -95,6 +97,7 @@ class VirtualGrid{
         this.onRemoveObstacle = onRemoveObstacle;
         this.onRemoveCoin = onRemoveCoin;
         this.onUpdateObject = onUpdateObject;
+        this.onApplyMoveToBot = onApplyMoveToBot;
         for (let bot of bots){
             this.add_bot(bot);
         }
@@ -953,11 +956,13 @@ class VirtualGrid{
         let success = false;
         let history = [];
         for (let direction of turns){
-            let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[direction], bot_index);
+            // let response_turn = this.turn_bot(bot_id, ANGLE_DIRS[direction], bot_index);
+            let response_turn = this.apply_next_move_to_bot(bot_id, ['turn', ANGLE_DIRS[direction]])
             if (!response_turn.success){
                 continue;
             }
-            let response_move = this.move_bot(bot_id, 1, bot_index);
+            // let response_move = this.move_bot(bot_id, 1, bot_index);
+            let response_move = this.apply_next_move_to_bot(bot_id, ['move', 1]);
             if (!response_move.success){
                 continue;
             }
@@ -1070,15 +1075,24 @@ class VirtualGrid{
      * @param {*} bot_id 
      * @param {*} move of the form ['move', 1] or ['turn', 180]
      */
-    apply_next_move_to_bot(bot_id, move){
+    apply_next_move_to_bot(bot_id, move, options={}){
+        this.onApplyMoveToBot(bot_id, move, options);
+        let success = false;
         if (move[0] === 'move'){
-            return this.move_bot(bot_id, move[1]);
+            let res =  this.move_bot(bot_id, move[1]);
+            success = res.success;
+            return res;
         } else if (move[0] === 'turn'){
-            return this.turn_bot(bot_id, move[1]);
+            let res =  this.turn_bot(bot_id, move[1]);
+            success = res.success;
+            return res;
         } else {
             console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
             return null;
         }
+        // if (success){
+        //     this.onApplyMoveToBot(bot_id, move, options)
+        // }
     }
     /**
      *

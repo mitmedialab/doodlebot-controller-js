@@ -1,10 +1,19 @@
 let grid;
 let boardDrawing;
+const SERVER_LINK = "http://localhost:5001";
+let socket; 
+
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
     let cols = 20;
     grid = new VirtualGrid(rows, cols, {
         // onPickupCoin: (bot, coin) => {grid.add_random_coin()}
+        // onAddBot: (bot) => {socket.emit("move_bot", bot)}
+        onApplyMoveToBot: (bot_id, move, options) => {
+            if (!options.noSocket){
+                socket.emit("move_bot", {bot_id, move})
+            }
+        }
     });
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
@@ -14,8 +23,48 @@ document.addEventListener('DOMContentLoaded', () => {
     //     setTimeout(a, duration);
     // }, duration);
     drawBoard();
+    setupSocket();
+    socket.emit("join_room", "Weird room???");
 })
-
+window.addEventListener("beforeunload", () => {
+    prompt("aaa")
+    closeSocketListeners();
+}, false)
+function setupSocket() {
+    socket = io(SERVER_LINK, {autoConnect: false});
+    socket.connect();
+    socket.on('message_received', (message) => {
+        console.log('received message');
+        console.log(message);
+    })
+    socket.on("joined_room", async (roomId) => {
+        console.log(`Detecting joining room: ${roomId}`);
+    })
+    socket.on("added_bot", (bot) => {
+        grid.add_bot(bot);
+        drawBoard();    
+        create_bot_options(bot)
+    })
+    //reminder: domingo 8am -> 8pm "se te ha hecho el calendario correcto, no se "
+    // si es que se va el 
+    socket.on("added_obstacle", (obstacle) => {
+        grid.add_obstacle(obstacle);
+        drawBoard();    
+    })
+    socket.on("added_coin", (coin) => {
+        grid.add_coin(coin);
+        drawBoard();    
+    })
+    socket.on("moved_bot", ({bot_id, move}) => {
+        grid.apply_next_move_to_bot(bot_id, move, {noSocket: true});
+        drawBoard();
+    })
+}
+function closeSocketListeners(){
+    socket.off('message_received');
+    socket.off('joined_room');
+    socket.off("added_bot");
+}
 function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
 }
@@ -325,14 +374,17 @@ addRandomBotButton.addEventListener("click", evt=>{
     let {bot} = grid.add_random_bot();
     drawBoard();
     create_bot_options(bot)
+    socket.emit("add_bot", bot);
 })
 addRandomObstacleButton.addEventListener('click', (evt)=>{
-    grid.add_random_obstacle();
+    let {obstacle} = grid.add_random_obstacle();
     drawBoard();
+    socket.emit("add_obstacle", obstacle);
 })
 addRandomCoinButton.addEventListener('click', (evt)=>{
-    grid.add_random_coin();
+    let {coin} = grid.add_random_coin();
     drawBoard();
+    socket.emit("add_coin", coin);
 })
 openEditorBot.addEventListener("click", evt=>{
     botEditorDiv.classList.toggle("editor-hide");
