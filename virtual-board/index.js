@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
     let cols = 20;
     grid = new VirtualGrid(rows, cols, {
-        onPickupCoin: (bot, coin) => {grid.add_random_coin()}
+        // onPickupCoin: (bot, coin) => {grid.add_random_coin()}
     });
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
@@ -534,10 +534,10 @@ testGraphButton.addEventListener("click", (evt)=>{
 })
 
 testLogicButton.addEventListener("click", (evt)=>{
-    let coin = {id: 21, real_bottom_left: [4, 3], width: 1, height: 1, type: 'coin'};
+    let coin = {id: 21, real_bottom_left: [2, 1], width: 1, height: 1, type: 'coin'};
     let bot = {id: 1, real_bottom_left: [0, 0], width: 3, height: 3, relative_anchor: [1, 1], type:"bot", angle: 90}
     console.log(`Do they crash?`)
-    console.log(grid.almost_crash(coin, bot, 0));
+    console.log(grid.almost_crash(bot, coin, 0));
     console.log("done!")
     console.log()
     grid.add_coin(coin);

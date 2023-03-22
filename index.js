@@ -29,15 +29,27 @@ let BORDER_IDS = {
   Mapping between doodlebot BLE ids to aruco ids
   This allows the connection between physical bots and virtual bots
 */
+// let DOODLEBOT_ID_TO_ARUCO_ID = {
+//   // "Xcuis/UrHNMN+oXjCB5Ldg==": 1,
+//   "90pOM2ntPK3x6YVsJD0UBA==": 1,
+//   "rNmwnlbopAuiAnTpSxnPRw==": 2
+// }
 let DOODLEBOT_ID_TO_ARUCO_ID = {
-  "Xcuis/UrHNMN+oXjCB5Ldg==": 1
+  "Doodlebot Samba\r\n": 1,
+  "Doodlebot Banksy": 2,
+  // "Doodlebot Bluefruit52": 2,
 }
 /*
   Mapping between doodlebot BLE ids to aruco ids
   This allows the connection between physical bots and virtual bots
 */
 let ARUCO_ID_TO_DOODLEBOT_ID = {
-  1: "Xcuis/UrHNMN+oXjCB5Ldg=="
+  // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
+  // 1: "90pOM2ntPK3x6YVsJD0UBA==",
+  // 2: "rNmwnlbopAuiAnTpSxnPRw=="
+  1: "Doodlebot Samba\r\n",
+  2: "Doodlebot Banksy",
+  // 2: "Doodlebot Bluefruit52",
 }
 
 IGNORE_IDS = []; // ids for which we wont keep track of the aruco data (rvec, tvec)
@@ -116,7 +128,7 @@ async function onReady() {
 deactivateCameraButton.addEventListener("click", (evt) => {
   cameraController.deactivateCamera();
 });
-let removedObjects = [];
+let removedObjects = new Set();
 
 activateCameraButton.addEventListener("click", async (evt) => {
   let stream = await cameraController.activateCamera();
@@ -129,7 +141,7 @@ activateCameraButton.addEventListener("click", async (evt) => {
       onAddCoin: onAddObject,
       onUpdateObject: onUpdateObject,
       onPickupCoin: (bot, coin)=>{
-        removedObjects.push(coin.id);
+        removedObjects.add(coin.id);
         delete currentVectors[coin.id]
         console.log(`Bot ${bot.id} picked coin with id ${coin.id}`)
       }
@@ -419,6 +431,7 @@ function random_from(arr){
  * @param {*} id aruco marker
  */
 function updateVirtualCoin(id){
+  // console.log(`Trying to update virtual coin ${id}`)
   let {
     width, height, real_bottom_left 
   } = getObjectPositionInfo(id)
@@ -429,7 +442,7 @@ function updateVirtualCoin(id){
 
     // let [gridX, gridY] = getGridPosition(id);
     // let {width, height} = OBJECT_SIZES[id];
-    grid.add_coin({
+    let res = grid.add_coin({
       id: id,
       // real_bottom_left:[gridX, gridY],
       real_bottom_left: real_bottom_left,
@@ -437,8 +450,16 @@ function updateVirtualCoin(id){
       width: width,
       height: height,
     })
+    if (!res.success){
+      console.log(`Couldn't add object with id ${id}. Response:`);
+      console.log(res)
+    }
   } else {
-    grid.update_coin(id, {width, height, real_bottom_left})
+    let res = grid.update_coin(id, {width, height, real_bottom_left})
+    if (!res.success){
+      console.log(`Couldn't update object with id ${id}. Response:`);
+      console.log(res)
+    }
   }
 }
 /**
@@ -725,7 +746,7 @@ function updateMarkerAppear(marker_id, appeared){
   }
   MARKERS_INFO[marker_id].appear = appear;
 }
-const APPEAR_THRESHOLD = 0.8;
+const APPEAR_THRESHOLD = 0.2;
 /**
  * 
  * @param {*} marker_id aruco marker
@@ -835,15 +856,23 @@ async function adjustAngleRealBot(aruco_bot_id){
  * TODO: This only moves the virtual bots. Need to move the real bot!
  */
 async function move_bots(){
+  let someone_moved = false;
+  let promises = [];
+
   for (let bot_id in grid.bots){
+    console.log(`Moving bot ${bot_id}`)
+    async function apply_move(){
     // Don't calculate next steps until bot has finished moving
     //If the real bot is not connected then don't do anything
     if (!getRealBotFromArucoId(bot_id)){
-      continue;
+      console.log(`Not found real bot ${bot_id}`)
+      // return;
+      return;
     }
     if (isRealBotMoving(bot_id)){
-      // console.log(`Bot ${bot_id} already moving (real life), so dont move`)
-      continue;
+      console.log(`Bot ${bot_id} already moving (real life), so dont move`)
+      // continue;
+      return;
     }
     // console.log(`Bot ${bot_id} is not moving (real life), so find next move`)
     let bot_index = 0;
@@ -861,7 +890,7 @@ async function move_bots(){
           // grid.apply_next_move_to_bot(bot_id, next_move);
           console.log("---------------------------------------")
           console.log("Making next move!")
-          await move_bots(); //keep moving
+          someone_moved = true;
         } else {
           //If not then stop moving
           bot.isMoving = false;
@@ -872,15 +901,24 @@ async function move_bots(){
           }
         }
     }
+    }
+    promises.push(apply_move());
+  }
+  console.log(`Number of promises = ${promises.length}`)
+  //Do the moves synchronously
+  await Promise.all(promises);
+  console.log(`Done moving bots!`)
+  if (someone_moved){
+    await move_bots(); //keep moving
   }
 }
 testNextMoveButton.addEventListener("click", async (e)=>{
   console.log("---------------------------------------")
   console.log("Making next move!")
-  let wasMoving;
   for (let bot_id in grid.bots){
+    console.log(`Changing status ${bot_id}`)
     let bot_index = 0;
-    wasMoving = grid.bots[bot_id][bot_index].isMoving;
+    let wasMoving = grid.bots[bot_id][bot_index].isMoving;
     if (!wasMoving){
       grid.change_moving_status(bot_id);
     }
@@ -913,9 +951,13 @@ async function processVideo() {
         //Just add the marker ids to the set
         for (let marker_id in markersInfo){
           marker_id = Number(marker_id);
-          if (removedObjects.includes(marker_id)){
+          if (removedObjects.has(marker_id)){
             //might not be necessary, just in case
             delete currentVectors[marker_id]
+            if (isInBoard(marker_id)){
+              //If it was supposedly removed but it's still detected
+              removedObjects.delete(marker_id);
+            }
           } else {
             foundArucoIds.add(marker_id);
             currentVectors[marker_id] = markersInfo[marker_id];
@@ -952,9 +994,9 @@ async function processVideo() {
       //     }
       //   } else {
       //     //It's still in board
-      //     if (grid && possible_marker_id in grid.coins){
-      //       updateCoinInfo(possible_marker_id);
-      //     }
+      //     // if (grid && possible_marker_id in grid.coins){
+      //     //   updateCoinInfo(possible_marker_id);
+      //     // }
       //   }
       // }
       // for (let id in markersInfo) {
@@ -1231,6 +1273,18 @@ multipleRobotsTestButton.addEventListener("click", async () => {
     await bot.turn({ NUM: 90 })
   }
 })
+penDownButton.addEventListener("click", async () => {
+  for (let key in allDoodlebots) {
+    let bot = allDoodlebots[key];
+    await bot.movePen({DIR: 'down'});
+  }
+})
+penUpButton.addEventListener("click", async () => {
+  for (let key in allDoodlebots) {
+    let bot = allDoodlebots[key];
+    await bot.movePen({DIR: 'up'});
+  }
+})
 
 /**Workers stuff, removing for now */
 // function onLog(data){
@@ -1289,8 +1343,9 @@ async function onRequestBluetoothDeviceButtonClick() {
 
     let newDoodlebot = new Doodlebot(log, onReceiveValue);
     await newDoodlebot.request_device();
-    console.log(`Added id with ${newDoodlebot.bot.id}`);
-    allDoodlebots[newDoodlebot.bot.id] = newDoodlebot; // Saving object
+    console.log(`Added id with ${newDoodlebot.bot.id} and name ${newDoodlebot.bot.name}`);
+    // allDoodlebots[newDoodlebot.bot.id] = newDoodlebot; // Saving object
+    allDoodlebots[newDoodlebot.bot.name] = newDoodlebot; // Saving
     populateBluetoothDevices(newDoodlebot);
   } catch (error) {
     log("Argh! " + error);

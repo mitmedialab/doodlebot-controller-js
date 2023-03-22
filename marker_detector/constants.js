@@ -6,8 +6,14 @@ let cameraConstraints = {
     width: 640,
     height: 640,
     frameRate: 30,
-    deviceId:
-      "900a49dfda6bfee6faf44cbb6b6b1cd7477dccb9c7ac304255fbac5c8d81f3d0",
+    kind: "videoinput",
+    // label:"Logitech Webcam C930e (046d:0843)",
+    deviceId: "08077cf851c532d64221ed33018a1f4bb27fadc7c0d0a68e66a7665e0d17beda",
+    // deviceId: "7637fb1fef82ff97f0e3e9fcd0ef18375d66bb68401ad2cd61de93801f93f0e9"
+    // deviceId: "08077cf851c532d64221ed33018a1f4bb27fadc7c0d0a68e66a7665e0d17beda",
+    // deviceId:  "7637fb1fef82ff97f0e3e9fcd0ef18375d66bb68401ad2cd61de93801f93f0e9",
+    // deviceId: "a3837b37f5af6c8e3f4523eef6245c94a65ab2abc7272055dc1926400f39f9f9"
+    // deviceId: "89246cbb3896e89e80324c97b452a4617b4192d153c79cde9a78ad2cbc4122c3"
   },
 };
 const FPS = 15; //30;
