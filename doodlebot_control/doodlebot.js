@@ -14,7 +14,10 @@ class UartService {
     return "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
   }
 }
-
+const PEN_DIRECTION_TO_ANGLE = {
+  down: 10,
+  up: 35,
+}
 class CustomEventTarget extends EventTarget{
   constructor(){
     super();
@@ -203,6 +206,11 @@ class Doodlebot {
         resolve();
       }, {once: true})
     })
+  }
+  async movePen(args){
+    let {DIR} = args;
+    let angle = PEN_DIRECTION_TO_ANGLE[DIR];
+    await this.sendCommandToRobot(`(u,${angle})`);
   }
   /**
    * Users should not call this function, but rather the function-specific methods 

@@ -110,6 +110,7 @@ class GridGraph{
         // this.update_values_from_grid_binary_board(grid, bot_id, bot_index);
         this.update_graph(grid, bot_dimensions);
         this.update_distances_to_crash(grid, bot_dimensions, coin)
+        console.log(this.graph)
     }
     get_node_from_position(i, j, angle){
         return interpolate(NODE_BREAKPOINTS, [i, j, angle]);
@@ -178,6 +179,34 @@ class GridGraph{
         this.newDistances = newDistances;
     }
     /**
+     * Store minimum distances from each cell so that the bot crashes with coin, by finding the minimum
+     * distance it takes for a cell to go to any cell that will make its front crash with the coin
+     * 
+     * @param {*} grid grid object
+     * @param {*} bot_dimensions {width: , height}
+     * @param {*} coin 
+     */
+    update_distances_to_crash(grid, bot_dimensions, coin){
+        let boundaries_per_angle = grid.get_crashing_bounds_front(bot_dimensions, coin);
+        //boundaries to crash
+        // let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = grid.get_crashing_bounds(bot_dimensions, coin);
+        // coin has no angle and so should be added
+        // for (let new_x = min_bot_x; new_x <= max_bot_x; new_x++){
+        //     for (let new_y = min_bot_y; new_y <= max_bot_y; new_y++){
+        //         for (let coin_angle of [0, 90, 180, 270]){
+        for (let coin_angle in boundaries_per_angle){
+            //boundaries to crash
+            let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = boundaries_per_angle[coin_angle];
+            for (let new_x = min_bot_x; new_x <= max_bot_x; new_x++){
+                for (let new_y = min_bot_y; new_y <= max_bot_y; new_y++){
+                    let start_node = this.get_node_from_position(new_x, new_y, coin_angle);
+                    let {distances} = findShortestPathDistances(this.graph.graph, start_node);
+                    this.update_distance_values(distances);
+                }
+            }
+        }
+    }
+        /**
      * Store minimum distances from each cell to crash with coin, by finding the minimum
      * distance it takes for a cell to go to any cell that will make it crash with the coin
      * 
@@ -185,7 +214,7 @@ class GridGraph{
      * @param {*} bot_dimensions {width: , height}
      * @param {*} coin 
      */
-    update_distances_to_crash(grid, bot_dimensions, coin){
+    update_distances_to_crash_front(grid, bot_dimensions, coin){
         //boundaries to crash
         let [min_bot_x, min_bot_y, max_bot_x, max_bot_y] = grid.get_crashing_bounds(bot_dimensions, coin);
         // coin has no angle and so should be added

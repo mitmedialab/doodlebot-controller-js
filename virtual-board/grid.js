@@ -16,6 +16,10 @@ const BOT_DIMENSIONS = {
     width: 3, 
     height: 3
 }
+const DEFAULT_BOT_DIMENSIONS = {
+    width: 5,
+    height: 5,
+}
 const BOT_POLICIES = {
     RANDOM: {
         value: "random",
@@ -528,6 +532,8 @@ class VirtualGrid{
         bot.realAngle = potentialBot.realAngle
         
         //Check if it has picked up any coins
+        //For now, get rid of it to make sure it picks it up in real life
+        //TODO: Check how different this will be for the all-virtual part
         let potential_crashes = this.get_almost_crashes(bot, 0);
         let coinsPicked = [];
         if (COIN_TYPE in potential_crashes){
@@ -546,17 +552,6 @@ class VirtualGrid{
             // this.add_random_coin(); //TODO: just for fun
             // this.add_or_change_obstacle(); //TODO: just for fun
         }
-
-        // if (new_anchor){
-        //     let [x, y] = bot.real_bottom_left;
-        //     let [anchor_x, anchor_y] = bot.relative_anchor;
-        //     let dx =  new_anchor[0] - (x + anchor_x);
-        //     let dy =  new_anchor[1] - (y + anchor_y);
-        //     bot.real_bottom_left = [x+dx, y+dy];
-        // }
-        // if (new_angle){
-        //     bot.angle = new_angle;
-        // }
         let message = `Moved succesfully`;
         this.onUpdateObject(bot);
         return {success: true, bot: bot, message: message};
@@ -1311,12 +1306,12 @@ class VirtualGrid{
     /**
      * 
      * @param {*} bot 
-     * @param {*} obstacle 
+     * @param {*} object {real_bottom_left:, width:, height:} 
      * @param {*} look_ahead 
      * @returns true iff the bot after `look_ahead` steps and the obstacle are crashing 
      */
-    almost_crash(bot, obstacle, look_ahead){
-        let obs_pos = obstacle.real_bottom_left;
+    almost_crash(bot, obj, look_ahead){
+        let obs_pos = obj.real_bottom_left;
         let dx = 0;
         let dy = 0;
         if (bot.type !== BOT_TYPE  && look_ahead !== 0){
@@ -1344,11 +1339,33 @@ class VirtualGrid{
                     console.log(`Incorrect ANGLE : ${bot.angle}`)
             }
         }
+        let [bot_x, bot_y] = bot.real_bottom_left;
+        bot_x += dx;
+        bot_y += dy;
+         
+        let x1, y1, x2, y2;
+        if (bot.type === BOT_TYPE && obj.type === COIN_TYPE){
+            //If bot against coin, only crashes if the front of the bot crashes with the coin
+            [x1, y1, x2, y2] = this.get_crashing_bounds_front(bot, obj)[bot.angle];
+        }
+        //  else if (bot.type === COIN_TYPE && obj.type === BOT_TYPE) {
+        //     //If swapped, still do bound front
+        //     [x1, y1, x2, y2] = this.get_crashing_bounds_front(obj, bot)[obj.angle];
+        // } 
+        else{
+            //In any other case, assume any type of crash is valid
+            [x1, y1, x2, y2] = this.get_crashing_bounds(bot, obj);
+        }
+        //is bot on the crashing bounds
+        return (
+            x1 <= bot_x && bot_x <= x2 &&
+            y1 <= bot_y && bot_y <= y2
+        )
         // console.log("look ahead:")
         // console.log(look_ahead);
         // console.log([dx, dy]);
         let [minObsX, minObsY] = [obs_pos[0], obs_pos[1]];
-        let [maxObsX, maxObsY] = [minObsX + obstacle.width - 1, minObsY + obstacle.height - 1];
+        let [maxObsX, maxObsY] = [minObsX + obj.width - 1, minObsY + obj.height - 1];
         
         let [minBotX, minBotY] = [bot.real_bottom_left[0] + dx, bot.real_bottom_left[1] + dy];
         let [maxBotX, maxBotY] = [minBotX + bot.width - 1, minBotY + bot.height - 1];
@@ -1516,11 +1533,16 @@ class VirtualGrid{
         //When obstacles change
         // Just get one bot's dimensions, assumes all bots are the same size
         //TODO: What to do if there are no bots?
-        let bot_index = 0;
-        let random_bot = Object.values(this.bots)[0][bot_index];
-        let bot_dimensions = {
-            width: random_bot.width,
-            height: random_bot.height
+        let bot_dimensions;
+        if (Object.keys(this.bots).length !== 0){
+            let bot_index = 0;
+            let random_bot = Object.values(this.bots)[0][bot_index];
+            bot_dimensions = {
+                width: random_bot.width,
+                height: random_bot.height
+            }
+        } else {
+            bot_dimensions = DEFAULT_BOT_DIMENSIONS;
         }
         for (let coin_id in this.coins){
             let coin_index = 0;
@@ -1708,6 +1730,36 @@ class VirtualGrid{
         let min_bot_y = Math.max(0, obj_y-h+1);
         let max_bot_y = Math.min(grid.rows-h, obj_y+obj_height-1);
         return [min_bot_x, min_bot_y, max_bot_x, max_bot_y]
+    }
+    /**
+     * 
+     * @param {*} bot {width:, height:} 
+     * @param {*} obj {real_bottom_left, width:, height:}
+     * @returns `{angle: [x1, y1, x2, y2]}` which means that any bot at that angle that has its real_bottom_left in that range will have its front
+     * crash with the object.
+     */
+    get_crashing_bounds_front(bot, obj){
+        // let bot_w = bot.width;
+        // let bot_h = bot.height;
+        let [obj_x, obj_y] = obj.real_bottom_left;
+        // let obj_w = obj.w;
+        // let obj_j = obj.h;
+        let boundaries = {};
+        for (let angle of [0, 90, 180, 270]){
+            // Whether the front is vertical or horizontal
+            let is_horizontal = angle == 90 || angle == 270;
+            //Only keep the dimension of the front
+            let new_bot = {
+                width: is_horizontal ? bot.width : 1,
+                height: is_horizontal ? 1: bot.height
+            }
+            let obj_new_bottom_left = [
+                angle !== ANGLE_DIRS.RIGHT ? obj_x : obj_x - (bot.width - 1), //Only when looking right the bottom left has to shift to the left
+                angle !== ANGLE_DIRS.UP ? obj_y : obj_y - (bot.height - 1) //Only when looking up the bottom left has to shift down
+            ]
+            boundaries[angle] = this.get_crashing_bounds(new_bot, {...obj, real_bottom_left: obj_new_bottom_left})
+        }
+        return boundaries;
     }
     /**
      * Binary board, where a cell is true iff the real_bottom_left of a bot with the given dimensions

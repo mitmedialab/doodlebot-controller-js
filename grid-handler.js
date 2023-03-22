@@ -1,6 +1,6 @@
 let grid;
 
-let [rows, cols] = [8, 8];
+let [rows, cols] = [16, 16];
 
 function log(message) {
   logDiv.value = message + "\n" + logDiv.value;
