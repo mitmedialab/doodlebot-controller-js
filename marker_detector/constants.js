@@ -8,6 +8,8 @@ let cameraConstraints = {
     frameRate: 30,
     kind: "videoinput",
     // label:"Logitech Webcam C930e (046d:0843)",
+    // label:"FaceTime HD Camera",
+    // deviceId:"47c765e31952fa817677e9d006e3cf9e47a9169200620d3109729bc3a88e7790",
     deviceId: "08077cf851c532d64221ed33018a1f4bb27fadc7c0d0a68e66a7665e0d17beda",
     // deviceId: "7637fb1fef82ff97f0e3e9fcd0ef18375d66bb68401ad2cd61de93801f93f0e9"
     // deviceId: "08077cf851c532d64221ed33018a1f4bb27fadc7c0d0a68e66a7665e0d17beda",

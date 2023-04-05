@@ -176,3 +176,7 @@ section {
 .coin-hide {
     display: none;
 }
+
+#virtualGridContainer.game-hidden{
+    display: none;
+}

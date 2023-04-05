@@ -97,25 +97,42 @@ class VirtualGrid{
         this.onRemoveObstacle = onRemoveObstacle;
         this.onRemoveCoin = onRemoveCoin;
         this.onUpdateObject = onUpdateObject;
-        this.onApplyMoveToBot = onApplyMoveToBot;
-        for (let bot of bots){
-            this.add_bot(bot);
-        }
-        for (let obstacle of obstacles){
-            this.add_obstacle(obstacle);
-        }
-        for (let coin of coins){
-            this.add_coin(coin);
-        }       
+        this.onApplyMoveToBot = onApplyMoveToBot;    
+        this.drawBoard = drawBoard;
         // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
         // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
         // If the relative_anchor is (0,0) that means tha 
         this.bots = {}; //bots should have an {angle} that the bot is looking at (e.g., 0 is looking right)
         this.obstacles = {};
         this.coins = {};
-        this.drawBoard = drawBoard;
         this.graphs = {} // bot_id => Reachability graph
         this.coin_graphs = {}; //coin_id -> Minimum distance graph
+        for (let bot_id in bots){
+            let bot = bots[bot_id][0];
+            this.add_bot(bot);
+        }
+        for (let obstacle_id in obstacles){
+            let obstacle = obstacles[obstacle_id][0];
+            this.add_obstacle(obstacle);
+        }
+        for (let coin_id in coins){
+            let coin = coins[coin_id][0];
+            this.add_coin(coin);
+        }   
+
+    }
+    /**
+     * 
+     * @returns a JSON representation of this board, including its shape and all elements that live there (bots, obstacles and coins)
+     */
+    toJSON(){
+        return {
+            rows: this.rows,
+            cols: this.cols,
+            bots: this.bots,
+            obstacles: this.obstacles,
+            coins: this.coins,
+        }
     }
     get_bot_angle(bot_id, bot_index=0){
         let bot = this.bots[bot_id][bot_index];
@@ -138,13 +155,14 @@ class VirtualGrid{
         // console.log({...obj, type})
         // console.log(potential_crashes);
         if (BOT_TYPE in potential_crashes || OBSTACLE_TYPE in potential_crashes || COIN_TYPE in potential_crashes){
+            console.log(potential_crashes);
             return {success: false, message: `Error adding object with type ${type}: There is a crash`}
         }
         //Bots are exempt as part of them could be outside
         //TODO: Maybe just check that the real_bottom_left (or anchor for bots) is inside the board
-        if (type !== BOT_TYPE && !this.isInsideBoard(obj.real_bottom_left, obj.width, obj.height)){
-            return {success: false, message: `Error adding object with type ${type}: Outside bounds`}
-        }
+        // if (type !== BOT_TYPE && !this.isInsideBoard(obj.real_bottom_left, obj.width, obj.height)){
+        //     return {success: false, message: `Error adding object with type ${type}: Outside bounds`}
+        // }
         let {id, width, height} = obj;
         if (width <= 0 || height <= 0){
             return {success: false, message: `Error adding object with type ${type}: Width and height have to be positive`}
@@ -323,11 +341,12 @@ class VirtualGrid{
         let attempt = 0;
         while(attempt < MAX_ATTEMPTS){
             attempt++;
-            let col = this.constructor.random_number_between(0, this.cols); //Math.floor(Math.random() * this.cols);
-            let row = this.constructor.random_number_between(0, this.rows); //Math.floor(Math.random() * this.rows);
+
             let botId = this.getNewBotId();
             //For now hardcode it
             let [width, height] = [3, 3];
+            let col = this.constructor.random_number_between(0, this.cols-width); //Math.floor(Math.random() * this.cols);
+            let row = this.constructor.random_number_between(0, this.rows-height); //Math.floor(Math.random() * this.rows);
             let relative_anchor = [1, 1];
             let angle = this.random_from(Object.values(ANGLE_DIRS));
             let potential_bot =  {
@@ -509,7 +528,7 @@ class VirtualGrid{
     /**
      * 
      * @param {*} bot_id 
-     * @param {*} update currently accepts angle, realAngle, and real_bottom_left
+     * @param {*} update currently accepts angle, realAngle, and real_anchor
      */
     update_bot(bot_id, update, bot_index=0){
         let {new_anchor, new_angle} = update;
@@ -519,7 +538,26 @@ class VirtualGrid{
         // let potentialBottomLeft = update.real_bottom_left == null|| bot.real_bottom_left;
         // let potentialAngle = update.angle == null || bot.angle;
         // let potentialRealAngle = update.realAngle == null || bot.realAngle;
-        let potentialBot = Object.assign({}, bot, update);
+        // let potentialBot = Object.assign({}, bot, update);
+        let potentialBot = {...bot};
+        //First turn
+        if (update.angle !== undefined) {
+            let prevAngle = potentialBot.angle;
+            let nextAngle = update.angle;
+            let diff = (nextAngle - prevAngle) % 360;
+            if (diff < 0){diff += 360;}
+            //This will update the real_bottom_left, width, height if necessary
+            potentialBot = this.future_position_after_turn(potentialBot, diff);
+        }
+        //Then translate, and assure that real_anchor is constant
+        if (update.real_anchor !== undefined){
+            let [anchorX, anchorY] = update.real_anchor;
+            potentialBot.real_bottom_left = [anchorX - potentialBot.relative_anchor[0], anchorY - potentialBot.relative_anchor[1]];
+        }
+        if (update.realAngle !== undefined){
+            potentialBot.realAngle = update.realAngle;
+        }
+
         // If it's outside is fine, as technically the real bot could be outside
         // if (!this.isInsideBoard(potentialBot.real_bottom_left, potentialBot.width, potentialBot.height)){
         //     return {success: false, bot: bot, message: "Outside board, no good!"};
@@ -533,6 +571,8 @@ class VirtualGrid{
         bot.real_bottom_left = potentialBot.real_bottom_left;
         bot.angle = potentialBot.angle;
         bot.realAngle = potentialBot.realAngle
+        bot.width = potentialBot.width;
+        bot.height = potentialBot.height;
         
         //Check if it has picked up any coins
         //For now, get rid of it to make sure it picks it up in real life
@@ -1056,6 +1096,9 @@ class VirtualGrid{
             //Only do this if there are coins to move to
             if (Object.keys(this.coins).length !== 0){
                 return this.get_next_move_using_get_coins(bot_id, num_turns);
+            } else {
+                //If there are no coins, just do random move
+                return this.get_next_move_randomly(bot_id, bot_index);
             }
         }
         
@@ -1271,6 +1314,18 @@ class VirtualGrid{
         this.onUpdateObject(obstacle);
         return {success: true, obstacle: obstacle, message: message};
     }
+    replace_bot(bot_id, bot){
+        this.bots[bot_id][0] = bot;
+        this.onUpdateObject(bot);
+    }
+    replace_obstacle(obstacle_id, obstacle){
+        this.obstacles[obstacle_id] = obstacle;
+        this.onUpdateObject(obstacle);
+    }
+    replace_coin(coin_id, coin){
+        this.coins[coin_id][0] = coin;
+        this.onUpdateObject(coin);
+    }
     /**
      * 
      * @param {*} obstacle_id 
@@ -1392,8 +1447,7 @@ class VirtualGrid{
     }
     /**
      * 
-     * @param {*} prev_bot 
-     * @param {*} bot_index 
+     * @param {*} prev_bot {angle, real_bottom_left, relative_anchor, width, height}
      * @returns the position of the bot, if it turned 90 deg counterclockwise
      */
     future_position_after_90_turn(prev_bot){
@@ -1587,6 +1641,9 @@ class VirtualGrid{
         }
     }
     remove_coin(coin_id, coin_index=0){
+        if (!(coin_id in this.coins)){
+            return; 
+        }
         this.onRemoveCoin(this.coins[coin_id][coin_index]);
         delete this.coins[coin_id][coin_index];
         // this.obstacles[obstacle_id].splice(obstacle_index, 1);
@@ -1740,9 +1797,9 @@ class VirtualGrid{
         let h = bot.height;
 
         let min_bot_x = Math.max(0, obj_x-w+1);
-        let max_bot_x = Math.min(grid.cols-w, obj_x+obj_width-1);
+        let max_bot_x = Math.min(this.cols-w, obj_x+obj_width-1);
         let min_bot_y = Math.max(0, obj_y-h+1);
-        let max_bot_y = Math.min(grid.rows-h, obj_y+obj_height-1);
+        let max_bot_y = Math.min(this.rows-h, obj_y+obj_height-1);
         return [min_bot_x, min_bot_y, max_bot_x, max_bot_y]
     }
     /**

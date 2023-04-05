@@ -25,6 +25,135 @@ let BORDER_IDS = {
   TOP_RIGHT: 33, //top right
   TOP_LEFT: 34 //top left
 }
+let colorInfo = {}; //color -> [x, y, w, h]
+
+const changeMovingBot= async (opt = {}) => {
+  let bot = grid.bots[currentBotId][0];
+  if (bot.isMoving){
+    bot.isMoving = false;
+    if (!opt.noSocket){
+      socket.emit("stop_bot", "")
+    }
+    changeBotsMovingButton.innerHTML = "Start moving";
+    changeBotsMovingButton.classList.remove("bot-stop");
+    changeBotsMovingButton.classList.add("bot-start");
+  } else {
+    if (!opt.noSocket){
+      socket.emit("start_bot", "")
+    }
+    bot.isMoving = true;
+    changeBotsMovingButton.innerHTML = "Stop moving";
+    changeBotsMovingButton.classList.remove("bot-start");
+    changeBotsMovingButton.classList.add("bot-stop");
+    await apply_next_move_to_bot(currentBotId);
+  }
+}
+
+changeBotsMovingButton.addEventListener("click", async (evt)=> {
+  changeMovingBot();
+
+})
+
+const SERVER_LINK = "localhost:5001"
+let currentBotId;
+let socket;
+document.addEventListener('DOMContentLoaded', () => {
+    setupSocket();
+})
+createRoomButton.addEventListener("click", () => {
+    //Creates and joins a random room
+    socket.emit("create_room");
+})
+joinRoomButton.addEventListener("click", () => {
+    let room = roomInput.value;
+    // alert(room);
+    socket.emit("join_room", room);
+});
+
+const REAL_GRID_CALLBACKS = {
+    onAddBot,
+    onAddObstacle: onAddObject,
+    onAddCoin: onAddObject,
+    onUpdateObject: onUpdateObject,
+    onRemoveCoin: (removedCoin) => {
+      socket.emit("remove_coin", {coin: removedCoin, virtualGrid: grid.toJSON()});
+    },
+    onPickupCoin: (bot, coin)=>{
+        // removedObjects.add(coin.id); //TODO: Check if only looking at camera stream is reliable
+        // delete currentVectors[coin.id] //TODO: Check if only looking at camera stream is reliable
+        console.log(`Bot ${bot.id} picked coin with id ${coin.id}`)
+    }
+}
+function setupSocket() {
+    socket = io(SERVER_LINK, {autoConnect: false});
+    socket.connect();
+    socket.on('message_received', (message) => {
+        console.log('received message');
+        console.log(message);
+    })
+    socket.on("not_valid_room", ({roomId}) => {
+        alert(`The room ${roomId} is not valid`);
+    })
+    socket.on("joined_room", async ({roomId, virtualGrid}) => {
+        console.log(`Detecting joining room: ${roomId}`);
+        currentBotId = 2; //TODO: For now hardoded, later there should be a select to have students decide which bot to claim
+        virtualGridContainer.classList.remove("game-hidden")
+        roomNameSpan.innerHTML = roomId
+        let {rows, cols, bots, obstacles, coins} = virtualGrid;
+
+        grid = new VirtualGrid(rows, cols, {bots, obstacles, coins, ...REAL_GRID_CALLBACKS});
+        drawBoard();
+
+
+        // grid = new VirtualGrid(rows, cols, {bots, obstacles, coins, ...VIRTUAL_GRID_CALLBACKS});
+        // drawBoard();
+    })
+    socket.on("added_bot", (bot) => {
+        grid.add_bot(bot);
+        drawBoard();    
+        // create_bot_options(bot) //Don't show this since it won't be editable by user.
+    })
+    // si es que se va el 
+    socket.on("added_obstacle", (obstacle) => {
+        grid.add_obstacle(obstacle);
+        drawBoard();    
+    })
+    socket.on("added_coin", (coin) => {
+        grid.add_coin(coin);
+        drawBoard();    
+    })
+    socket.on("moved_bot", ({bot_id, move}) => {
+        grid.apply_next_move_to_bot(bot_id, move, {noSocket: true});
+        drawBoard();
+    })
+    socket.on("started_bot", async () => {
+        // await apply_next_move_to_bot(currentBotId);
+        // startMovingButton_ClickHandler(currentBotId);
+        changeMovingBot({noSocket: true});
+    })
+    socket.on("stopped_bot", () => {
+        // let bot = this.bots[currentBotId][0];
+        // bot.isMoving = false;
+        // getRealBotFromArucoId(currentBotId).isMoving = false;
+        changeMovingBot({noSocket: true});
+        // stopMovingButton_ClickHandler(currentBotId);
+    })
+    socket.on("updated_bot", ({id, update}) => {
+        grid.update_bot(id, update);
+        drawBoard();
+    })
+    socket.on("updated_obstacle", ({id, update}) => {
+        grid.update_obstacle(id, update);
+        drawBoard();
+    })
+    socket.on("updated_coin", ({id, update}) => {
+        grid.update_coin(id, update);
+        drawBoard();
+    })
+    socket.on("removed_coin", ({coin}) => {
+      grid.remove_coin(coin.id);
+    })
+}
 /*
   Mapping between doodlebot BLE ids to aruco ids
   This allows the connection between physical bots and virtual bots
@@ -70,6 +199,7 @@ let foundArucoIds = new Set(); //ids of objects found in the RECORDING state
 //id -> {type, width: , height: }
 const OBJECT_SIZES = {
   //bots
+  //6, 4, 2, 1
   1: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 51},
   2: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 52},
   3: {type: BOT_TYPE, width: 5, height: 5, relative_anchor: [2, 2], direction_id: 53},
@@ -89,10 +219,18 @@ const OBJECT_SIZES = {
   25: {type: COIN_TYPE, width: 1, height: 1}
 
 }
+const COLOR_SIZES = {
+  PINK: {id: 26, type: COIN_TYPE, width: 3, height: 3}
+}
 let MARKERS_INFO = {};
 for (let marker_id in OBJECT_SIZES){
   MARKERS_INFO[marker_id] = {};
 }
+for (let color in COLOR_SIZES){
+  let {id} = COLOR_SIZES[color];
+  MARKERS_INFO[id] = {};
+}
+
 /**
  * Camera controllers
  */
@@ -134,19 +272,8 @@ activateCameraButton.addEventListener("click", async (evt) => {
   let stream = await cameraController.activateCamera();
   videoObj.srcObject = stream;
   //create grid
+  currentBotId = 1; //TODO: For now hardcode, later change
   processVideo();
-  grid = new VirtualGrid(rows, cols, {
-      onAddBot,
-      onAddObstacle: onAddObject,
-      onAddCoin: onAddObject,
-      onUpdateObject: onUpdateObject,
-      onPickupCoin: (bot, coin)=>{
-        removedObjects.add(coin.id);
-        delete currentVectors[coin.id]
-        console.log(`Bot ${bot.id} picked coin with id ${coin.id}`)
-      }
-  });
-  drawBoard();
 });
 changeStateButton.addEventListener("click", (evt)=>{
   if (positionState === STATES.RECORDING){
@@ -246,15 +373,19 @@ function findHomographicMatrix() {
   let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, worldx, 0, 0, worldy, worldx, worldy]);
   homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri) //, dstTri); //cv.findHomography(srcTri, dstTri);
 }
+function getGridPositionFromReal(pos){
+  let [x, y] = pos;
+  let [gridX, gridY] = [Math.floor(x / width * cols), Math.floor(y / width * rows)];
+  return [gridX, gridY]; 
+}
 /**
  * 
  * @param {*} id aruco marker
  * @returns 2d position in the 2D grid of a given marker
  */
-function getGridPosition(id){
-  let [x, y] = getReal2dPosition(id);
-  let [gridX, gridY] = [Math.floor(x / width * cols), Math.floor(y / width * rows)];
-  return [gridX, gridY];  
+function getGridPosition(id_or_color, is_color=false){
+  let [x, y] = getReal2dPosition(id_or_color, is_color);
+  return getGridPositionFromReal([x, y])
 }
 /**
  * 
@@ -366,28 +497,42 @@ function updateVirtualBot(id){
     //If its not there, create one
     if (!grid.bots[id]){
       //virtual bot doesnt exist, so create one
-      let {success, message} = grid.add_bot({
+      let bot_to_add = {
         id: id,
-        real_bottom_left: [gridX-anchor_x, gridY-anchor_y],
-        angle: angle,
-        realAngle: realAngle,
+        real_bottom_left: [-anchor_x, -anchor_y], //So that real anchor = [0, 0]
+        angle: 0,
         relative_anchor: [anchor_x, anchor_y], //wont change
         width: width, //wont change 
         height: height, //wont change
-      })
+      }
+      //This assumes angle is 0, need to turn it if necessary
+      bot_to_add = grid.future_position_after_turn(bot_to_add, angle);
+
+      //This was assuming that real_anchor = [0, 0], so now need to move it to [gridX, gridY] (where the aruco code is)
+      bot_to_add.real_bottom_left = [bot_to_add.real_bottom_left[0] + gridX, bot_to_add.real_bottom_left[1] + gridY];
+      bot_to_add.realAngle = realAngle;
+
+      let {bot, success, message} = grid.add_bot(bot_to_add);
       if (!success){
         console.log(`Couldn't add bot ${id}: ${message}`)
+      } else {
+        socket.emit('add_bot', {bot, virtualGrid: grid.toJSON()});
       }
     } else{
+      let bot = grid.bots[id][0];
+
       //If it already exists, just update accordingly
       if (positionState === STATES.RECORDING){
-        let {success, message} = grid.update_bot(id, {
+        let update = {
           angle: angle,
           realAngle: realAngle,
-          real_bottom_left: [gridX-anchor_x, gridY-anchor_y]
-        });
+          real_anchor: [gridX, gridY]
+        }
+        let {success, message} = grid.update_bot(id, update);
         if (!success){
           console.log(`Couldn't update bot ${id}: ${message}`)
+        } else {
+          socket.emit("update_bot", {id, update, virtualGrid: grid.toJSON()})
         }
       }
     }
@@ -408,7 +553,7 @@ function updateVirtualObstacle(id){
       }
 
       // let {width, height} = OBJECT_SIZES[id];
-      grid.add_obstacle({
+      let {success, obstacle} = grid.add_obstacle({
         id: id,
         // real_bottom_left:[gridX, gridY],
         real_bottom_left: real_bottom_left,
@@ -416,25 +561,47 @@ function updateVirtualObstacle(id){
         width: width,
         height: height,
       })
+      if (success){
+        socket.emit('add_obstacle', {obstacle, virtualGrid: grid.toJSON()})
+      }
     } else {
       if (positionState === STATES.RECORDING){
-        grid.update_obstacle(id, {width, height, real_bottom_left})
+        let update = {width, height, real_bottom_left}
+        let {success} = grid.update_obstacle(id, update);
+        if (success){
+          socket.emit("update_obstacle", {id, update, virtualGrid: grid.toJSON()})
+        }
       }
     }
 }
 function random_from(arr){
       return arr[Math.floor(Math.random() * arr.length)]
   }
+
+function getColorPositionInfo(color){
+  let [x, y, w, h] = colorInfo[color];
+  return getGridPositionFromReal([x, y]);
+}
 /**
  * Updates position of a given coin in the virtual grid. If the coin is not there then it
  * will create one
  * @param {*} id aruco marker
  */
-function updateVirtualCoin(id){
+function updateVirtualCoin(id_or_color, is_color= false){
   // console.log(`Trying to update virtual coin ${id}`)
-  let {
-    width, height, real_bottom_left 
-  } = getObjectPositionInfo(id)
+  let id, width, height, real_bottom_left;
+
+  if (!is_color){
+    id = id_or_color;
+    ({ width, height, real_bottom_left } = getObjectPositionInfo(id))
+  } else {
+    // id = grid.getNewCoinId();
+    ({id, width, height} = COLOR_SIZES[id_or_color]);
+    // real_bottom_left = getColorPositionInfo(id_or_color);
+    let [top_left_x, top_left_y] = getGridPosition(id_or_color, is_color=true)
+    real_bottom_left = [top_left_x, top_left_y-height+1]
+  }
+
   if (!grid.coins[id]){
     if (!(id in OBJECT_SIZES)){
       console.log(`Couldnt find size information for id =${id} `)
@@ -450,15 +617,31 @@ function updateVirtualCoin(id){
       width: width,
       height: height,
     })
-    if (!res.success){
+    console.log("trying to add following coin:");
+    console.log({
+      id: id,
+      // real_bottom_left:[gridX, gridY],
+      real_bottom_left: real_bottom_left,
+      relative_anchor: [0,0], //All obstacles will be created this way
+      width: width,
+      height: height,
+    })
+    let {success, coin} = res;
+    if (!success){
       console.log(`Couldn't add object with id ${id}. Response:`);
       console.log(res)
+    } else {
+      socket.emit("add_coin", {coin, virtualGrid: grid.toJSON()})
     }
   } else {
-    let res = grid.update_coin(id, {width, height, real_bottom_left})
-    if (!res.success){
+    let update = {width, height, real_bottom_left};
+    let res = grid.update_coin(id, update)
+    let {coin, success} = res;
+    if (!success){
       console.log(`Couldn't update object with id ${id}. Response:`);
       console.log(res)
+    } else {
+      socket.emit("update_coin", {id, update, virtualGrid: grid.toJSON()})
     }
   }
 }
@@ -488,6 +671,9 @@ function updateVirtualObjects(){
     } else if (typeObj === COIN_TYPE){
       updateVirtualCoin(id);
     }
+  }
+  for (let color in colorInfo){
+    updateVirtualCoin(color, is_color=true);
   }
 }
 function getColorFromType(obj_type){
@@ -746,14 +932,20 @@ function updateMarkerAppear(marker_id, appeared){
   }
   MARKERS_INFO[marker_id].appear = appear;
 }
-const APPEAR_THRESHOLD = 0.2;
+const APPEAR_THRESHOLD = 0.01;
 /**
  * 
  * @param {*} marker_id aruco marker
  * @returns true iff the given marker is considered to be in the board, according to APPEAR_THRESHOLD
  */
 function isInBoard(marker_id){
+  if (!(marker_id in MARKERS_INFO)){
+    return false;
+  }
   let appear = MARKERS_INFO[marker_id].appear;
+  if (!appear){
+    return false;
+  }
   let timesDetected = appear.reduce((a, b) => a + b, 0); 
   let avg = timesDetected / appear.length;
   return avg > APPEAR_THRESHOLD;
@@ -850,20 +1042,14 @@ async function adjustAngleRealBot(aruco_bot_id){
   }
 
 }
-/**
- * Goes through all the bots and move them one step according to their policy
- * 
- * TODO: This only moves the virtual bots. Need to move the real bot!
- */
-async function move_bots(){
-  let someone_moved = false;
-  let promises = [];
+let someone_moved = false;
 
-  for (let bot_id in grid.bots){
-    console.log(`Moving bot ${bot_id}`)
-    async function apply_move(){
+async function apply_next_move_to_bot(bot_id){
+    // async function apply_move(){
     // Don't calculate next steps until bot has finished moving
     //If the real bot is not connected then don't do anything
+    let did_bot_move = false;
+
     if (!getRealBotFromArucoId(bot_id)){
       console.log(`Not found real bot ${bot_id}`)
       // return;
@@ -891,18 +1077,36 @@ async function move_bots(){
           console.log("---------------------------------------")
           console.log("Making next move!")
           someone_moved = true;
+          did_bot_move = true;
         } else {
           //If not then stop moving
-          bot.isMoving = false;
+          // Don't stop, just do random moves
+          // bot.isMoving = false;
 
-          let realBot = getRealBotFromArucoId(bot_id);
-          if (realBot){
-            realBot.isMoving = false;
-          }
+          // let realBot = getRealBotFromArucoId(bot_id);
+          // if (realBot){
+          //   realBot.isMoving = false;
+          // }
         }
     }
+    if (did_bot_move){
+      //Keep moving
+      await apply_next_move_to_bot(bot_id);
     }
-    promises.push(apply_move());
+    // }
+}
+/**
+ * Goes through all the bots and move them one step according to their policy
+ * 
+ * TODO: This only moves the virtual bots. Need to move the real bot!
+ */
+async function move_bots(){
+  someone_moved = false; //restart
+  let promises = [];
+  for (let bot_id in grid.bots){
+    console.log(`Moving bot ${bot_id}`)
+
+    promises.push(apply_move_to_bot(bot_id));
   }
   console.log(`Number of promises = ${promises.length}`)
   //Do the moves synchronously
@@ -937,9 +1141,12 @@ async function processVideo() {
   context.drawImage(videoObj, 0, 0, width, height);
   let imageData = context.getImageData(0, 0, width, height);
   let markersInfo = cameraController.findArucoCodes(imageData);
+  let currentColors = cameraController.filterColor(imageData, [0, 0, 0], [0, 0, 255]);
+
   //Only draw when there is frame available
   if (context) {
     cv.imshow("arucoCanvasOutput", cameraController.dst); // canvasOutput is the id of another <canvas>;
+  // }if (false){
     show2dProjection();
     if (!markersInfo) {
       console.log("No markers detected");
@@ -951,18 +1158,32 @@ async function processVideo() {
         //Just add the marker ids to the set
         for (let marker_id in markersInfo){
           marker_id = Number(marker_id);
-          if (removedObjects.has(marker_id)){
-            //might not be necessary, just in case
-            delete currentVectors[marker_id]
-            if (isInBoard(marker_id)){
-              //If it was supposedly removed but it's still detected
-              removedObjects.delete(marker_id);
-            }
-          } else {
-            foundArucoIds.add(marker_id);
-            currentVectors[marker_id] = markersInfo[marker_id];
-          }
+          foundArucoIds.add(marker_id);
+          currentVectors[marker_id] = markersInfo[marker_id];
+          // if (!isInBoard(marker_id)){
+          //   // delete currentVectors[marker_id];
+          //   continue;
+          // } else {  
+          //   foundArucoIds.add(marker_id);
+          //   currentVectors[marker_id] = markersInfo[marker_id];
+          // }
+          // if (removedObjects.has(marker_id)){
+          //   //might not be necessary, just in case
+          //   delete currentVectors[marker_id]
+          //   if (isInBoard(marker_id)){
+          //     //If it was supposedly removed but it's still detected
+          //     removedObjects.delete(marker_id);
+          //   }
+          // } else {
+          //   foundArucoIds.add(marker_id);
+          //   currentVectors[marker_id] = markersInfo[marker_id];
+          // }
         }
+        console.log(currentColors);
+        for (let color in currentColors){
+          colorInfo[color] = currentColors[color]; //Storing [x, y, w, h]
+        }
+        
       } else if (positionState === STATES.SETUP){
 
       } else if (positionState === STATES.LOCKED){
@@ -971,34 +1192,62 @@ async function processVideo() {
         console.log(`Invalid position state = ${positionState}`);
       }
       //To keep track of whether the bots are considered in the board
+      // console.log(MARKERS_INFO)
       for (let possible_marker_id in OBJECT_SIZES){
         let appeared = markersInfo[possible_marker_id] ? 1: 0;
         updateMarkerAppear(possible_marker_id, appeared);
       }
+      for (let color in COLOR_SIZES){
+        let appeared = currentColors[color] ? 1: 0;
+        let {id} = COLOR_SIZES[color];
+        updateMarkerAppear(id, appeared);
+      }
+      // console.log(MARKERS_INFO)
       //TODO: Check what part of this deserves to stay
-      // for (let possible_marker_id in OBJECT_SIZES){
-      //   if (!isInBoard(possible_marker_id)){
-      //     if (possible_marker_id in currentVectors){
-      //       console.log(`Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`)
-      //       delete currentVectors[possible_marker_id];
-      //     }
-      //     delete MARKERS_INFO[possible_marker_id].appear; // delete previous appear history
-      //     if (!grid){continue};
-      //     // If not in board anymore, delete it from the virtual grid
-      //     if (possible_marker_id in grid.bots){
-      //       grid.remove_bot(possible_marker_id);
-      //     } else if (possible_marker_id in grid.obstacles){
-      //       grid.remove_obstacle(possible_marker_id)
-      //     } else if (possible_marker_id in grid.coins){
-      //       grid.remove_coin(possible_marker_id);
-      //     }
-      //   } else {
-      //     //It's still in board
-      //     // if (grid && possible_marker_id in grid.coins){
-      //     //   updateCoinInfo(possible_marker_id);
-      //     // }
-      //   }
-      // }
+      for (let possible_marker_id in OBJECT_SIZES){
+        if (!isInBoard(possible_marker_id)){
+          possible_marker_id = Number(possible_marker_id);
+          if (possible_marker_id === 21){
+            console.log("21 is out!")
+          }
+          if (possible_marker_id in currentVectors){
+            console.log(`Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`)
+            delete currentVectors[possible_marker_id];
+          }
+          // delete MARKERS_INFO[possible_marker_id].appear; // delete previous appear history
+          if (!grid){continue};
+          // If not in board anymore, delete it from the virtual grid
+          if (possible_marker_id in grid.bots){
+            grid.remove_bot(possible_marker_id);
+          } else if (possible_marker_id in grid.obstacles){
+            grid.remove_obstacle(possible_marker_id)
+          } else if (possible_marker_id in grid.coins){
+            grid.remove_coin(possible_marker_id);
+          }
+        } else {
+          //It's still in board
+          // if (grid && possible_marker_id in grid.coins){
+          //   updateCoinInfo(possible_marker_id);
+          // }
+        }
+      }
+      for (let color in colorInfo){
+        let {id} = colorInfo[color];
+        let possible_marker_id = id;
+        if (!grid){continue};
+
+        if (isInBoard(possible_marker_id)){
+          continue;
+        }
+        // If not in board anymore, delete it from the virtual grid
+        if (possible_marker_id in grid.bots){
+          grid.remove_bot(possible_marker_id);
+        } else if (possible_marker_id in grid.obstacles){
+          grid.remove_obstacle(possible_marker_id)
+        } else if (possible_marker_id in grid.coins){
+          grid.remove_coin(possible_marker_id);
+        }
+      }
       // for (let id in markersInfo) {
       //   id = Number(id);
       //   if (IGNORE_IDS.indexOf(id) !== -1) continue;
@@ -1009,7 +1258,7 @@ async function processVideo() {
         updateVirtualObjects();
         // await move_bots();
         drawBoard();
-    }
+      }
     }
   }
   // schedule next one.
@@ -1071,8 +1320,13 @@ function logDistance(id1, id2) {
  * @param {*} id aruco marker
  * @returns 2d position of the 3d coordinates (from tvec) of a given marker
  */
-function getReal2dPosition(id){
-  let point = get2D(currentVectors[id].tvec.data64F);
+function getReal2dPosition(id_or_color, is_color=false){
+  let point; //2D point
+  if (!is_color){
+    point = get2D(currentVectors[id_or_color].tvec.data64F);
+  } else {
+    point = colorInfo[id_or_color];
+  }
   let point3D = cv.matFromArray(3, 1, cv.CV_64F, [point[0], point[1], 1]);
   let outPoint3D = new cv.Mat();
   let useless = new cv.Mat(); //to be multiplied by 0

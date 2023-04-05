@@ -8,6 +8,19 @@
     <link rel="stylesheet" href="./virtual-board-style.css"></link>
 </head>
 <body>
+    <div>
+        <!-- <form> -->
+            <button id="createRoomButton">Create Room</button>
+            <input 
+                type="text"
+                id="roomInput"
+            >
+            <button id="joinRoomButton" type="submit">Join room</button>
+        <!-- </form> -->
+    </div>
+
+    <div id="virtualGridContainer" class="game-hidden">
+    <h1>Room <i id="roomNameSpan"></i></h1>
     <button id="create_grid_button">Create grid</button>
     <h1>Directions of bots: </h1>
     <div id="botDirectionsDiv"></div>
@@ -17,6 +30,7 @@
     <section>
         <textarea id="logDiv" rows="10" cols="100"></textarea>
     </section>
+    <button id="changeBotsMovingButton" class="bot-moving-btn bot-start">Start</button>
     <h1>Virtual Grid: </h1>
     <div id="gridDiv">
     </div>
@@ -100,6 +114,7 @@
             </div>
         </div>
     </section>
+    </div>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script type="text/javascript" src="./graph.js"></script>
     <script type="text/javascript" src="./grid-graph.js"></script>

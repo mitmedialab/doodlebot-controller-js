@@ -2,19 +2,18 @@ let grid;
 let boardDrawing;
 const SERVER_LINK = "http://localhost:5001";
 let socket; 
-
+let roomName;
+let VIRTUAL_GRID_CALLBACKS = {
+    onApplyMoveToBot: (bot_id, move, options) => {
+        if (!options.noSocket){
+            socket.emit("move_bot", {bot_id, move, virtualGrid: grid.toJSON()})
+        }
+    }
+}
 document.addEventListener('DOMContentLoaded', () => {
     let rows = 10;
     let cols = 20;
-    grid = new VirtualGrid(rows, cols, {
-        // onPickupCoin: (bot, coin) => {grid.add_random_coin()}
-        // onAddBot: (bot) => {socket.emit("move_bot", bot)}
-        onApplyMoveToBot: (bot_id, move, options) => {
-            if (!options.noSocket){
-                socket.emit("move_bot", {bot_id, move})
-            }
-        }
-    });
+    // grid = new VirtualGrid(rows, cols, VIRTUAL_GRID_CALLBACKS);
     // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
     // let duration = 100;
     // setTimeout(function a() {
@@ -22,14 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
     //     drawBoard()
     //     setTimeout(a, duration);
     // }, duration);
-    drawBoard();
+    // drawBoard();
     setupSocket();
-    socket.emit("join_room", "Weird room???");
 })
 window.addEventListener("beforeunload", () => {
     prompt("aaa")
     closeSocketListeners();
 }, false)
+createRoomButton.addEventListener("click", () => {
+    //Creates and joins a random room
+    socket.emit("create_room");
+})
+joinRoomButton.addEventListener("click", () => {
+    let room = roomInput.value;
+    // alert(room);
+    socket.emit("join_room", room);
+});
+let currentBotId;
 function setupSocket() {
     socket = io(SERVER_LINK, {autoConnect: false});
     socket.connect();
@@ -37,13 +45,21 @@ function setupSocket() {
         console.log('received message');
         console.log(message);
     })
-    socket.on("joined_room", async (roomId) => {
+    socket.on("not_valid_room", ({roomId}) => {
+        alert(`The room ${roomId} is not valid`);
+    })
+    socket.on("joined_room", async ({roomId, virtualGrid}) => {
         console.log(`Detecting joining room: ${roomId}`);
+        virtualGridContainer.classList.remove("game-hidden")
+        roomNameSpan.innerHTML = roomId
+        let {rows, cols, bots, obstacles, coins} = virtualGrid;
+        grid = new VirtualGrid(rows, cols, {bots, obstacles, coins, ...VIRTUAL_GRID_CALLBACKS});
+        drawBoard();
     })
     socket.on("added_bot", (bot) => {
         grid.add_bot(bot);
         drawBoard();    
-        create_bot_options(bot)
+        // create_bot_options(bot) //Don't show this since it won't be editable by user.
     })
     //reminder: domingo 8am -> 8pm "se te ha hecho el calendario correcto, no se "
     // si es que se va el 
@@ -58,6 +74,12 @@ function setupSocket() {
     socket.on("moved_bot", ({bot_id, move}) => {
         grid.apply_next_move_to_bot(bot_id, move, {noSocket: true});
         drawBoard();
+    })
+    socket.on("started_bot", () => {
+        startMovingButton_ClickHandler(currentBotId);
+    })
+    socket.on("stopped_bot", () => {
+        stopMovingButton_ClickHandler(currentBotId);
     })
 }
 function closeSocketListeners(){
@@ -251,14 +273,14 @@ function create_bot_options(bot){
     controlsDiv.appendChild(tempDiv);
     controlsDiv.appendChild(moveDownButton);
 
-    let changeMovingButton = createButton(`changeMovingButton-${bot_id}`, "Start moving", [
-        {
-            key: "click",
-            handler: (evt)=>{changeMoving_ClickHandler(bot_id, evt)}
-        }
-    ]);
-    changeMovingButton.classList.add("bot-moving-btn");
-    changeMovingButton.classList.add("bot-start")
+    // let changeMovingButton = createButton(`changeMovingButton-${bot_id}`, "Start moving", [
+    //     {
+    //         key: "click",
+    //         handler: (evt)=>{changeMoving_ClickHandler(bot_id, evt)}
+    //     }
+    // ]);
+    // changeMovingButton.classList.add("bot-moving-btn");
+    // changeMovingButton.classList.add("bot-start")
     // let policySelect = createSelect(`policySelect-${bot_id}`, "Select a moving policy:", POLICY_SELECT_OPTIONS, [
     //     {
     //         key: "change",
@@ -273,7 +295,7 @@ function create_bot_options(bot){
     policyTextHeader.innerText = "Select a policy:";
     policyContainer.appendChild(policyTextHeader);
     policyContainer.appendChild(policyCheckboxGroupDiv);
-    policyContainer.appendChild(changeMovingButton);
+    // policyContainer.appendChild(changeMovingButton);
 
     let otherOptionsContainer = document.createElement('div');
     otherOptionsContainer.classList.add("bot-other-options-container");
@@ -374,17 +396,18 @@ addRandomBotButton.addEventListener("click", evt=>{
     let {bot} = grid.add_random_bot();
     drawBoard();
     create_bot_options(bot)
-    socket.emit("add_bot", bot);
+    currentBotId = bot.id;
+    socket.emit("add_bot", {bot, virtualGrid: grid.toJSON()});
 })
 addRandomObstacleButton.addEventListener('click', (evt)=>{
     let {obstacle} = grid.add_random_obstacle();
     drawBoard();
-    socket.emit("add_obstacle", obstacle);
+    socket.emit("add_obstacle", {obstacle, virtualGrid: grid.toJSON()});
 })
 addRandomCoinButton.addEventListener('click', (evt)=>{
     let {coin} = grid.add_random_coin();
     drawBoard();
-    socket.emit("add_coin", coin);
+    socket.emit("add_coin", {coin, virtualGrid: grid.toJSON()});
 })
 openEditorBot.addEventListener("click", evt=>{
     botEditorDiv.classList.toggle("editor-hide");
@@ -483,18 +506,29 @@ function changeMoving_ClickHandler(bot_id, evt){
     let isMoving = bot_id in intervals;
     if (isMoving){
         //Stop
+        socket.emit("stop_bot", "")
         stopMovingButton_ClickHandler(bot_id, evt);
-        evt.target.innerHTML = "Start moving";
-        evt.target.classList.remove("bot-stop");
-        evt.target.classList.add("bot-start");
+        // evt.target.innerHTML = "Start moving";
+        // evt.target.classList.remove("bot-stop");
+        // evt.target.classList.add("bot-start");
     } else {
         //Start
+        socket.emit("start_bot", "")
         startMovingButton_ClickHandler(bot_id, evt);
-        evt.target.innerHTML = "Stop moving";
-        evt.target.classList.remove("bot-start");
-        evt.target.classList.add("bot-stop");
+        // evt.target.innerHTML = "Stop moving";
+        // evt.target.classList.remove("bot-start");
+        // evt.target.classList.add("bot-stop");
     }
 }
+changeBotsMovingButton.addEventListener("click", (evt)=> {
+    //Start all of them, or stop all of them
+    changeMoving_ClickHandler(currentBotId, evt);
+    // for (let bot_id in grid.bots){
+    //     bot_id = Number(bot_id);
+    //     console.log(`Chaning move of Bot ${bot_id}`)
+    //     changeMoving_ClickHandler(bot_id, evt);
+    // }
+})
 
 let i = 0;
 let x;
@@ -508,6 +542,10 @@ function startMovingButton_ClickHandler(bot_id, evt){
     // if (!(bot_id in drawQueue)){
     //     drawQueue[bot_id] = [];
     // }
+    //Change button style
+    changeBotsMovingButton.innerHTML = "Stop moving";
+    changeBotsMovingButton.classList.remove("bot-start");
+    changeBotsMovingButton.classList.add("bot-stop");
     function move(){
         console.log("-------------------------MOVING-------------------")
         // if (drawQueue[bot_id].length > 0){
@@ -553,6 +591,10 @@ function startMovingButton_ClickHandler(bot_id, evt){
 function stopMovingButton_ClickHandler(bot_id, evt){
     clearInterval(intervals[bot_id]);
     delete intervals[bot_id];
+    //Changing button style
+    changeBotsMovingButton.innerHTML = "Start moving";
+    changeBotsMovingButton.classList.remove("bot-stop");
+    changeBotsMovingButton.classList.add("bot-start");
 }
 
 // function policySelect_ChangeHandler(bot_id, evt){
