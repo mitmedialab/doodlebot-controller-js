@@ -68,7 +68,7 @@ grid = new VirtualGrid(rows, cols, {bots, obstacles, coins})
 <!-- ### `grid.get_bot_angle`
 ### `grid.get_almost_crashes` -->
 ### `grid.change_moving_status`
-Stops a bot if it's moving, starts it if it's not moving. When pressing `start` this method should be called on all objects.
+Stops a bot if it's moving, starts it if it's not moving. When pressing `start` this method should be called on all bots.
 
 <!-- ### `grid.isInsideBoard(bottom_left, w, h)`
 Returns whether an object with `bottom_left` and dimensions `[w, h]` would fall fully inside the grid. -->
