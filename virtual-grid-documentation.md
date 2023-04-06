@@ -1,4 +1,4 @@
-# Doodlebot UI project documentation
+# Doodlebot UI project VirtualGrid documentation
 
 Technologies used: HTML, CSS, JavaScript, Sockets, OpencvJS
 
