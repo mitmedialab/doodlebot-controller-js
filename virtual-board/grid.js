@@ -50,7 +50,7 @@ const DISTANCE_VALUES = {
     }
 }
 let defaultOptions = {
-    drawBoard: () => {},
+    // drawBoard: () => {},
     bots: [], 
     obstacles: [],
     coins: [],
@@ -72,7 +72,7 @@ class VirtualGrid{
     constructor(m, n, options={}){
         options = Object.assign(defaultOptions, options);
         let {
-            drawBoard, 
+            // drawBoard, 
             bots, 
             obstacles, 
             coins, 
@@ -98,7 +98,7 @@ class VirtualGrid{
         this.onRemoveCoin = onRemoveCoin;
         this.onUpdateObject = onUpdateObject;
         this.onApplyMoveToBot = onApplyMoveToBot;    
-        this.drawBoard = drawBoard;
+        // this.drawBoard = drawBoard;
         // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
         // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
         // If the relative_anchor is (0,0) that means tha 
@@ -192,7 +192,7 @@ class VirtualGrid{
         }
         objects[id][id_index] = newObject;
         // objects[id].push(newObject);
-        this.drawBoard(this.print_board());
+        // this.drawBoard(this.print_board());
         return {success: true, message: `Succesfully added object with type ${type} and id ${id}`, object: newObject}
     }
     /**
@@ -513,7 +513,7 @@ class VirtualGrid{
         //Below might not be necessary because Javascript send objects by reference, not by copy
         this.bots[bot_id][bot_index] = bot;
         let message = coinsPicked.length === 0 ? "": `Moved succesfully and picked up ${coinsPicked.length} coins ${coinsPicked}`
-        this.drawBoard(this.print_board());
+        // this.drawBoard(this.print_board());
 
         //Now that the bot has moved, we can add stuff
         for (let coin of coinsPicked){
@@ -1554,7 +1554,7 @@ class VirtualGrid{
         }
         // console.log(`bot after turning ${angle}`)
         // console.log(bot);
-        this.drawBoard(this.print_board());
+        // this.drawBoard(this.print_board());
         // TODO: Under assumption of square bots, turning should always be fine
         // But might be better to check for other cases.
         return {bot, success: true, message:`Bot with id ${bot_id} turned ${angle} degrees`};
