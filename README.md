@@ -31,6 +31,8 @@ Python serves the frontend in `http://localhost:8000`. If, for some reason, you 
 
 ## Folder structure
 As of now, there are several folders, some with different purposes and others with no purpose but just me testing stuff. As that description is probably not useful, here's a more detailed explanation:
+
+
 | Folder name | Description | Important? | 
 ---- | -------- | -------- | -------- |
 | [virtual-board](./virtual-board/)| This is the core of this project. This provides [virtual-board/grid.js](./virtual-board/grid.js) which handles the creationg/deletion and update of bots/obstacles/coins. For more details, you can check out its [documentation](#documentation). Apart from this, the folder also provides [graph.js](./virtual-board/graph.js) with general code to find shortest path on a Graph using Dijkstra; and [grid-graph.js](./virtual-board/grid-graph.js) which provides `VirtualGrid`-specific methods to find the shortest way for a bot to go to a given object (i.e., a coin). | **YES**|
