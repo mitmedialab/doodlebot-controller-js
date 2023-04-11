@@ -1,0 +1,36 @@
+#body{
+    font-family: "Audiowide", sans-serif;
+}
+.background1 {
+    background-image: url('../assets/DB_NoThemeControlPanel_1.png');
+    background-size: cover; 
+}
+.background2 {
+    background-image: url('../assets/DoodleBot_CityTheme_Background.png');
+    background-size: cover;
+}
+#virtualMode {
+    width: 250px;
+    height: 250px;
+}
+#realVideoStream {
+    width: 250px;
+    height: 250px;
+}
+.fixed-size {
+    width: 120px;
+    height: 40px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.hoverable {
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.hoverable:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
