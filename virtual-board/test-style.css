@@ -64,3 +64,43 @@
   /* This makes things *much* easier */
   box-sizing: border-box;
 }
+
+#gridContainer {
+  position: relative;
+  object-fit: scale-down;
+}
+/* for bots*/
+.grid-row {
+  display: flex;
+}
+
+.grid-column {
+  display: flex;
+  /* height: 60px; */
+  /* width: 60px; */
+  /* background-color: rgb(88, 84, 84); */
+  /* margin: 10px; */
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 0.1px dashed white;
+}
+
+.cell-row-text,
+.cell-column-text {
+  /* margin: 10px; */
+  display: flex;
+  /* height: 60px; */
+  /* width: 60px; */
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.bot-container {
+  position: absolute;
+}
+.bot-image {
+  object-fit: scale-down;
+}

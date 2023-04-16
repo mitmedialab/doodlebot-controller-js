@@ -17,6 +17,16 @@
     <!--Adding interact.js-->
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <!-- <script type="module" src="./test.js"></script> -->
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script type="module" src="./test-interact.js"></script>
+    <script type="text/javascript" src="./graph.js"></script>
+    <script type="text/javascript" src="./grid-graph.js"></script>
+    <script type="text/javascript" src="./grid.js"></script>
+    <script type="module" src="./test-index.js"></script>
+    <!-- <script type="text/javascript" src="./html-helpers.js"></script> -->
+    <!-- <script type="text/javascript" src="./index.js"></script> -->
+    <!-- <script type="text/javascript" src="./virtual-board-worker.js"></script> -->
 </head>
 
 
@@ -24,11 +34,14 @@
     <!-- <div id="no-drop" class="drag-drop"> #no-drop </div> -->
     
 
-    <div id="outer-dropzone" class="dropzone">
+    <!-- <div id="outer-dropzone" class="dropzone"> -->
         <!-- #outer-dropzone -->
-            <div id="yes-drop" class="drag-drop"> #yes-drop </div>
+            <!-- <div id="yes-drop" class="drag-drop"> #yes-drop </div> -->
 
         <!-- <div id="inner-dropzone" class="dropzone">#inner-dropzone</div> -->
+    <!-- </div> -->
+    <div id="gridContainer">
+
     </div>
     <!-- <div class="resize-drag">
         Resize and/or drag me
@@ -36,6 +49,4 @@
 
 <!--Draggable Script-->
 </body>
-<script type="module" src="./test-index.js"></script>
-
 </html>

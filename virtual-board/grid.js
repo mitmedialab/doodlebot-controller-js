@@ -373,7 +373,7 @@ class VirtualGrid {
    * a (valid) position and angle.
    * @returns
    */
-  add_random_bot() {
+  add_random_bot(info = {}) {
     let MAX_ATTEMPTS = 10;
     let attempt = 0;
     while (attempt < MAX_ATTEMPTS) {
@@ -393,6 +393,7 @@ class VirtualGrid {
         height: height,
         relative_anchor: relative_anchor,
         angle: angle,
+        ...info,
       };
       let result = this.add_bot(potential_bot);
       if (result.success) {
@@ -598,8 +599,8 @@ class VirtualGrid {
     // let potentialBottomLeft = update.real_bottom_left == null|| bot.real_bottom_left;
     // let potentialAngle = update.angle == null || bot.angle;
     // let potentialRealAngle = update.realAngle == null || bot.realAngle;
-    // let potentialBot = Object.assign({}, bot, update);
-    let potentialBot = { ...bot };
+    let potentialBot = Object.assign({}, bot, update); //TODO: Check if this breaks anything
+    // let potentialBot = { ...bot };
     //First turn
     if (update.angle !== undefined) {
       let prevAngle = potentialBot.angle;
@@ -641,16 +642,23 @@ class VirtualGrid {
         message: "angle has to be one of [0, 90, 180, 270] !",
       };
     }
+
+    //Check if it has picked up any coins
+    //For now, get rid of it to make sure it picks it up in real life
+    //TODO: Check how different this will be for the all-virtual part
+    let potential_crashes = this.get_almost_crashes(potentialBot, 0);
+    if (potential_crashes[OBSTACLE_TYPE] || potential_crashes[BOT_TYPE]) {
+      return {
+        success: false,
+        bot: bot,
+        message: "Updating this crashes with either a bot or an obstacle",
+      };
+    }
     bot.real_bottom_left = potentialBot.real_bottom_left;
     bot.angle = potentialBot.angle;
     bot.realAngle = potentialBot.realAngle;
     bot.width = potentialBot.width;
     bot.height = potentialBot.height;
-
-    //Check if it has picked up any coins
-    //For now, get rid of it to make sure it picks it up in real life
-    //TODO: Check how different this will be for the all-virtual part
-    let potential_crashes = this.get_almost_crashes(bot, 0);
     let coinsPicked = [];
     if (COIN_TYPE in potential_crashes) {
       //If crashed with coins then pick them up
