@@ -7,7 +7,7 @@ import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
 
 /**
  *
- * @param {*} id ${TYPE}-${id}
+ * @param {*} id ${TYPE}-${id}n The id of the DOM element
  * @param {*} object
  * @param {*} cell_size
  */
@@ -31,47 +31,7 @@ const setupDraggable = (id, cell_size) => {
     // dragMoveListener from the dragging demo above
     listeners: {
       move: dragMoveListener,
-      end: (event) => {
-        let div = document.getElementById(id);
-        let [type, obj_id] = id.split("-");
-        let object;
-        if (type === BOT_TYPE) {
-          object = grid.bots[obj_id][0];
-        } else if (type === OBSTACLE_TYPE) {
-          object = grid.obstacles[obj_id][0];
-        } else if (type === COIN_TYPE) {
-          object = grid.coins[obj_id][0];
-        } else {
-          console.log(`In valid type ${type} from if '${id}'`);
-        }
-        // let dx = event.page.x - event.x0;
-        // let dy = event.page.y - event.y0;
-        let dx = Number(div.getAttribute("data-x") || 0);
-        let dy = -Number(div.getAttribute("data-y") || 0); // the Y axis is backwards
-
-        let di = Math.round(dx / cell_size);
-        let dj = Math.round(dy / cell_size);
-        let i = object.real_bottom_left[0] + di;
-        let j = object.real_bottom_left[1] + dj;
-        console.log(
-          `Moved [${di}, ${dj}] from ${object.real_bottom_left} to ${[i, j]}`
-        );
-        // Try different methods depending on the type of object
-        let { success } = grid.update_bot(object.id, {
-          real_bottom_left: [i, j],
-        });
-
-        if (!success) {
-          [i, j] = object.real_bottom_left; //Storing the original
-        }
-        div.style.left = `${cell_size * i}px`;
-        div.style.bottom = `${cell_size * j}px`;
-
-        //To put it back as new
-        div.style.transform = null;
-        div.removeAttribute("data-x");
-        div.removeAttribute("data-y");
-      },
+      end: (event) => dragEndListener(event, id, cell_size),
     },
   });
   //Resize is still TBD
@@ -177,8 +137,64 @@ function dragMoveListener(event) {
   target.setAttribute("data-x", x);
   target.setAttribute("data-y", y);
 }
+function dragEndListener(event, id, cell_size) {
+  let div = document.getElementById(id);
+  let [type, obj_id] = id.split("-");
+  let object;
+  if (type === BOT_TYPE) {
+    object = grid.bots[obj_id][0];
+  } else if (type === OBSTACLE_TYPE) {
+    object = grid.obstacles[obj_id][0];
+  } else if (type === COIN_TYPE) {
+    object = grid.coins[obj_id][0];
+  } else {
+    console.log(`In valid type ${type} from if '${id}'`);
+  }
+  // let dx = event.page.x - event.x0;
+  // let dy = event.page.y - event.y0;
+  let dx = Number(div.getAttribute("data-x") || 0);
+  let dy = -Number(div.getAttribute("data-y") || 0); // the Y axis is backwards
+
+  let di = Math.round(dx / cell_size);
+  let dj = Math.round(dy / cell_size);
+  let i = object.real_bottom_left[0] + di;
+  let j = object.real_bottom_left[1] + dj;
+  console.log(
+    `Moved [${di}, ${dj}] from ${object.real_bottom_left} to ${[i, j]}`
+  );
+  // Try different methods depending on the type of object
+  let res = {};
+  if (type === BOT_TYPE) {
+    res = grid.update_bot(object.id, {
+      real_bottom_left: [i, j],
+    });
+  } else if (type === OBSTACLE_TYPE) {
+    res = grid.update_obstacle(object.id, {
+      real_bottom_left: [i, j],
+    });
+  } else if (type === COIN_TYPE) {
+    res = grid.update_coin(object.id, {
+      real_bottom_left: [i, j],
+    });
+  } else {
+    console.log(`In valid type ${type} from if '${id}'`);
+  }
+  let { success } = res;
+
+  if (!success) {
+    [i, j] = object.real_bottom_left; //Storing the original
+  }
+  div.style.left = `${cell_size * i}px`;
+  div.style.bottom = `${cell_size * j}px`;
+
+  //To put it back as new
+  div.style.transform = null;
+  div.removeAttribute("data-x");
+  div.removeAttribute("data-y");
+}
 // this is used later in the resizing
 window.dragMoveListener = dragMoveListener;
+window.dragEndListener = dragEndListener;
 
 /////////////////////////////////////////DROPPING////////////////////////////////////////////////////
 // enable draggables to be dropped into this

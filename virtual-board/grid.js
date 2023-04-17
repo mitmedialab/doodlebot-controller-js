@@ -200,13 +200,13 @@ class VirtualGrid {
     let newObject = { ...obj, type, id_index };
     if (type === BOT_TYPE) {
       newObject = {
-        ...newObject,
         coins: [],
         policies: new Set(),
         distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
         only_reachable: false, //Whether to only calculate distance to reachable points
         targets: [],
         isMoving: false,
+        ...newObject,
       };
     }
     objects[id][id_index] = newObject;
@@ -338,7 +338,7 @@ class VirtualGrid {
     let max_coin_id = Math.max(MIN_COIN_ID - 1, ...Object.keys(this.coins));
     return max_coin_id + 1;
   }
-  add_random_coin() {
+  add_random_coin(info = {}) {
     let MAX_ATTEMPTS = 10;
     let attempt = 0;
     while (attempt < MAX_ATTEMPTS) {
@@ -351,6 +351,7 @@ class VirtualGrid {
         real_bottom_left: [col, row],
         width: 1,
         height: 1,
+        ...info,
       };
       let result = this.add_coin(potential_coin);
       if (result.success) {
@@ -402,7 +403,7 @@ class VirtualGrid {
       }
     }
   }
-  add_random_obstacle() {
+  add_random_obstacle(info = {}) {
     let MAX_ATTEMPTS = 10;
     let attempt = 0;
     while (attempt < MAX_ATTEMPTS) {
@@ -411,9 +412,9 @@ class VirtualGrid {
       let possible_sizes = [
         [1, 2],
         [1, 3],
-        [2, 1],
-        [3, 1],
-        [2, 2],
+        // [2, 1],
+        // [3, 1],
+        // [2, 2],
       ];
       let [width, height] = this.random_from(possible_sizes);
       let obstacleId = this.getNewObstacleId();
@@ -422,6 +423,7 @@ class VirtualGrid {
         real_bottom_left: [col, row],
         width: width,
         height: height,
+        ...info,
       };
       let result = this.add_obstacle(potential_obstacle);
       if (result.success) {
@@ -558,7 +560,7 @@ class VirtualGrid {
       for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]) {
         //TODO: Change bot state (e.g., give it more points)
         bot.coins.push([coin_id, coin_index]);
-        coinsPicked.push(this.coins[(coin_id, coin_index)]);
+        coinsPicked.push(this.coins[coin_id][coin_index]);
         this.remove_coin(coin_id, coin_index);
       }
     }

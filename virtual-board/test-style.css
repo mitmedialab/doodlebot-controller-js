@@ -84,7 +84,7 @@
   align-items: center;
   justify-content: center;
   color: white;
-  border: 0.1px dashed white;
+  border: 0.01px dashed white;
 }
 
 .cell-row-text,
@@ -103,4 +103,50 @@
 }
 .bot-image {
   object-fit: scale-down;
+}
+.obstacle-container {
+  position: absolute;
+}
+.obstacle-image {
+  object-fit: scale-down;
+}
+.coin-container {
+  position: absolute;
+}
+.coin-image {
+  object-fit: scale-down;
+}
+
+.rotation-handle {
+  padding: 3px 4px;
+  display: table;
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: -30px;
+  background-color: #ff1661;
+  border-radius: 10rem;
+  line-height: 1;
+  text-align: center;
+  font-weight: bold;
+  color: #fff;
+  cursor: move;
+}
+.rotation-handle:hover {
+  cursor: pointer;
+}
+
+#startBotsButton {
+  border: none;
+  color: white;
+  border-radius: 5px;
+  padding: 5px;
+  margin-top: 10px;
+}
+.bot-start {
+  background-color: green;
+}
+
+.bot-stop {
+  background-color: red;
 }

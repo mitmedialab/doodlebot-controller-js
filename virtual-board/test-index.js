@@ -3,7 +3,7 @@ import { setupDraggable } from "./test-interact.js";
 let grid;
 let rows = 10;
 let cols = 20;
-let cell_size = 30;
+let cell_size = 60;
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
  *
@@ -79,18 +79,38 @@ document.addEventListener("DOMContentLoaded", () => {
   // drawBoard();
   //   setupSocket();
   createDOMGrid(rows, cols, cell_size);
-  grid = new VirtualGrid(rows, cols, { onAddBot });
+  grid = new VirtualGrid(rows, cols, {
+    onAddBot,
+    onAddObstacle,
+    onAddCoin,
+    onPickupCoin,
+  });
   window.grid = grid;
 
-  grid.add_random_bot({ image: "../assets/None_Doodlebot.png" });
-  grid.add_random_bot({ image: "../assets/None_Doodlebot_Cowboy.png" });
+  grid.add_random_bot({
+    image: "../assets/None_Doodlebot.png",
+    policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
+  });
 
-  //   grid.add_random_coin();
-  //   grid.add_random_obstacle();
+  grid.add_random_bot({
+    image: "../assets/None_Doodlebot_Cowboy.png",
+    policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
+  });
+
+  grid.add_random_coin({ image: "../assets/None_Coin.png" });
+  grid.add_random_coin({ image: "../assets/None_Coin.png" });
+  grid.add_random_coin({ image: "../assets/None_Coin.png" });
+
+  grid.add_random_obstacle({ image: "../assets/None_Building.png" });
+  grid.add_random_obstacle({ image: "../assets/None_Building.png" });
 
   console.log(grid);
 });
-
+const onPickupCoin = (bot, coin) => {
+  //Remove the image of the coin!
+  let dom_id = `${COIN_TYPE}-${coin.id}`;
+  document.getElementById(dom_id).remove();
+};
 const onAddBot = (bot) => {
   let {
     width,
@@ -100,11 +120,22 @@ const onAddBot = (bot) => {
 
   //Creating a div at the given position
   let bot_dom = document.createElement("div");
-  bot_dom.classList.add("bot-container");
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  bot_dom.classList.add("bot-container");
   bot_dom.setAttribute("id", DOM_ID);
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
+
+  let rotateArrow = document.createElement("div");
+  rotateArrow.innerText = "⟲";
+  rotateArrow.classList.add("rotation-handle");
+  rotateArrow.addEventListener("click", () => {
+    //Remove previous, and paint again
+    document.getElementById(DOM_ID).remove();
+    let res = grid.turn_bot(bot.id, 90);
+    onAddBot(res.bot);
+  });
+  bot_dom.appendChild(rotateArrow);
 
   // Creates the underlying image, with the given dimensions and orientation
   let image = document.createElement("img");
@@ -122,3 +153,134 @@ const onAddBot = (bot) => {
   //Makes the created div draggable
   setupDraggable(DOM_ID, cell_size);
 };
+
+const onAddObstacle = (obstacle) => {
+  let {
+    width,
+    height,
+    real_bottom_left: [i, j],
+  } = obstacle;
+
+  //Creating a div at the given position
+  let obstacle_dom = document.createElement("div");
+  obstacle_dom.classList.add("obstacle-container");
+  let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  obstacle_dom.setAttribute("id", DOM_ID);
+  obstacle_dom.style.left = `${cell_size * i}px`;
+  obstacle_dom.style.bottom = `${cell_size * j}px`;
+
+  // Creates the underlying image, with the given dimensions and orientation
+  let image = document.createElement("img");
+  image.classList.add("obstacle-image");
+  image.setAttribute(`id`, `${DOM_ID}-image`);
+  image.setAttribute("src", obstacle.image);
+  image.style.width = `${cell_size * width}px`;
+  image.style.height = `${cell_size * height}px`;
+
+  obstacle_dom.appendChild(image);
+  gridContainer.appendChild(obstacle_dom);
+
+  //Makes the created div draggable
+  setupDraggable(DOM_ID, cell_size);
+};
+
+const onAddCoin = (coin) => {
+  let {
+    width,
+    height,
+    real_bottom_left: [i, j],
+  } = coin;
+
+  //Creating a div at the given position
+  let coin_dom = document.createElement("div");
+  coin_dom.classList.add("coin-container");
+  let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  coin_dom.setAttribute("id", DOM_ID);
+  coin_dom.style.left = `${cell_size * i}px`;
+  coin_dom.style.bottom = `${cell_size * j}px`;
+
+  // Creates the underlying image, with the given dimensions and orientation
+  let image = document.createElement("img");
+  image.classList.add("coin-image");
+  image.setAttribute(`id`, `${DOM_ID}-image`);
+  image.setAttribute("src", coin.image);
+  image.style.width = `${cell_size * width}px`;
+  image.style.height = `${cell_size * height}px`;
+
+  coin_dom.appendChild(image);
+  gridContainer.appendChild(coin_dom);
+
+  //Makes the created div draggable
+  setupDraggable(DOM_ID, cell_size);
+};
+const updateBotInVirtualGrid = (id, type) => {
+  let bot = grid.bots[id][0];
+  let domID = `${type}-${id}`;
+  let div = document.getElementById(domID);
+  //TODO: Check if deleting is needed, or could just update
+  div.remove(); //Restart view for this bot
+  onAddBot(bot); //Add the one with the new position/angle
+};
+let intervals = {};
+function changeMoving_ClickHandler(bot_id, evt) {
+  let isMoving = bot_id in intervals;
+  if (isMoving) {
+    //Stop
+    // socket.emit("stop_bot", "")
+    stopMovingButton_ClickHandler(bot_id, evt);
+    // evt.target.innerHTML = "Start moving";
+    // evt.target.classList.remove("bot-stop");
+    // evt.target.classList.add("bot-start");
+  } else {
+    //Start
+    // socket.emit("start_bot", "")
+    startMovingButton_ClickHandler(bot_id, evt);
+    // evt.target.innerHTML = "Stop moving";
+    // evt.target.classList.remove("bot-start");
+    // evt.target.classList.add("bot-stop");
+  }
+}
+function startMovingButton_ClickHandler(bot_id, evt) {
+  if (bot_id in intervals) {
+    log("The bot is already moving!");
+    return;
+  }
+  startBotsButton.innerHTML = "Stop moving";
+  startBotsButton.classList.remove("bot-start");
+  startBotsButton.classList.add("bot-stop");
+  function move() {
+    console.log("-------------------------MOVING-------------------");
+    let num_turns = 1;
+    let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
+    console.log(next_move);
+    grid.apply_next_move_to_bot(bot_id, next_move);
+    // Now updte the view of the bot
+    updateBotInVirtualGrid(bot_id, BOT_TYPE);
+    // Number(
+    //   document.getElementById(`coins-policy-turns-${bot_id}`).value
+    // );
+    // let history = grid.move_bot_using_policies(
+    //   bot_id,
+    //   0,
+    //   num_turns
+    //   //   (bot_index = 0),
+    //   //   (num_turns = num_turns)
+    // );
+    // drawBoard();
+  }
+  intervals[bot_id] = setInterval(move, 500);
+}
+
+function stopMovingButton_ClickHandler(bot_id, evt) {
+  clearInterval(intervals[bot_id]);
+  delete intervals[bot_id];
+  //Changing button style
+  startBotsButton.innerHTML = "Start moving";
+  startBotsButton.classList.remove("bot-stop");
+  startBotsButton.classList.add("bot-start");
+}
+startBotsButton.addEventListener("click", () => {
+  for (let bot_id in grid.bots) {
+    changeMoving_ClickHandler(bot_id);
+  }
+});
