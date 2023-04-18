@@ -1,4 +1,4 @@
-import { setupDraggable } from "./test-interact.js";
+import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 
 let grid;
 let rows = 10;
@@ -86,25 +86,25 @@ document.addEventListener("DOMContentLoaded", () => {
     onPickupCoin,
   });
   window.grid = grid;
+  setupDraggable(".template", cell_size); //Make all templates draggable
+  setupGridDropzone(cell_size); //Make it droppable
 
-  grid.add_random_bot({
-    image: "../assets/None_Doodlebot.png",
-    policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
-  });
+  // grid.add_random_bot({
+  //   image: "../assets/None_Doodlebot.png",
+  //   policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
+  // });
 
-  grid.add_random_bot({
-    image: "../assets/None_Doodlebot_Cowboy.png",
-    policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
-  });
+  // grid.add_random_bot({
+  //   image: "../assets/None_Doodlebot_Cowboy.png",
+  //   policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
+  // });
 
-  grid.add_random_coin({ image: "../assets/None_Coin.png" });
-  grid.add_random_coin({ image: "../assets/None_Coin.png" });
-  grid.add_random_coin({ image: "../assets/None_Coin.png" });
+  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
+  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
+  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
 
-  grid.add_random_obstacle({ image: "../assets/None_Building.png" });
-  grid.add_random_obstacle({ image: "../assets/None_Building.png" });
-
-  console.log(grid);
+  // grid.add_random_obstacle({ image: "../assets/None_Building.png" });
+  // grid.add_random_obstacle({ image: "../assets/None_Building.png" });
 });
 const onPickupCoin = (bot, coin) => {
   //Remove the image of the coin!
@@ -115,7 +115,9 @@ const onAddBot = (bot) => {
   let {
     width,
     height,
+    image,
     real_bottom_left: [i, j],
+    angle,
   } = bot;
 
   //Creating a div at the given position
@@ -138,20 +140,20 @@ const onAddBot = (bot) => {
   bot_dom.appendChild(rotateArrow);
 
   // Creates the underlying image, with the given dimensions and orientation
-  let image = document.createElement("img");
-  image.classList.add("bot-image");
-  image.setAttribute(`id`, `${DOM_ID}-image`);
-  image.setAttribute("src", bot.image);
-  image.style.width = `${cell_size * width}px`;
-  image.style.height = `${cell_size * height}px`;
+  let imageEl = document.createElement("img");
+  imageEl.classList.add("bot-image");
+  imageEl.setAttribute(`id`, `${DOM_ID}-image`);
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
   // Angle defined in bot is not same direction as transform expects
-  image.style.transform = `rotate(${360 - bot.angle}deg)`;
+  imageEl.style.transform = `rotate(${360 - angle}deg)`;
 
-  bot_dom.appendChild(image);
+  bot_dom.appendChild(imageEl);
   gridContainer.appendChild(bot_dom);
 
   //Makes the created div draggable
-  setupDraggable(DOM_ID, cell_size);
+  setupDraggable(`#${DOM_ID}`, cell_size);
 };
 
 const onAddObstacle = (obstacle) => {
@@ -159,29 +161,30 @@ const onAddObstacle = (obstacle) => {
     width,
     height,
     real_bottom_left: [i, j],
+    image,
   } = obstacle;
 
   //Creating a div at the given position
   let obstacle_dom = document.createElement("div");
-  obstacle_dom.classList.add("obstacle-container");
   let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  obstacle_dom.classList.add("obstacle-container");
   obstacle_dom.setAttribute("id", DOM_ID);
   obstacle_dom.style.left = `${cell_size * i}px`;
   obstacle_dom.style.bottom = `${cell_size * j}px`;
 
   // Creates the underlying image, with the given dimensions and orientation
-  let image = document.createElement("img");
-  image.classList.add("obstacle-image");
-  image.setAttribute(`id`, `${DOM_ID}-image`);
-  image.setAttribute("src", obstacle.image);
-  image.style.width = `${cell_size * width}px`;
-  image.style.height = `${cell_size * height}px`;
+  let imageEl = document.createElement("img");
+  imageEl.classList.add("obstacle-image");
+  imageEl.setAttribute(`id`, `${DOM_ID}-image`);
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
 
   obstacle_dom.appendChild(image);
   gridContainer.appendChild(obstacle_dom);
 
   //Makes the created div draggable
-  setupDraggable(DOM_ID, cell_size);
+  setupDraggable(`#${DOM_ID}`, cell_size);
 };
 
 const onAddCoin = (coin) => {
@@ -189,29 +192,30 @@ const onAddCoin = (coin) => {
     width,
     height,
     real_bottom_left: [i, j],
+    image,
   } = coin;
 
   //Creating a div at the given position
   let coin_dom = document.createElement("div");
-  coin_dom.classList.add("coin-container");
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  coin_dom.classList.add("coin-container");
   coin_dom.setAttribute("id", DOM_ID);
   coin_dom.style.left = `${cell_size * i}px`;
   coin_dom.style.bottom = `${cell_size * j}px`;
 
   // Creates the underlying image, with the given dimensions and orientation
-  let image = document.createElement("img");
-  image.classList.add("coin-image");
-  image.setAttribute(`id`, `${DOM_ID}-image`);
-  image.setAttribute("src", coin.image);
-  image.style.width = `${cell_size * width}px`;
-  image.style.height = `${cell_size * height}px`;
+  let imageEl = document.createElement("img");
+  imageEl.classList.add("coin-image");
+  imageEl.setAttribute(`id`, `${DOM_ID}-image`);
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
 
   coin_dom.appendChild(image);
-  gridContainer.appendChild(coin_dom);
+  waitingRoom.appendChild(coin_dom);
 
   //Makes the created div draggable
-  setupDraggable(DOM_ID, cell_size);
+  setupDraggable(`#${DOM_ID}`, cell_size);
 };
 const updateBotInVirtualGrid = (id, type) => {
   let bot = grid.bots[id][0];

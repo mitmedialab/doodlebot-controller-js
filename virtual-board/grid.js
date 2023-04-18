@@ -206,6 +206,7 @@ class VirtualGrid {
         only_reachable: false, //Whether to only calculate distance to reachable points
         targets: [],
         isMoving: false,
+        angle: ANGLE_DIRS.RIGHT, // Looking to the right
         ...newObject,
       };
     }

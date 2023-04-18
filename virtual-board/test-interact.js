@@ -4,6 +4,7 @@ import "https://cdn.interactjs.io/v1.9.20/actions/resize/index.js";
 import "https://cdn.interactjs.io/v1.9.20/modifiers/index.js";
 import "https://cdn.interactjs.io/v1.9.20/dev-tools/index.js";
 import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
+let cell_size = 60;
 
 /**
  *
@@ -11,29 +12,61 @@ import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
  * @param {*} object
  * @param {*} cell_size
  */
-const setupDraggable = (id, cell_size) => {
-  let grid = window.grid;
+const setupDraggable = (selector, cell_size) => {
+  interact(selector)
+    .draggable({
+      manualStart: true,
+      inertia: true,
+      modifiers: [
+        // interact.modifiers.restrictRect({
+        //   restriction: "parent",
+        //   endOnly: true,
+        // }),
+        interact.modifiers.snap({
+          targets: [interact.snappers.grid({ x: cell_size, y: cell_size })],
+          // range: Infinity,
+          relativePoints: [{ x: 0, y: 0 }],
+        }),
+      ],
+      //   autoScroll: true,
+      // dragMoveListener from the dragging demo above
+      listeners: {
+        move: dragMoveListener,
+        // end: (event) => dragEndListener(event, id, cell_size),
+      },
+    })
+    .on("move", function (event) {
+      var interaction = event.interaction;
+      // if the pointer was moved while being held down
+      // and an interaction hasn't started yet
+      if (interaction.pointerIsDown && !interaction.interacting()) {
+        let original = event.currentTarget;
 
-  interact(`#${id}`).draggable({
-    inertia: true,
-    modifiers: [
-      // interact.modifiers.restrictRect({
-      //   restriction: "parent",
-      //   endOnly: true,
-      // }),
-      interact.modifiers.snap({
-        targets: [interact.snappers.grid({ x: cell_size, y: cell_size })],
-        // range: Infinity,
-        relativePoints: [{ x: 0, y: 0 }],
-      }),
-    ],
-    //   autoScroll: true,
-    // dragMoveListener from the dragging demo above
-    listeners: {
-      move: dragMoveListener,
-      end: (event) => dragEndListener(event, id, cell_size),
-    },
-  });
+        //It's clone if it's one of the ones that is mid-drag or one that is already part
+        //of the grid
+        let is_clone =
+          original.getAttribute("clone") === "true" ||
+          original.getAttribute("id") != null;
+        if (!is_clone) {
+          // create a clone of the currentTarget element
+          let clone = event.currentTarget.cloneNode(true);
+          clone.setAttribute("clone", "true");
+          clone.style.position = "relative";
+          clone.classList.remove("template"); //To make sure it's no the original
+          clone.style["touch-action"] = "none";
+          // insert the clone to the page
+          // TODO: position the clone appropriately
+          // original.parentElement
+          document.body.appendChild(clone);
+
+          // start a drag interaction targeting the clone
+          interaction.start({ name: "drag" }, event.interactable, clone);
+        } else {
+          // Should still be able to be dragged, but don't make a copy
+          interaction.start({ name: "drag" }, event.interactable, original);
+        }
+      }
+    });
   //Resize is still TBD
   // .resizable({
   //   edges: {
@@ -124,7 +157,6 @@ const setupDraggable = (id, cell_size) => {
  * @param {*} event
  */
 function dragMoveListener(event) {
-  console.log(event);
   var target = event.target;
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
@@ -137,9 +169,10 @@ function dragMoveListener(event) {
   target.setAttribute("data-x", x);
   target.setAttribute("data-y", y);
 }
-function dragEndListener(event, id, cell_size) {
-  let div = document.getElementById(id);
-  let [type, obj_id] = id.split("-");
+function updateVirtualGrid(div_id, grid_position) {
+  let [i, j] = grid_position;
+  let div = document.getElementById(div_id);
+  let [type, obj_id] = div_id.split("-");
   let object;
   if (type === BOT_TYPE) {
     object = grid.bots[obj_id][0];
@@ -148,20 +181,8 @@ function dragEndListener(event, id, cell_size) {
   } else if (type === COIN_TYPE) {
     object = grid.coins[obj_id][0];
   } else {
-    console.log(`In valid type ${type} from if '${id}'`);
+    console.log(`Invalid type ${type} from if '${div_id}'`);
   }
-  // let dx = event.page.x - event.x0;
-  // let dy = event.page.y - event.y0;
-  let dx = Number(div.getAttribute("data-x") || 0);
-  let dy = -Number(div.getAttribute("data-y") || 0); // the Y axis is backwards
-
-  let di = Math.round(dx / cell_size);
-  let dj = Math.round(dy / cell_size);
-  let i = object.real_bottom_left[0] + di;
-  let j = object.real_bottom_left[1] + dj;
-  console.log(
-    `Moved [${di}, ${dj}] from ${object.real_bottom_left} to ${[i, j]}`
-  );
   // Try different methods depending on the type of object
   let res = {};
   if (type === BOT_TYPE) {
@@ -177,13 +198,16 @@ function dragEndListener(event, id, cell_size) {
       real_bottom_left: [i, j],
     });
   } else {
-    console.log(`In valid type ${type} from if '${id}'`);
+    console.log(`Invalid type ${type} from if '${id}'`);
   }
   let { success } = res;
 
   if (!success) {
-    [i, j] = object.real_bottom_left; //Storing the original
+    console.log(res);
+    i = object.real_bottom_left[0]; //Storing the original
+    j = object.real_bottom_left[1];
   }
+  console.log(`New bottom left: ${[i, j]} `);
   div.style.left = `${cell_size * i}px`;
   div.style.bottom = `${cell_size * j}px`;
 
@@ -194,115 +218,175 @@ function dragEndListener(event, id, cell_size) {
 }
 // this is used later in the resizing
 window.dragMoveListener = dragMoveListener;
-window.dragEndListener = dragEndListener;
+// window.dragEndListener = dragEndListener;
 
+function getRelativeBottomLeft(grid, element) {
+  // (0, 0) is on top left of the screen
+  let gridRect = grid.getBoundingClientRect();
+  let gridLeft = gridRect.left;
+  let gridBottom = gridRect.bottom;
+
+  let elementRect = element.getBoundingClientRect();
+  let elementLeft = elementRect.left;
+  let elementBottom = elementRect.bottom;
+
+  let dx = elementLeft - gridLeft;
+  let dy = gridBottom - elementBottom; // as grid positions are calculated different
+  return [dx, dy];
+}
 /////////////////////////////////////////DROPPING////////////////////////////////////////////////////
 // enable draggables to be dropped into this
-interact(".dropzone").dropzone({
-  // only accept elements matching this CSS selector
-  accept: "#yes-drop",
-  // Require a 75% element overlap for a drop to be possible
-  overlap: 0.75,
-
-  // listen for drop related events:
-  ondropactivate: function (event) {
-    // add active dropzone feedback
-    event.target.classList.add("drop-active");
-  },
-  ondragenter: function (event) {
-    var draggableElement = event.relatedTarget;
-    var dropzoneElement = event.target;
-
-    // feedback the possibility of a drop
-    dropzoneElement.classList.add("drop-target");
-    draggableElement.classList.add("can-drop");
-    draggableElement.textContent = "Dragged in";
-  },
-  ondragleave: function (event) {
-    // remove the drop feedback style
-    event.target.classList.remove("drop-target");
-    event.relatedTarget.classList.remove("can-drop");
-    event.relatedTarget.textContent = "Dragged out";
-  },
-  ondrop: function (event) {
-    event.relatedTarget.textContent = "Dropped";
-  },
-  ondropdeactivate: function (event) {
-    // remove active dropzone feedback
-    event.target.classList.remove("drop-active");
-    event.target.classList.remove("drop-target");
-  },
-});
-
-interact(".drag-drop").draggable({
-  inertia: true,
-  //   origin: "self",
-  //   snap: {
-  //     targets: [
-  //       interact.createSnapGrid({
-  //         x: 100,
-  //         y: 100,
-  //         // limit to the container dimensions
-  //         limits: {
-  //           left: 0,
-  //           top: 0,
-  //           right: 500 - 100,
-  //           bottom: 500 - 100,
-  //         },
-  //       }),
-  //     ],
-  //     relativePoints: [{ x: 0, y: 0 }],
-  //   },
-  modifiers: [
-    // interact.modifiers.restrictRect({
-    //   restriction: "parent",
-    //   endOnly: true,
-    // }),
-    interact.modifiers.snap({
-      targets: [interact.snappers.grid({ x: 100, y: 100 })],
-      // range: Infinity,
-      relativePoints: [{ x: 0, y: 0 }],
-    }),
-  ],
-  //   autoScroll: true,
-  // dragMoveListener from the dragging demo above
-  listeners: { move: dragMoveListener },
-});
-interact(".drag-drop").resizable({
-  //   origin: "self",
-  edges: {
-    top: true, // Use pointer coords to check for resize.
-    left: true, // Disable resizing from left edge.
-    bottom: true, // Resize if pointer target matches selector
-    right: true, // Resize if pointer target is the given Element
-  },
-  snapSize: {
-    // targets: [{ width: 100, height: 100, range: 100 }],
-    targets: [
-      interact.createSnapGrid({
-        x: 100,
-        y: 100,
-        range: 100,
-      }),
-    ],
-  },
-  listeners: {
-    move: function (event) {
-      let { x, y } = event.target.dataset;
-
-      x = (parseFloat(x) || 0) + event.deltaRect.left;
-      y = (parseFloat(y) || 0) + event.deltaRect.top;
-
-      Object.assign(event.target.style, {
-        width: `${event.rect.width}px`,
-        height: `${event.rect.height}px`,
-        transform: `translate(${x}px, ${y}px)`,
-      });
-
-      Object.assign(event.target.dataset, { x, y });
+function setupGridDropzone(cell_size) {
+  interact(".dropzone").dropzone({
+    accept: "*",
+    overlap: 0.75,
+    // listen for drop related events:
+    ondropactivate: function (event) {
+      console.log("on drop activate");
+      // add active dropzone feedback
+      event.target.classList.add("drop-active");
     },
-  },
-});
+    ondragenter: function (event) {
+      console.log("on drop enter");
+      var draggableElement = event.relatedTarget;
+      var dropzoneElement = event.target;
+
+      // feedback the possibility of a drop
+      dropzoneElement.classList.add("drop-target");
+      draggableElement.classList.add("can-drop");
+      // draggableElement.textContent = "Dragged in";
+    },
+    ondragleave: function (event) {
+      console.log("on drop leave");
+
+      // remove the drop feedback style
+      event.target.classList.remove("drop-target");
+      event.relatedTarget.classList.remove("can-drop");
+      // event.relatedTarget.textContent = "Dragged out";
+    },
+    ondrop: function (event) {
+      // event.relatedTarget.textContent = "Dropped";
+      console.log("Dropped!");
+      console.log(event);
+      let gridDiv = event.target;
+      let element = event.relatedTarget;
+      let [dx, dy] = getRelativeBottomLeft(gridDiv, element);
+      let gridX = Math.round(dx / cell_size); //Have cell_size be part of the info
+      let gridY = Math.round(dy / cell_size); //Have cell_size
+      //TODO: Check that the bot is inside the grid
+
+      //It only has an id if it's already part of the grid
+      let is_new = element.getAttribute("id") == null;
+      if (!is_new) {
+        console.log("Curren bot, just updating!");
+        //If it's a clone that moved, then just update
+        updateVirtualGrid(element.getAttribute("id"), [gridX, gridY]);
+      } else {
+        //If it's the original that moved then create the object on the grid
+        console.log(`New bot, adding to grid!`);
+        let id = grid.getNewBotId();
+
+        let image = "../assets/None_Doodlebot.png"; //TODO: Get from div element
+        let width = 3; //TODO: Get from div element
+        let height = 3; //TODO: Get from div element
+
+        grid.add_bot({
+          id: id,
+          real_bottom_left: [gridX, gridY],
+          image: image,
+          policies: new Set(["Get coins"]), //TODO: Don't hardcode this
+          width: width,
+          height: height,
+          angle: 0,
+          relative_anchor: [1, 1], //TODO: Get from div element
+        });
+        //This div not needed anymore, a new one will be created in onAddBot
+        element.remove();
+      }
+    },
+    ondropdeactivate: function (event) {
+      console.log("on drop deactivate");
+      // remove active dropzone feedback
+      event.target.classList.remove("drop-active");
+      event.target.classList.remove("drop-target");
+      // let is_new = event.relatedTarget.getAttribute("id") == null;
+      // if (!is_new) {
+      //   //It was a new that didn't work out
+      //   event.relatedTarget.remove();
+      // }
+    },
+  });
+}
+
+// interact(".drag-drop").draggable({
+//   inertia: true,
+//   //   origin: "self",
+//   //   snap: {
+//   //     targets: [
+//   //       interact.createSnapGrid({
+//   //         x: 100,
+//   //         y: 100,
+//   //         // limit to the container dimensions
+//   //         limits: {
+//   //           left: 0,
+//   //           top: 0,
+//   //           right: 500 - 100,
+//   //           bottom: 500 - 100,
+//   //         },
+//   //       }),
+//   //     ],
+//   //     relativePoints: [{ x: 0, y: 0 }],
+//   //   },
+//   modifiers: [
+//     // interact.modifiers.restrictRect({
+//     //   restriction: "parent",
+//     //   endOnly: true,
+//     // }),
+//     interact.modifiers.snap({
+//       targets: [interact.snappers.grid({ x: 100, y: 100 })],
+//       // range: Infinity,
+//       relativePoints: [{ x: 0, y: 0 }],
+//     }),
+//   ],
+//   //   autoScroll: true,
+//   // dragMoveListener from the dragging demo above
+//   listeners: { move: dragMoveListener },
+// });
+// interact(".drag-drop").resizable({
+//   //   origin: "self",
+//   edges: {
+//     top: true, // Use pointer coords to check for resize.
+//     left: true, // Disable resizing from left edge.
+//     bottom: true, // Resize if pointer target matches selector
+//     right: true, // Resize if pointer target is the given Element
+//   },
+//   snapSize: {
+//     // targets: [{ width: 100, height: 100, range: 100 }],
+//     targets: [
+//       interact.createSnapGrid({
+//         x: 100,
+//         y: 100,
+//         range: 100,
+//       }),
+//     ],
+//   },
+//   listeners: {
+//     move: function (event) {
+//       let { x, y } = event.target.dataset;
+
+//       x = (parseFloat(x) || 0) + event.deltaRect.left;
+//       y = (parseFloat(y) || 0) + event.deltaRect.top;
+
+//       Object.assign(event.target.style, {
+//         width: `${event.rect.width}px`,
+//         height: `${event.rect.height}px`,
+//         transform: `translate(${x}px, ${y}px)`,
+//       });
+
+//       Object.assign(event.target.dataset, { x, y });
+//     },
+//   },
+// });
 
 /////////////////////////////////////////RESIZING////////////////////////////////////////////////////
 // interact(".resize-drag")
@@ -359,4 +443,4 @@ interact(".drag-drop").resizable({
 //     ],
 //   });
 
-export { setupDraggable };
+export { setupDraggable, setupGridDropzone };

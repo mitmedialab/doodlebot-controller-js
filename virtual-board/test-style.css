@@ -1,24 +1,25 @@
-#outer-dropzone {
+/* #outer-dropzone {
   height: 500px;
   width: 500px;
-}
+} */
 
-#inner-dropzone {
+/* #inner-dropzone {
   height: 80px;
-}
+} */
 
 .dropzone {
-  background-color: #bfe4ff;
+  /* background-color: #bfe4ff; */
   border: dashed 4px transparent;
   border-radius: 4px;
   /* margin: 10px auto 30px; */
   /* padding: 10px; */
   /* width: 80%; */
-  transition: background-color 0.3s;
+  opacity: 1;
 }
 
 .drop-active {
-  border-color: #aaa;
+  opacity: 0.5;
+  transition: opacity 1s;
 }
 
 .drop-target {
@@ -149,4 +150,12 @@
 
 .bot-stop {
   background-color: red;
+}
+
+.template {
+  position: relative;
+}
+/*Used to have the divs be on the same place*/
+#waitingRoom {
+  position: absolute;
 }
