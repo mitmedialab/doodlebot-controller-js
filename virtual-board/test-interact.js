@@ -52,18 +52,24 @@ const setupDraggable = (selector, cell_size) => {
           // create a clone of the currentTarget element
           let clone = event.currentTarget.cloneNode(true);
           clone.setAttribute("clone", "true");
-          clone.style.position = "relative";
+          clone.classList.add("grabbing");
+          clone.style.position = "absolute";
+          let { left, top } = original.getBoundingClientRect();
+          clone.style.left = `${left}px`;
+          clone.style.top = `${top}px`;
           clone.classList.remove("template"); //To make sure it's no the original
-          clone.style["touch-action"] = "none";
+          clone.style.touchAction = "none";
           // insert the clone to the page
           // TODO: position the clone appropriately
           // original.parentElement
+
           document.body.appendChild(clone);
 
           // start a drag interaction targeting the clone
           interaction.start({ name: "drag" }, event.interactable, clone);
         } else {
           // Should still be able to be dragged, but don't make a copy
+          original.classList.add("grabbing");
           interaction.start({ name: "drag" }, event.interactable, original);
         }
       }

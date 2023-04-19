@@ -199,6 +199,7 @@ const onAddBot = (bot) => {
   let bot_dom = document.createElement("div");
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   bot_dom.classList.add("bot-container");
+  bot_dom.classList.add("grab");
   bot_dom.setAttribute("id", DOM_ID);
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
@@ -242,6 +243,7 @@ const onAddObstacle = (obstacle) => {
   let obstacle_dom = document.createElement("div");
   let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
   obstacle_dom.classList.add("obstacle-container");
+  obstacle_dom.classList.add("grab");
   obstacle_dom.setAttribute("id", DOM_ID);
   obstacle_dom.style.left = `${cell_size * i}px`;
   obstacle_dom.style.bottom = `${cell_size * j}px`;
@@ -274,6 +276,7 @@ const onAddCoin = (coin) => {
   let coin_dom = document.createElement("div");
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
   coin_dom.classList.add("coin-container");
+  coin_dom.classList.add("grab");
   coin_dom.setAttribute("id", DOM_ID);
   coin_dom.style.left = `${cell_size * i}px`;
   coin_dom.style.bottom = `${cell_size * j}px`;
