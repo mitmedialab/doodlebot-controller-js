@@ -9,6 +9,10 @@
     background-image: url('../assets/DoodleBot_CityTheme_Background.png');
     background-size: cover;
 }
+.background3 {
+    background-image: url('../assets/DoodleBot_PacmanTheme_Background_1.png');
+    background-size: cover;
+}
 #virtualMode {
     width: 250px;
     height: 250px;
