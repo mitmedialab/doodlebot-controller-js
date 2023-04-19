@@ -4,6 +4,32 @@ let grid;
 let rows = 10;
 let cols = 20;
 let cell_size = 60;
+window.rows = rows;
+window.cols = cols;
+window.cell_size = cell_size;
+
+let ASSETS_FOLDER = "../assets/";
+const ALL_ASSETS = {
+  doodlebot_alone: {
+    image: ASSETS_FOLDER + "None_DoodleBot.png",
+    width: 3,
+    height: 3,
+    type: BOT_TYPE,
+  },
+  doodlebot_cowboy: {
+    image: ASSETS_FOLDER + "None_DoodleBot_Cowboy.png",
+    width: 3,
+    height: 3,
+    type: BOT_TYPE,
+  },
+  building: {
+    image: ASSETS_FOLDER + "None_Building.png",
+    width: 1,
+    height: 3,
+    type: OBSTACLE_TYPE,
+  },
+};
+window.ALL_ASSETS = ALL_ASSETS;
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
  *
@@ -66,6 +92,24 @@ const createDOMGrid = (rows, cols, cell_size) => {
   }
   gridContainer.appendChild(colNumbersDiv);
 };
+const addTemplateDiv = (template_id) => {
+  let { image, width, height, type } = ALL_ASSETS[template_id];
+  // let div = document.createElement("div");
+  // div.classList.add("template");
+  // //TO make sure div does not take more space than needed
+  // div.style.width = `${cell_size * width}px`;
+  // div.style.height = `${cell_size * height}px`;
+  // div.setAttribute("object-id", template_id);
+
+  let imageEl = document.createElement("img");
+  imageEl.setAttribute("object-id", template_id); //from div
+  imageEl.classList.add("template"); //from div
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
+  // div.appendChild(imageEl);
+  waitingRoom.appendChild(imageEl);
+};
 document.addEventListener("DOMContentLoaded", () => {
   console.log(rows, cols);
   // grid = new VirtualGrid(rows, cols, VIRTUAL_GRID_CALLBACKS);
@@ -84,8 +128,13 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddObstacle,
     onAddCoin,
     onPickupCoin,
+    onUpdateObject,
   });
   window.grid = grid;
+  let all_templates = ["doodlebot_alone", "doodlebot_cowboy", "building"];
+  for (let template_id of all_templates) {
+    addTemplateDiv(template_id);
+  }
   setupDraggable(".template", cell_size); //Make all templates draggable
   setupGridDropzone(cell_size); //Make it droppable
 
@@ -111,6 +160,21 @@ const onPickupCoin = (bot, coin) => {
   let dom_id = `${COIN_TYPE}-${coin.id}`;
   document.getElementById(dom_id).remove();
 };
+const onUpdateObject = (updatedObject) => {
+  console.log("Detected update, changing object shown!");
+  let DOM_ID = `${updatedObject.type}-${updatedObject.id}`;
+  let div = document.getElementById(DOM_ID);
+  div.remove(); //Not needed anymore, but paint the object again
+
+  let { type } = updatedObject;
+  if (type === BOT_TYPE) {
+    onAddBot(updatedObject);
+  } else if (type === OBSTACLE_TYPE) {
+    onAddObstacle(updatedObject);
+  } else if (type === COIN_TYPE) {
+    onAddCoin(updatedObject);
+  }
+};
 const onAddBot = (bot) => {
   let {
     width,
@@ -125,17 +189,28 @@ const onAddBot = (bot) => {
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   bot_dom.classList.add("bot-container");
   bot_dom.setAttribute("id", DOM_ID);
+  bot_dom.setAttribute("data-type", BOT_TYPE);
+
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
+  bot_dom.style.touchAction = "none";
 
   let rotateArrow = document.createElement("div");
   rotateArrow.innerText = "⟲";
   rotateArrow.classList.add("rotation-handle");
   rotateArrow.addEventListener("click", () => {
-    //Remove previous, and paint again
-    document.getElementById(DOM_ID).remove();
-    let res = grid.turn_bot(bot.id, 90);
-    onAddBot(res.bot);
+    console.log("Tyring to turn 90");
+    grid.turn_bot(bot.id, 90);
+
+    // //Remove previous, and paint again
+    // document.getElementById(DOM_ID).remove();
+    // console.log(DOM_ID);
+    // console.log(grid.bots[bot.id][0]);
+    // // let res = grid.turn_bot(bot.id, 90);
+    // console.log(grid.bots[bot.id][0]);
+    // // console.log(res);
+    // // console.log(res.bot);
+    // // onAddBot(res.bot);
   });
   bot_dom.appendChild(rotateArrow);
 
@@ -148,8 +223,8 @@ const onAddBot = (bot) => {
   imageEl.style.height = `${cell_size * height}px`;
   // Angle defined in bot is not same direction as transform expects
   imageEl.style.transform = `rotate(${360 - angle}deg)`;
-
   bot_dom.appendChild(imageEl);
+
   gridContainer.appendChild(bot_dom);
 
   //Makes the created div draggable

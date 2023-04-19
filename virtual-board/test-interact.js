@@ -33,6 +33,7 @@ const setupDraggable = (selector, cell_size) => {
       listeners: {
         move: dragMoveListener,
         // end: (event) => dragEndListener(event, id, cell_size),
+        end: onDropHandler,
       },
     })
     .on("move", function (event) {
@@ -169,10 +170,11 @@ function dragMoveListener(event) {
   target.setAttribute("data-x", x);
   target.setAttribute("data-y", y);
 }
-function updateVirtualGrid(div_id, grid_position) {
+function updateVirtualGrid(obj_id, type, grid_position) {
+  console.log(
+    `Trying to update virtual grid with id ${obj_id} and type ${type}`
+  );
   let [i, j] = grid_position;
-  let div = document.getElementById(div_id);
-  let [type, obj_id] = div_id.split("-");
   let object;
   if (type === BOT_TYPE) {
     object = grid.bots[obj_id][0];
@@ -181,8 +183,11 @@ function updateVirtualGrid(div_id, grid_position) {
   } else if (type === COIN_TYPE) {
     object = grid.coins[obj_id][0];
   } else {
-    console.log(`Invalid type ${type} from if '${div_id}'`);
+    console.log(`Invalid type ${type} from object with id '${obj_id}'`);
   }
+  console.log(`Object: `);
+  console.log(object);
+
   // Try different methods depending on the type of object
   let res = {};
   if (type === BOT_TYPE) {
@@ -200,6 +205,8 @@ function updateVirtualGrid(div_id, grid_position) {
   } else {
     console.log(`Invalid type ${type} from if '${id}'`);
   }
+  console.log("Resultados: ");
+  console.log(res);
   let { success } = res;
 
   if (!success) {
@@ -207,14 +214,18 @@ function updateVirtualGrid(div_id, grid_position) {
     i = object.real_bottom_left[0]; //Storing the original
     j = object.real_bottom_left[1];
   }
+
+  let div = document.getElementById(`${type}-${obj_id}`);
   console.log(`New bottom left: ${[i, j]} `);
+  console.log(div);
   div.style.left = `${cell_size * i}px`;
   div.style.bottom = `${cell_size * j}px`;
-
+  console.log("Removing attributes...");
   //To put it back as new
   div.style.transform = null;
   div.removeAttribute("data-x");
   div.removeAttribute("data-y");
+  console.log("Done!");
 }
 // this is used later in the resizing
 window.dragMoveListener = dragMoveListener;
@@ -233,6 +244,70 @@ function getRelativeBottomLeft(grid, element) {
   let dx = elementLeft - gridLeft;
   let dy = gridBottom - elementBottom; // as grid positions are calculated different
   return [dx, dy];
+}
+
+function onDropHandler(event) {
+  // event.relatedTarget.textContent = "Dropped";
+  console.log("Dropped!");
+  console.log(event);
+  // Below is when drop comes from the dropzone
+  // let gridDiv = event.target;
+  // let element = event.relatedTarget;
+
+  let element = event.target;
+  let gridDiv = document.getElementById("gridContainer");
+
+  let [dx, dy] = getRelativeBottomLeft(gridDiv, element);
+  let gridX = Math.round(dx / cell_size); //Have cell_size be part of the info
+  let gridY = Math.round(dy / cell_size); //Have cell_size
+  console.log([gridX, gridY]);
+  console.log([rows, cols]);
+  //It only has an id if it's already part of the grid
+  let is_new = element.getAttribute("id") == null;
+  let is_valid = !(0 > gridX || gridX >= cols || 0 > gridY || gridY >= rows);
+
+  if (!is_new) {
+    console.log("Curren bot, just updating!");
+    //If it's a clone that moved, then just update
+    console.log(`is_valid = ${is_valid}`);
+    if (is_valid) {
+      //Only update if it's valid, if not go back
+      let div_id = element.getAttribute("id");
+      let [type, obj_id] = div_id.split("-");
+      // let type = element.getAttribute("data-type");
+      updateVirtualGrid(obj_id, type, [gridX, gridY]);
+    }
+  } else {
+    //If it's a new and it's outisde just don't add it
+    if (!is_valid) {
+      // Outside the board :0
+      element.remove();
+      return;
+    }
+    //If it's the original that moved then create the object on the grid
+    console.log(`New bot, adding to grid!`);
+    let id = grid.getNewBotId();
+
+    // let image = "../assets/None_Doodlebot.png"; //TODO: Get from div element
+    // let width = 3; //TODO: Get from div element
+    // let height = 3; //TODO: Get from div element
+
+    let { image, width, height } =
+      ALL_ASSETS[element.getAttribute("object-id")];
+
+    grid.add_bot({
+      id: id,
+      real_bottom_left: [gridX, gridY],
+      image: image,
+      policies: new Set(["Get coins"]), //TODO: Don't hardcode this
+      width: width,
+      height: height,
+      angle: 0,
+      relative_anchor: [1, 1], //TODO: Get from div element
+    });
+    //This div not needed anymore, a new one will be created in onAddBot
+    element.remove();
+  }
 }
 /////////////////////////////////////////DROPPING////////////////////////////////////////////////////
 // enable draggables to be dropped into this
@@ -264,46 +339,7 @@ function setupGridDropzone(cell_size) {
       event.relatedTarget.classList.remove("can-drop");
       // event.relatedTarget.textContent = "Dragged out";
     },
-    ondrop: function (event) {
-      // event.relatedTarget.textContent = "Dropped";
-      console.log("Dropped!");
-      console.log(event);
-      let gridDiv = event.target;
-      let element = event.relatedTarget;
-      let [dx, dy] = getRelativeBottomLeft(gridDiv, element);
-      let gridX = Math.round(dx / cell_size); //Have cell_size be part of the info
-      let gridY = Math.round(dy / cell_size); //Have cell_size
-      //TODO: Check that the bot is inside the grid
-
-      //It only has an id if it's already part of the grid
-      let is_new = element.getAttribute("id") == null;
-      if (!is_new) {
-        console.log("Curren bot, just updating!");
-        //If it's a clone that moved, then just update
-        updateVirtualGrid(element.getAttribute("id"), [gridX, gridY]);
-      } else {
-        //If it's the original that moved then create the object on the grid
-        console.log(`New bot, adding to grid!`);
-        let id = grid.getNewBotId();
-
-        let image = "../assets/None_Doodlebot.png"; //TODO: Get from div element
-        let width = 3; //TODO: Get from div element
-        let height = 3; //TODO: Get from div element
-
-        grid.add_bot({
-          id: id,
-          real_bottom_left: [gridX, gridY],
-          image: image,
-          policies: new Set(["Get coins"]), //TODO: Don't hardcode this
-          width: width,
-          height: height,
-          angle: 0,
-          relative_anchor: [1, 1], //TODO: Get from div element
-        });
-        //This div not needed anymore, a new one will be created in onAddBot
-        element.remove();
-      }
-    },
+    ondrop: (event) => {},
     ondropdeactivate: function (event) {
       console.log("on drop deactivate");
       // remove active dropzone feedback

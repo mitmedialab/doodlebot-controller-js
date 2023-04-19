@@ -1769,6 +1769,7 @@ class VirtualGrid {
     // this.drawBoard(this.print_board());
     // TODO: Under assumption of square bots, turning should always be fine
     // But might be better to check for other cases.
+    this.onUpdateObject(bot);
     return {
       bot,
       success: true,
