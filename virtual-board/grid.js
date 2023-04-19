@@ -587,6 +587,7 @@ class VirtualGrid {
       // this.add_random_coin(); //TODO: just for fun
       // this.add_or_change_obstacle(); //TODO: just for fun
     }
+    this.onUpdateObject(bot);
     return { success: true, bot: bot, message: message };
   }
   /**

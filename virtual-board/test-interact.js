@@ -4,7 +4,7 @@ import "https://cdn.interactjs.io/v1.9.20/actions/resize/index.js";
 import "https://cdn.interactjs.io/v1.9.20/modifiers/index.js";
 import "https://cdn.interactjs.io/v1.9.20/dev-tools/index.js";
 import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
-let cell_size = 60;
+// let cell_size = 60;
 
 /**
  *
@@ -18,13 +18,8 @@ const setupDraggable = (selector, cell_size) => {
       manualStart: true,
       inertia: true,
       modifiers: [
-        // interact.modifiers.restrictRect({
-        //   restriction: "parent",
-        //   endOnly: true,
-        // }),
         interact.modifiers.snap({
           targets: [interact.snappers.grid({ x: cell_size, y: cell_size })],
-          // range: Infinity,
           relativePoints: [{ x: 0, y: 0 }],
         }),
       ],
@@ -32,7 +27,6 @@ const setupDraggable = (selector, cell_size) => {
       // dragMoveListener from the dragging demo above
       listeners: {
         move: dragMoveListener,
-        // end: (event) => dragEndListener(event, id, cell_size),
         end: onDropHandler,
       },
     })
@@ -59,9 +53,6 @@ const setupDraggable = (selector, cell_size) => {
           clone.style.top = `${top}px`;
           clone.classList.remove("template"); //To make sure it's no the original
           clone.style.touchAction = "none";
-          // insert the clone to the page
-          // TODO: position the clone appropriately
-          // original.parentElement
 
           document.body.appendChild(clone);
 
@@ -74,91 +65,7 @@ const setupDraggable = (selector, cell_size) => {
         }
       }
     });
-  //Resize is still TBD
-  // .resizable({
-  //   edges: {
-  //     top: true,
-  //     left: false,
-  //     bottom: false,
-  //     right: true,
-  //   },
-  //   snapSize: {
-  //     // targets: [{ width: 100, height: 100, range: 100 }],
-  //     targets: [
-  //       interact.createSnapGrid({
-  //         x: cell_size,
-  //         y: cell_size,
-  //         range: cell_size,
-  //       }),
-  //     ],
-  //   },
-  //   // modifiers: [
-  //   //   interact.modifiers.aspectRatio({
-  //   //     ratio: "equalDelta",
-  //   //   }),
-  //   // ],
-  //   listeners: {
-  //     move: (event) => {
-  //       let { x, y } = event.target.dataset;
-
-  //       x = (parseFloat(x) || 0) + event.deltaRect.left;
-  //       y = (parseFloat(y) || 0) + event.deltaRect.top;
-
-  //       // let image = document.querySelector("image", event.target);
-  //       let image = event.target.getElementsByTagName("img")[0];
-  //       Object.assign(image.style, {
-  //         width: `${event.rect.width}px`,
-  //         height: `${event.rect.height}px`,
-  //       });
-  //       Object.assign(event.target.style, {
-  //         transform: `translate(${x}px, ${y}px)`,
-  //       });
-  //       Object.assign(event.target.dataset, { x, y });
-  //     },
-  //   },
-  // });
 };
-/////////////////////////////////////////DRAGGING////////////////////////////////////////////////////
-// target elements with the "draggable" class
-// interact(".draggable").draggable({
-//   // enable inertial throwing
-//   inertia: true,
-//   // keep the element within the area of it's parent
-//   modifiers: [
-//     interact.modifiers.snap({
-//       targets: [interact.snappers.grid({ x: 300, y: 300 })],
-//       // range: Infinity,
-//       // relativePoints: [{ x: 0, y: 0 }]
-//     }),
-//     interact.modifiers.restrictRect({
-//       restriction: "parent",
-//       endOnly: true,
-//     }),
-//   ],
-//   // enable autoScroll
-//   autoScroll: true,
-
-//   listeners: {
-//     // call this function on every dragmove event
-//     move: dragMoveListener,
-
-//     // call this function on every dragend event
-//     end(event) {
-//       var textEl = event.target.querySelector("p");
-
-//       textEl &&
-//         (textEl.textContent =
-//           "moved a distance of " +
-//           Math.sqrt(
-//             (Math.pow(event.pageX - event.x0, 2) +
-//               Math.pow(event.pageY - event.y0, 2)) |
-//               0
-//           ).toFixed(2) +
-//           "px");
-//     },
-//   },
-// });
-
 /**
  * Stores the total delta in `data-x` and `data-y` properties
  * @param {*} event
@@ -235,8 +142,15 @@ function updateVirtualGrid(obj_id, type, grid_position) {
 }
 // this is used later in the resizing
 window.dragMoveListener = dragMoveListener;
-// window.dragEndListener = dragEndListener;
 
+/**
+ * Get the position of the `element` with respect to `grid`.
+ * Uses `getBoundingClientRect` to determine relative position
+ *
+ * @param {*} grid
+ * @param {*} element
+ * @returns
+ */
 function getRelativeBottomLeft(grid, element) {
   // (0, 0) is on top left of the screen
   let gridRect = grid.getBoundingClientRect();
@@ -290,12 +204,8 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
-    // let image = "../assets/None_Doodlebot.png"; //TODO: Get from div element
-    // let width = 3; //TODO: Get from div element
-    // let height = 3; //TODO: Get from div element
-
     let { image, width, height, type } =
-      ALL_ASSETS[element.getAttribute("object-id")];
+      ALL_ASSETS[element.getAttribute("template_id")];
     console.log(`New ${type}, adding to grid!`);
 
     if (type === BOT_TYPE) {
@@ -351,6 +261,7 @@ function setupGridDropzone(cell_size) {
       // add active dropzone feedback
       event.target.classList.add("drop-active");
     },
+    // Entered dropzone!
     ondragenter: function (event) {
       console.log("on drop enter");
       var draggableElement = event.relatedTarget;
@@ -359,8 +270,8 @@ function setupGridDropzone(cell_size) {
       // feedback the possibility of a drop
       dropzoneElement.classList.add("drop-target");
       draggableElement.classList.add("can-drop");
-      // draggableElement.textContent = "Dragged in";
     },
+    //Left dropzone!
     ondragleave: function (event) {
       console.log("on drop leave");
 
@@ -375,138 +286,8 @@ function setupGridDropzone(cell_size) {
       // remove active dropzone feedback
       event.target.classList.remove("drop-active");
       event.target.classList.remove("drop-target");
-      // let is_new = event.relatedTarget.getAttribute("id") == null;
-      // if (!is_new) {
-      //   //It was a new that didn't work out
-      //   event.relatedTarget.remove();
-      // }
     },
   });
 }
-
-// interact(".drag-drop").draggable({
-//   inertia: true,
-//   //   origin: "self",
-//   //   snap: {
-//   //     targets: [
-//   //       interact.createSnapGrid({
-//   //         x: 100,
-//   //         y: 100,
-//   //         // limit to the container dimensions
-//   //         limits: {
-//   //           left: 0,
-//   //           top: 0,
-//   //           right: 500 - 100,
-//   //           bottom: 500 - 100,
-//   //         },
-//   //       }),
-//   //     ],
-//   //     relativePoints: [{ x: 0, y: 0 }],
-//   //   },
-//   modifiers: [
-//     // interact.modifiers.restrictRect({
-//     //   restriction: "parent",
-//     //   endOnly: true,
-//     // }),
-//     interact.modifiers.snap({
-//       targets: [interact.snappers.grid({ x: 100, y: 100 })],
-//       // range: Infinity,
-//       relativePoints: [{ x: 0, y: 0 }],
-//     }),
-//   ],
-//   //   autoScroll: true,
-//   // dragMoveListener from the dragging demo above
-//   listeners: { move: dragMoveListener },
-// });
-// interact(".drag-drop").resizable({
-//   //   origin: "self",
-//   edges: {
-//     top: true, // Use pointer coords to check for resize.
-//     left: true, // Disable resizing from left edge.
-//     bottom: true, // Resize if pointer target matches selector
-//     right: true, // Resize if pointer target is the given Element
-//   },
-//   snapSize: {
-//     // targets: [{ width: 100, height: 100, range: 100 }],
-//     targets: [
-//       interact.createSnapGrid({
-//         x: 100,
-//         y: 100,
-//         range: 100,
-//       }),
-//     ],
-//   },
-//   listeners: {
-//     move: function (event) {
-//       let { x, y } = event.target.dataset;
-
-//       x = (parseFloat(x) || 0) + event.deltaRect.left;
-//       y = (parseFloat(y) || 0) + event.deltaRect.top;
-
-//       Object.assign(event.target.style, {
-//         width: `${event.rect.width}px`,
-//         height: `${event.rect.height}px`,
-//         transform: `translate(${x}px, ${y}px)`,
-//       });
-
-//       Object.assign(event.target.dataset, { x, y });
-//     },
-//   },
-// });
-
-/////////////////////////////////////////RESIZING////////////////////////////////////////////////////
-// interact(".resize-drag")
-//   .resizable({
-//     // resize from all edges and corners
-//     edges: { left: true, right: true, bottom: true, top: true },
-
-//     listeners: {
-//       move(event) {
-//         var target = event.target;
-//         var x = parseFloat(target.getAttribute("data-x")) || 0;
-//         var y = parseFloat(target.getAttribute("data-y")) || 0;
-
-//         // update the element's style
-//         target.style.width = event.rect.width + "px";
-//         target.style.height = event.rect.height + "px";
-
-//         // translate when resizing from top or left edges
-//         x += event.deltaRect.left;
-//         y += event.deltaRect.top;
-
-//         target.style.transform = "translate(" + x + "px," + y + "px)";
-
-//         target.setAttribute("data-x", x);
-//         target.setAttribute("data-y", y);
-//         target.textContent =
-//           Math.round(event.rect.width) +
-//           "\u00D7" +
-//           Math.round(event.rect.height);
-//       },
-//     },
-//     modifiers: [
-//       // keep the edges inside the parent
-//       interact.modifiers.restrictEdges({
-//         outer: "parent",
-//       }),
-
-//       // minimum size
-//       interact.modifiers.restrictSize({
-//         min: { width: 100, height: 50 },
-//       }),
-//     ],
-
-//     inertia: true,
-//   })
-//   .draggable({
-//     listeners: { move: window.dragMoveListener },
-//     inertia: true,
-//     modifiers: [
-//       interact.modifiers.restrictRect({
-//         restriction: "parent",
-//         endOnly: true,
-//       }),
-//     ],
-//   });
 
 export { setupDraggable, setupGridDropzone };

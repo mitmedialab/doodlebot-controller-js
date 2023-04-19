@@ -1,14 +1,19 @@
 import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 
 let grid;
+
+// TODO: This info should depende on how good it'll look in the screen
 let rows = 10;
 let cols = 20;
 let cell_size = 60;
+// Just so that they become global variables
 window.rows = rows;
 window.cols = cols;
 window.cell_size = cell_size;
 
 let ASSETS_FOLDER = "../assets/";
+// Should place everything here.
+// There will be no resizing, so the width and height are fixed.
 const ALL_ASSETS = {
   doodlebot_alone: {
     image: ASSETS_FOLDER + "None_DoodleBot.png",
@@ -38,6 +43,7 @@ const ALL_ASSETS = {
 window.ALL_ASSETS = ALL_ASSETS;
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
+ * and places it on `gridContainer`
  *
  * @param {*} rows number of rows
  * @param {*} cols number of columns
@@ -62,7 +68,7 @@ const createDOMGrid = (rows, cols, cell_size) => {
     // let rowNumberDiv = document.createElement("div");
     // rowNumberDiv.classList.add("cell-row-text");
     // rowNumberDiv.innerHTML = `Row ${i}`;
-    // // rowNumberDiv.style.width = `${cell_size}px`;
+    // rowNumberDiv.style.width = `${cell_size}px`;
     // rowNumberDiv.style.height = `${cell_size}px`;
     // row.appendChild(rowNumberDiv);
     for (let j = 0; j < cols; j++) {
@@ -70,63 +76,43 @@ const createDOMGrid = (rows, cols, cell_size) => {
       cell.classList.add("grid-column");
       cell.style.width = `${cell_size}px`;
       cell.style.height = `${cell_size}px`;
-      // let text = board[i][j];
-      // cell.innerText = text;
-      // if (text.startsWith(BOT_TYPE)){
-      //     if (text.startsWith(`${BOT_TYPE}-edge`)){
-      //         cell.classList.add("cell-bot-edge")
-      //     } else{
-      //         cell.classList.add("cell-bot")
-      //     }
-      // } else if (text.startsWith(OBSTACLE_TYPE)){
-      //     cell.classList.add("cell-obstacle")
-      // } else if (text.startsWith(COIN_TYPE)){
-      //     cell.classList.add("cell-coin")
-      // }
+
       row.appendChild(cell);
 
-      //   if (i === 0) {
-      //     let colDiv = document.createElement("div");
-      //     colDiv.classList.add("cell-column-text");
-      //     colDiv.innerHTML = `Col ${j}`;
-      //     // colDiv.style.width = `${cell_size}px`;
-      //     colDiv.style.height = `${cell_size}px`;
-      //     colNumbersDiv.appendChild(colDiv);
-      //   }
+      // if (i === 0) {
+      //   let colDiv = document.createElement("div");
+      //   colDiv.classList.add("cell-column-text");
+      //   colDiv.innerHTML = `Col ${j}`;
+      //   colDiv.style.width = `${cell_size}px`;
+      //   colDiv.style.height = `${cell_size}px`;
+      //   colNumbersDiv.appendChild(colDiv);
+      // }
     }
     gridContainer.appendChild(row);
   }
   gridContainer.appendChild(colNumbersDiv);
 };
+/**
+ * Used to create a `template` image that is draggable into the grid.
+ * @param {*} template_id a valid key of ALL_ASSETS
+ */
 const addTemplateDiv = (template_id) => {
+  if (!(template_id in ALL_ASSETS)) {
+    console.error(`Template ${template_id} is not valid`);
+    return;
+  }
   let { image, width, height, type } = ALL_ASSETS[template_id];
-  // let div = document.createElement("div");
-  // div.classList.add("template");
-  // //TO make sure div does not take more space than needed
-  // div.style.width = `${cell_size * width}px`;
-  // div.style.height = `${cell_size * height}px`;
-  // div.setAttribute("object-id", template_id);
 
   let imageEl = document.createElement("img");
-  imageEl.setAttribute("object-id", template_id); //from div
-  imageEl.classList.add("template"); //from div
+  imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
-  // div.appendChild(imageEl);
+
   waitingRoom.appendChild(imageEl);
 };
 document.addEventListener("DOMContentLoaded", () => {
-  console.log(rows, cols);
-  // grid = new VirtualGrid(rows, cols, VIRTUAL_GRID_CALLBACKS);
-  // boardDrawing = setInterval(drawBoard, 1) //Get the latest state every 500 ms
-  // let duration = 100;
-  // setTimeout(function a() {
-  // // your own code
-  //     drawBoard()
-  //     setTimeout(a, duration);
-  // }, duration);
-  // drawBoard();
   //   setupSocket();
   createDOMGrid(rows, cols, cell_size);
   grid = new VirtualGrid(rows, cols, {
@@ -137,40 +123,45 @@ document.addEventListener("DOMContentLoaded", () => {
     onUpdateObject,
   });
   window.grid = grid;
-  let all_templates = [
+  // TODO: show the necessary templates given the selected theme
+  // might need to add 'theme' key to ALL_ASSETS
+  let templates_to_show = [
     "doodlebot_alone",
     "doodlebot_cowboy",
     "building",
     "coin",
   ];
-  for (let template_id of all_templates) {
+  for (let template_id of templates_to_show) {
     addTemplateDiv(template_id);
   }
   setupDraggable(".template", cell_size); //Make all templates draggable
-  setupGridDropzone(cell_size); //Make it droppable
+  setupGridDropzone(cell_size); // To style the grid when an object can be dropped
 
   // grid.add_random_bot({
   //   image: "../assets/None_Doodlebot.png",
   //   policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
   // });
-
-  // grid.add_random_bot({
-  //   image: "../assets/None_Doodlebot_Cowboy.png",
-  //   policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
-  // });
-
-  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
-  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
-  // grid.add_random_coin({ image: "../assets/None_Coin.png" });
-
-  // grid.add_random_obstacle({ image: "../assets/None_Building.png" });
-  // grid.add_random_obstacle({ image: "../assets/None_Building.png" });
 });
+/**
+ * If a coin has been picked up, remove it from the screen
+ * @param {*} bot
+ * @param {*} coin
+ */
 const onPickupCoin = (bot, coin) => {
-  //Remove the image of the coin!
   let dom_id = `${COIN_TYPE}-${coin.id}`;
   document.getElementById(dom_id).remove();
 };
+/**
+ * An object has been updated, so this deletes
+ * the previous div and creates a new one with the new
+ * info.
+ *
+ * If could be possible to update the existing div instead of deleting
+ * it and redoing it. However this is easier to write and doesn't *seem*
+ * to hinder performance too much.
+ *
+ * @param {*} updatedObject
+ */
 const onUpdateObject = (updatedObject) => {
   console.log("Detected update, changing object shown!");
   let DOM_ID = `${updatedObject.type}-${updatedObject.id}`;
@@ -186,6 +177,11 @@ const onUpdateObject = (updatedObject) => {
     onAddCoin(updatedObject);
   }
 };
+/**
+ * A bot has been created on the VirtualGrid system. This method:
+ * 1. Creates the image in the grid at the necessary position
+ * 2. Makes the created image draggable
+ */
 const onAddBot = (bot) => {
   let {
     width,
@@ -230,7 +226,11 @@ const onAddBot = (bot) => {
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
 };
-
+/**
+ * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
+ *
+ * @param {*} obstacle
+ */
 const onAddObstacle = (obstacle) => {
   let {
     width,
@@ -263,7 +263,11 @@ const onAddObstacle = (obstacle) => {
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
 };
-
+/**
+ * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
+ *
+ * @param {*} obstacle
+ */
 const onAddCoin = (coin) => {
   let {
     width,
@@ -296,34 +300,31 @@ const onAddCoin = (coin) => {
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
 };
-const updateBotInVirtualGrid = (id, type) => {
-  let bot = grid.bots[id][0];
-  let domID = `${type}-${id}`;
-  let div = document.getElementById(domID);
-  //TODO: Check if deleting is needed, or could just update
-  div.remove(); //Restart view for this bot
-  onAddBot(bot); //Add the one with the new position/angle
-};
-let intervals = {};
-function changeMoving_ClickHandler(bot_id, evt) {
+
+//--------------------------- Below code controls moving -------------------------------------///
+let intervals = {}; //bot_id -> interval
+/**
+ * If the bot is moving, it will stop (and vice versa)
+ *
+ * @param {*} bot_id
+ * @param {*} evt
+ */
+function changeMovingBot(bot_id) {
   let isMoving = bot_id in intervals;
   if (isMoving) {
     //Stop
+    console.log("stopping...");
     // socket.emit("stop_bot", "")
-    stopMovingButton_ClickHandler(bot_id, evt);
-    // evt.target.innerHTML = "Start moving";
-    // evt.target.classList.remove("bot-stop");
-    // evt.target.classList.add("bot-start");
+    stopMovingBot(bot_id);
   } else {
     //Start
     // socket.emit("start_bot", "")
-    startMovingButton_ClickHandler(bot_id, evt);
-    // evt.target.innerHTML = "Stop moving";
-    // evt.target.classList.remove("bot-start");
-    // evt.target.classList.add("bot-stop");
+    console.log("starting...");
+    startMovingBot(bot_id);
   }
 }
-function startMovingButton_ClickHandler(bot_id, evt) {
+/** Starts bot by creating a code that runs every certain time */
+function startMovingBot(bot_id) {
   if (bot_id in intervals) {
     log("The bot is already moving!");
     return;
@@ -338,7 +339,7 @@ function startMovingButton_ClickHandler(bot_id, evt) {
     console.log(next_move);
     grid.apply_next_move_to_bot(bot_id, next_move);
     // Now updte the view of the bot
-    updateBotInVirtualGrid(bot_id, BOT_TYPE);
+    // updateBotInVirtualGrid(bot_id, BOT_TYPE);
     // Number(
     //   document.getElementById(`coins-policy-turns-${bot_id}`).value
     // );
@@ -353,8 +354,8 @@ function startMovingButton_ClickHandler(bot_id, evt) {
   }
   intervals[bot_id] = setInterval(move, 500);
 }
-
-function stopMovingButton_ClickHandler(bot_id, evt) {
+/** Stops bot by deleting the interval for the bot */
+function stopMovingBot(bot_id) {
   clearInterval(intervals[bot_id]);
   delete intervals[bot_id];
   //Changing button style
@@ -364,6 +365,6 @@ function stopMovingButton_ClickHandler(bot_id, evt) {
 }
 startBotsButton.addEventListener("click", () => {
   for (let bot_id in grid.bots) {
-    changeMoving_ClickHandler(bot_id);
+    changeMovingBot(bot_id);
   }
 });
