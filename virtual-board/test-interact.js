@@ -274,7 +274,6 @@ function onDropHandler(event) {
       //Only update if it's valid, if not go back
       let div_id = element.getAttribute("id");
       let [type, obj_id] = div_id.split("-");
-      // let type = element.getAttribute("data-type");
       updateVirtualGrid(obj_id, type, [gridX, gridY]);
     }
   } else {
@@ -285,26 +284,51 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
-    console.log(`New bot, adding to grid!`);
-    let id = grid.getNewBotId();
-
     // let image = "../assets/None_Doodlebot.png"; //TODO: Get from div element
     // let width = 3; //TODO: Get from div element
     // let height = 3; //TODO: Get from div element
 
-    let { image, width, height } =
+    let { image, width, height, type } =
       ALL_ASSETS[element.getAttribute("object-id")];
+    console.log(`New ${type}, adding to grid!`);
 
-    grid.add_bot({
-      id: id,
-      real_bottom_left: [gridX, gridY],
-      image: image,
-      policies: new Set(["Get coins"]), //TODO: Don't hardcode this
-      width: width,
-      height: height,
-      angle: 0,
-      relative_anchor: [1, 1], //TODO: Get from div element
-    });
+    if (type === BOT_TYPE) {
+      let id = grid.getNewBotId();
+
+      grid.add_bot({
+        id: id,
+        real_bottom_left: [gridX, gridY],
+        image: image,
+        policies: new Set(["Get coins"]), //TODO: Don't hardcode this
+        width: width,
+        height: height,
+        angle: 0,
+        relative_anchor: [1, 1], //TODO: Get from div element
+      });
+    } else if (type === OBSTACLE_TYPE) {
+      let id = grid.getNewObstacleId();
+
+      grid.add_obstacle({
+        id: id,
+        real_bottom_left: [gridX, gridY],
+        image: image,
+        width: width,
+        height: height,
+      });
+    } else if (type === COIN_TYPE) {
+      let id = grid.getNewCoinId();
+
+      grid.add_coin({
+        id: id,
+        real_bottom_left: [gridX, gridY],
+        image: image,
+        width: width,
+        height: height,
+      });
+    } else {
+      console.log(`Invalid type: ${type}`);
+    }
+
     //This div not needed anymore, a new one will be created in onAddBot
     element.remove();
   }

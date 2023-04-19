@@ -28,6 +28,12 @@ const ALL_ASSETS = {
     height: 3,
     type: OBSTACLE_TYPE,
   },
+  coin: {
+    image: ASSETS_FOLDER + "None_Coin.png",
+    width: 1,
+    height: 1,
+    type: COIN_TYPE,
+  },
 };
 window.ALL_ASSETS = ALL_ASSETS;
 /**
@@ -131,7 +137,12 @@ document.addEventListener("DOMContentLoaded", () => {
     onUpdateObject,
   });
   window.grid = grid;
-  let all_templates = ["doodlebot_alone", "doodlebot_cowboy", "building"];
+  let all_templates = [
+    "doodlebot_alone",
+    "doodlebot_cowboy",
+    "building",
+    "coin",
+  ];
   for (let template_id of all_templates) {
     addTemplateDiv(template_id);
   }
@@ -189,8 +200,6 @@ const onAddBot = (bot) => {
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   bot_dom.classList.add("bot-container");
   bot_dom.setAttribute("id", DOM_ID);
-  bot_dom.setAttribute("data-type", BOT_TYPE);
-
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
   bot_dom.style.touchAction = "none";
@@ -201,16 +210,6 @@ const onAddBot = (bot) => {
   rotateArrow.addEventListener("click", () => {
     console.log("Tyring to turn 90");
     grid.turn_bot(bot.id, 90);
-
-    // //Remove previous, and paint again
-    // document.getElementById(DOM_ID).remove();
-    // console.log(DOM_ID);
-    // console.log(grid.bots[bot.id][0]);
-    // // let res = grid.turn_bot(bot.id, 90);
-    // console.log(grid.bots[bot.id][0]);
-    // // console.log(res);
-    // // console.log(res.bot);
-    // // onAddBot(res.bot);
   });
   bot_dom.appendChild(rotateArrow);
 
@@ -246,6 +245,7 @@ const onAddObstacle = (obstacle) => {
   obstacle_dom.setAttribute("id", DOM_ID);
   obstacle_dom.style.left = `${cell_size * i}px`;
   obstacle_dom.style.bottom = `${cell_size * j}px`;
+  obstacle_dom.style.touchAction = "none";
 
   // Creates the underlying image, with the given dimensions and orientation
   let imageEl = document.createElement("img");
@@ -255,7 +255,7 @@ const onAddObstacle = (obstacle) => {
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
 
-  obstacle_dom.appendChild(image);
+  obstacle_dom.appendChild(imageEl);
   gridContainer.appendChild(obstacle_dom);
 
   //Makes the created div draggable
@@ -277,6 +277,7 @@ const onAddCoin = (coin) => {
   coin_dom.setAttribute("id", DOM_ID);
   coin_dom.style.left = `${cell_size * i}px`;
   coin_dom.style.bottom = `${cell_size * j}px`;
+  coin_dom.style.touchAction = "none";
 
   // Creates the underlying image, with the given dimensions and orientation
   let imageEl = document.createElement("img");
@@ -286,8 +287,8 @@ const onAddCoin = (coin) => {
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
 
-  coin_dom.appendChild(image);
-  waitingRoom.appendChild(coin_dom);
+  coin_dom.appendChild(imageEl);
+  gridContainer.appendChild(coin_dom);
 
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
