@@ -9,12 +9,15 @@ dropdownOptions.forEach(function (option) {
   option.addEventListener("click", function () {
     dropdownButton.innerText = option.innerText;
     var body = document.getElementById("body");
+    console.log("test here");
+    console.log(option.innerText);
     if (option.innerText == "City") {
       virtualMode.setAttribute("name", "City");
       body.className =
         "background2 d-flex justify-content-center align-items-center vh-100";
       console.log(virtualMode.getAttribute("name"));
-    } else if (option.innerText == "None") {
+    } else if (option.innerText == "None" || option.innerText == null) {
+      console.log("im null");
       virtualMode.setAttribute("name", "None");
       body.className =
         "background1 d-flex justify-content-center align-items-center vh-100";
