@@ -3,9 +3,9 @@ import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-let rows = 10;
-let cols = 20;
-let cell_size = 60;
+let rows = 5; //was 10
+let cols = 10; //was 20
+let cell_size = 30; //was 60s
 // Just so that they become global variables
 window.rows = rows;
 window.cols = cols;
