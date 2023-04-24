@@ -80,15 +80,15 @@
                     <center><small>Drag and drop into the grid</small></center>
                     <p style="margin-bottom: 0;">Bots</p>
                     <div id="bots" class="border border-dark p-2">
-                        <!-- <img id="img1" alt="bot" src="../assets/DB_Controls_1.png" style="width:50px; height:50px;"> -->
+                        
                     </div>
                     <p style="margin-bottom: 0; margin-top: 15px;">Obstacles</p>
                     <div id="obstacles" class="border border-dark p-2">
-                        <p>Primary card</p>
+                        
                     </div>
-                    <p style="margin-bottom: 0; margin-top: 15px;">Coins</p>
+                    <p style="margin-bottom: 0; margin-top: 15px;">Rewards</p>
                     <div id="coins" class="border border-dark p-2">
-                        <p>Primary card</p>
+                        
                     </div>
                 </div>
             </div>
@@ -99,27 +99,30 @@
             <div id="gridSpace" class="border border-5 border-light"></div> -->
             
             <!--Integration html code-->
+            <!-- <div id="waitingRoom">
+            </div> -->
             <div id="waitingRoom">
             </div>
-            <button id="startBotsButton" class="bot-start">Start!</button>
+            <button id="startBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;">Start!</button>
             <div id="gridContainer" id="outer-dropzone" class="dropzone"></div>
             <!--Integration html code-->
 
         </div>
       
     </div>
-    <script type="text/javascript" src="./virtualMode.js"></script>
+    
     <!--Adding interact.js-->
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <!-- <script type="module" src="./test.js"></script> -->
+    <!-- <script type="text/javascript" src="./virtualMode.js"></script> -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script type="module" src="./test-interact.js"></script>
     <script type="text/javascript" src="./graph.js"></script>
     <script type="text/javascript" src="./grid-graph.js"></script>
     <script type="text/javascript" src="./grid.js"></script>
     <script type="module" src="./test-index.js"></script>
-
-    <script>
+    
+    <script type="module">
         import "https://cdn.interactjs.io/v1.9.20/auto-start/index.js";
         import "https://cdn.interactjs.io/v1.9.20/actions/drag/index.js";
         import "https://cdn.interactjs.io/v1.9.20/actions/resize/index.js";
@@ -484,6 +487,7 @@
         export { setupDraggable };
 
     </script>
+
 </body>
 
 </html>

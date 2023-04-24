@@ -1,11 +1,40 @@
 import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 
+//to know the selected theme and change the background accordingly
+var body = document.getElementById("body");
+var urlParams = new URLSearchParams(window.location.search);
+var selectedOption = urlParams.get("option");
+
+if (selectedOption == "City") {
+  body.className =
+    "background2 d-flex justify-content-center align-items-center vh-100";
+} else if (
+  selectedOption == "None" ||
+  selectedOption === undefined ||
+  selectedOption === null
+) {
+  body.className =
+    "background1 d-flex justify-content-center align-items-center vh-100";
+} else if (selectedOption == "School") {
+  body.className =
+    "background1 d-flex justify-content-center align-items-center vh-100";
+} else if (selectedOption == "Pacman") {
+  body.className =
+    "background3 d-flex justify-content-center align-items-center vh-100";
+}
+
+//get the divs of bots, obstacles, and coins to display the images
+var botsDiv = document.getElementById("bots");
+var obstaclesDiv = document.getElementById("obstacles");
+var coinsDiv = document.getElementById("coins");
+var waitingRoom = document.getElementById("waitingRoom");
+
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-let rows = 5; //was 10
-let cols = 10; //was 20
-let cell_size = 30; //was 60s
+var rows = 10; //was 10
+var cols = 16; //was 20
+var cell_size = 40; //was 60
 // Just so that they become global variables
 window.rows = rows;
 window.cols = cols;
@@ -15,30 +44,178 @@ let ASSETS_FOLDER = "../assets/";
 // Should place everything here.
 // There will be no resizing, so the width and height are fixed.
 const ALL_ASSETS = {
+  ///////////////////////None theme//////////////////////
   doodlebot_alone: {
     image: ASSETS_FOLDER + "None_DoodleBot.png",
-    width: 3,
-    height: 3,
+    width: 1.9,
+    height: 1.7,
     type: BOT_TYPE,
+    theme: "None",
   },
   doodlebot_cowboy: {
     image: ASSETS_FOLDER + "None_DoodleBot_Cowboy.png",
-    width: 3,
-    height: 3,
+    width: 1.9,
+    height: 1.7,
     type: BOT_TYPE,
+    theme: "None",
+  },
+  robot_1: {
+    image: ASSETS_FOLDER + "DB_Robot_1.png",
+    width: 1.9,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "None",
+  },
+  robot_2: {
+    image: ASSETS_FOLDER + "DB_Robot_2.png",
+    width: 1.9,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "None",
+  },
+  robot_3: {
+    image: ASSETS_FOLDER + "DB_Robot_3.png",
+    width: 1.9,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "None",
   },
   building: {
     image: ASSETS_FOLDER + "None_Building.png",
-    width: 1,
-    height: 3,
+    width: 1.1,
+    height: 2,
     type: OBSTACLE_TYPE,
+    theme: "None",
   },
   coin: {
     image: ASSETS_FOLDER + "None_Coin.png",
-    width: 1,
-    height: 1,
+    width: 1.5,
+    height: 1.5,
     type: COIN_TYPE,
+    theme: "None",
   },
+  star: {
+    image: ASSETS_FOLDER + "Star_1.png",
+    width: 1.5,
+    height: 1.5,
+    type: COIN_TYPE,
+    theme: "None",
+  },
+  ///////////////////////City theme//////////////////////
+  car_1: {
+    image: ASSETS_FOLDER + "DB_Car_1.png",
+    width: 1.3,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "City",
+  },
+  car_2: {
+    image: ASSETS_FOLDER + "DB_Car_2.png",
+    width: 1.3,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "City",
+  },
+  car_3: {
+    image: ASSETS_FOLDER + "DB_Car_3.png",
+    width: 1.3,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "City",
+  },
+  truck_1: {
+    image: ASSETS_FOLDER + "DB_Truck_1.png",
+    width: 1.3,
+    height: 2,
+    type: BOT_TYPE,
+    theme: "City",
+  },
+  bush: {
+    image: ASSETS_FOLDER + "DB_Bush_1.png",
+    width: 1.7,
+    height: 1.7,
+    type: OBSTACLE_TYPE,
+    theme: "City",
+  },
+  river: {
+    image: ASSETS_FOLDER + "DB_River_1.png",
+    width: 1,
+    height: 2,
+    type: OBSTACLE_TYPE,
+    theme: "City",
+  },
+  coffee: {
+    image: ASSETS_FOLDER + "DB_Coffee_1.png",
+    width: 1.2,
+    height: 1.5,
+    type: COIN_TYPE,
+    theme: "City",
+  },
+  pizza: {
+    image: ASSETS_FOLDER + "DB_Pizza_1.png",
+    width: 1.5,
+    height: 1.5,
+    type: COIN_TYPE,
+    theme: "City",
+  },
+  ///////////////////////Pacman theme//////////////////////
+  pacman: {
+    image: ASSETS_FOLDER + "DB_Pacman_1.png",
+    width: 1.5,
+    height: 1.5,
+    type: BOT_TYPE,
+    theme: "Pacman",
+  },
+  ghost_blue: {
+    image: ASSETS_FOLDER + "DB_GhostBlue_1.png",
+    width: 1.5,
+    height: 1.7,
+    type: BOT_TYPE,
+    theme: "Pacman",
+  },
+  ghost_orange: {
+    image: ASSETS_FOLDER + "DB_GhostOrange_1.png",
+    width: 1.5,
+    height: 1.7,
+    type: BOT_TYPE,
+    theme: "Pacman",
+  },
+  ghost_pink: {
+    image: ASSETS_FOLDER + "DB_GhostPink_1.png",
+    width: 1.5,
+    height: 1.7,
+    type: BOT_TYPE,
+    theme: "Pacman",
+  },
+  ghost_red: {
+    image: ASSETS_FOLDER + "DB_GhostRed_1.png",
+    width: 1.5,
+    height: 1.7,
+    type: BOT_TYPE,
+    theme: "Pacman",
+  },
+  pacman_wall: {
+    image: ASSETS_FOLDER + "DB_PacmanWall_1.png",
+    width: 0.7,
+    height: 2,
+    type: OBSTACLE_TYPE,
+    theme: "Pacman",
+  },
+  pacman_cherry: {
+    image: ASSETS_FOLDER + "DB_PacmanCherry_1.png",
+    width: 1.5,
+    height: 1.5,
+    type: COIN_TYPE,
+    theme: "Pacman",
+  },
+  pacman_food: {
+    image: ASSETS_FOLDER + "DB_PacmanFood_1.png",
+    width: 1.5,
+    height: 1.5,
+    type: COIN_TYPE,
+    theme: "Pacman",
+  },
+  ///////////////////////School theme//////////////////////
 };
 window.ALL_ASSETS = ALL_ASSETS;
 /**
@@ -51,10 +228,20 @@ window.ALL_ASSETS = ALL_ASSETS;
  */
 const createDOMGrid = (rows, cols, cell_size) => {
   //TODO: Have this info come from the theme previously chosen
-  gridContainer.style.backgroundImage =
-    "url(../assets/None_background_cropped.png)";
-  gridContainer.style.width = `${cols * cell_size}px`;
-  gridContainer.style.height = `${rows * cell_size}px`;
+  console.log(selectedOption);
+
+  if (selectedOption == "None") {
+    gridContainer.style.backgroundImage =
+      "url(../assets/None_background_cropped.png)";
+  } else if (selectedOption == "City") {
+    gridContainer.style.backgroundImage = "url(../assets/DB_CityGridBG_2.png)";
+  } else if (selectedOption == "Pacman") {
+    gridContainer.style.backgroundImage =
+      "url(../assets/DB_PacmanGridBG_1.png)";
+  } else if (selectedOption == "School") {
+    gridContainer.style.backgroundImage =
+      "url(../assets/None_background_cropped.png)";
+  }
 
   let colNumbersDiv = document.createElement("div");
   colNumbersDiv.classList.add("grid-row");
@@ -101,6 +288,7 @@ const addTemplateDiv = (template_id) => {
     console.error(`Template ${template_id} is not valid`);
     return;
   }
+  console.log("the template id is: " + template_id);
   let { image, width, height, type } = ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
@@ -109,9 +297,86 @@ const addTemplateDiv = (template_id) => {
   imageEl.setAttribute("src", image);
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
+  imageEl.style.padding = `5px`;
 
+  botsDiv.appendChild(imageEl);
+  console.log("I will add the image now");
   waitingRoom.appendChild(imageEl);
+
+  //add the images based on theme in their correct div --> Ive done this each in its separate function
 };
+/////////////////////////////////////////////////////////////////////
+
+//Add Bots
+const addBotsDiv = (template_id) => {
+  if (!(template_id in ALL_ASSETS)) {
+    console.error(`Template ${template_id} is not valid`);
+    return;
+  }
+  console.log("the template id is: " + template_id);
+  let { image, width, height, type } = ALL_ASSETS[template_id];
+
+  let imageEl = document.createElement("img");
+  imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.classList.add("template"); // For making it interactive later
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
+  imageEl.style.padding = `5px`;
+
+  console.log("I will add the image now");
+  botsDiv.appendChild(imageEl);
+  // waitingRoom.appendChild(imageEl);
+
+  //add the images based on theme in their correct div
+};
+
+const addObstaclesDiv = (template_id) => {
+  if (!(template_id in ALL_ASSETS)) {
+    console.error(`Template ${template_id} is not valid`);
+    return;
+  }
+  console.log("the template id is: " + template_id);
+  let { image, width, height, type } = ALL_ASSETS[template_id];
+
+  let imageEl = document.createElement("img");
+  imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.classList.add("template"); // For making it interactive later
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
+  imageEl.style.padding = `5px`;
+
+  console.log("I will add the image now");
+  obstaclesDiv.appendChild(imageEl);
+  // waitingRoom.appendChild(imageEl);
+
+  //add the images based on theme in their correct div
+};
+
+const addCoinsDiv = (template_id) => {
+  if (!(template_id in ALL_ASSETS)) {
+    console.error(`Template ${template_id} is not valid`);
+    return;
+  }
+  console.log("the template id is: " + template_id);
+  let { image, width, height, type } = ALL_ASSETS[template_id];
+
+  let imageEl = document.createElement("img");
+  imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.classList.add("template"); // For making it interactive later
+  imageEl.setAttribute("src", image);
+  imageEl.style.width = `${cell_size * width}px`;
+  imageEl.style.height = `${cell_size * height}px`;
+  imageEl.style.padding = `5px`;
+
+  console.log("I will add the image now");
+  coinsDiv.appendChild(imageEl);
+  // waitingRoom.appendChild(imageEl);
+
+  //add the images based on theme in their correct div
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   //   setupSocket();
   createDOMGrid(rows, cols, cell_size);
@@ -125,15 +390,83 @@ document.addEventListener("DOMContentLoaded", () => {
   window.grid = grid;
   // TODO: show the necessary templates given the selected theme
   // might need to add 'theme' key to ALL_ASSETS
-  let templates_to_show = [
-    "doodlebot_alone",
-    "doodlebot_cowboy",
-    "building",
-    "coin",
-  ];
-  for (let template_id of templates_to_show) {
-    addTemplateDiv(template_id);
+  let templates_to_show = [];
+  let bots = [];
+  let obstacles = [];
+  let coins = [];
+  if (selectedOption == "None") {
+    templates_to_show = [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+      "building",
+      "coin",
+      "star",
+    ];
+    bots = [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+    ];
+    obstacles = ["building"];
+    coins = ["coin", "star"];
+  } else if (selectedOption == "City") {
+    templates_to_show = [
+      "car_1",
+      "car_2",
+      "car_3",
+      "truck_1",
+      "river",
+      "bush",
+      "pizza",
+      "coffee",
+    ];
+    bots = ["car_1", "car_2", "car_3", "truck_1"];
+    obstacles = ["river", "bush"];
+    coins = ["pizza", "coffee"];
+  } else if (selectedOption == "Pacman") {
+    templates_to_show = [
+      "pacman",
+      "ghost_pink",
+      "ghost_blue",
+      "ghost_orange",
+      "ghost_red",
+      "pacman_wall",
+      "pacman_cherry",
+      "pacman_food",
+    ];
+    bots = ["pacman", "ghost_pink", "ghost_blue", "ghost_orange", "ghost_red"];
+    obstacles = ["pacman_wall"];
+    coins = ["pacman_cherry", "pacman_food"];
+  } else if (selectedOption == "School") {
+    templates_to_show = [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "building",
+      "coin",
+      "star",
+    ];
+    bots = ["car_1", "car_2", "car_3", "truck_1"];
+    obstacles = ["river", "bush"];
+    coins = ["pizza", "coffee"];
   }
+  // for (let template_id of templates_to_show) {
+  //   addTemplateDiv(template_id);
+  // }
+  for (let template_id of bots) {
+    addBotsDiv(template_id);
+  }
+  for (let template_id of obstacles) {
+    addObstaclesDiv(template_id);
+  }
+  for (let template_id of coins) {
+    addCoinsDiv(template_id);
+  }
+
   setupDraggable(".template", cell_size); //Make all templates draggable
   setupGridDropzone(cell_size); // To style the grid when an object can be dropped
 
@@ -315,11 +648,41 @@ function changeMovingBot(bot_id) {
     //Stop
     console.log("stopping...");
     // socket.emit("stop_bot", "")
+    document.getElementById("controls").style.visibility = "visible";
+    document.getElementById("objects").style.visibility = "visible";
+    document.getElementById("mySidebar").style.width = "500px";
+    document.getElementById("main").style.marginLeft = "500px";
+    // createDOMGrid("10", "16", "40");
     stopMovingBot(bot_id);
+    // if (startBotsButton.innerHTML === "Start!" || "Start moving") {
+    //   startButton.innerHTML = "Stop";
+    //   document.getElementById("mySidebar").style.width = "0";
+    //   document.getElementById("controls").style.visibility = "hidden";
+    //   document.getElementById("objects").style.visibility = "hidden";
+    //   document.getElementById("main").style.marginLeft = "250px";
+    //   // startButton.className = "startbtn btn btn-danger";
+    // } else {
+    //   startButton.innerHTML = "Stop moving";
+    //   document.getElementById("controls").style.visibility = "visible";
+    //   document.getElementById("objects").style.visibility = "visible";
+    //   document.getElementById("mySidebar").style.width = "500px";
+    //   document.getElementById("main").style.marginLeft = "500px";
+    //   // startButton.className = "startbtn btn btn-success";
+    // }
   } else {
     //Start
     // socket.emit("start_bot", "")
     console.log("starting...");
+    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("controls").style.visibility = "hidden";
+    document.getElementById("objects").style.visibility = "hidden";
+    document.getElementById("main").style.marginLeft = "250px";
+    // gridContainer.style.width = `700px`;
+    // gridContainer.style.height = `940px`;
+    // createDOMGrid("14", "18", "50");
+    // var rows = 10; //was 10
+    // var cols = 16; //was 20 to get width
+    // var cell_size = 40; //was 60
     startMovingBot(bot_id);
   }
 }
