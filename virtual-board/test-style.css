@@ -69,6 +69,7 @@
 #gridContainer {
   position: relative;
   object-fit: scale-down;
+  
 }
 /* for bots*/
 .grid-row {

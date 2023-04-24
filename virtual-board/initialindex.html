@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./virtual-board-style.css"></link>
+</head>
+<body>
+    <div>
+        <!-- <form> -->
+            <button id="createRoomButton">Create Room</button>
+            <input 
+                type="text"
+                id="roomInput"
+            >
+            <button id="joinRoomButton" type="submit">Join room</button>
+        <!-- </form> -->
+    </div>
+
+    <div id="virtualGridContainer" class="game-hidden">
+    <h1>Room <i id="roomNameSpan"></i></h1>
+    <button id="create_grid_button">Create grid</button>
+    <h1>Directions of bots: </h1>
+    <div id="botDirectionsDiv"></div>
+    <section>
+        <textarea id="botScoresDiv" rows="10" cols="100"></textarea>
+    </section>
+    <section>
+        <textarea id="logDiv" rows="10" cols="100"></textarea>
+    </section>
+    <button id="changeBotsMovingButton" class="bot-moving-btn bot-start">Start</button>
+    <h1>Virtual Grid: </h1>
+    <div id="gridDiv">
+    </div>
+    <button id="testGraphButton">Test graph</button>
+    <button id="testLogicButton">Test Logic</button>
+    <section>
+        <h1>Select bot:</h1>
+        <div id="botControlsContainer">
+
+        </div>
+        <!-- <select id="botSelect"></select> -->
+        <textarea id="botCrashLog" rows="10" cols="100"></textarea>
+
+    </section>
+    <section>
+        <!-- <h1>Editing part:</h1> -->
+        <div id="editingContainer">
+            <div>
+                <h2>Creating bots</h2>
+                <button id="addRandomBotButton">Add random bot</button>
+                <br />
+                <button id="openEditorBot">Toggle editor</button>
+                <div id="botEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="botColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="botRowNumberInput" min="0">
+                    <br />
+                    <!-- Width
+                    <input type="number" id="botWidthInput" min="1" />
+                    <br />
+                    Height
+                    <input type="number" id="botColNumber" min="1" /> -->
+                    <br />
+                    <button id="addBotButton">Add bot</button>
+                </div>
+            </div>
+            <div>
+                <h2>Creating obstacles</h2>
+                <button id="addRandomObstacleButton">Add random Obstacle</button>
+                <br />
+                <button id="openEditorObstacle">Toggle editor</button>
+
+                <div id="obstacleEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="obstacleColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="obstacleRowNumberInput" min="0">
+                    <br/>
+                    Width
+                    <input type="number" id="obstacleWidthInput" min="1"/>
+                    <br />
+                    Height
+                    <input type="number" id="obstacleColNumber" min="1"/>
+                    <br />
+                    <button id="addObstacleButton">Add obstacle</button>
+                </div>
+            </div>
+            <div>
+                <h2>Creating Coins</h2>
+                <button id="addRandomCoinButton">Add random coin</button>
+                <br/>
+                <button id="openEditorCoin">Toggle editor</button>
+                <div id="coinEditorDiv" class="editor editor-hide">
+                    Col number (bottom left)
+                    <input type="number" id="coinColNumberInput" min="0" />
+                    <br />
+                    Row number (bottom left)
+                    <input type="number" id="coinRowNumberInput" min="0">
+                    <br/>
+                    <!-- Width
+                    <input type="number" id="coinWidthInput" min="1"/>
+                    <br />
+                    Height
+                    <input type="number" id="coinColNumber" min="1"/>
+                    <br /> -->
+                    <button id="addCoinButton">Add coin</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    </div>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script type="text/javascript" src="./graph.js"></script>
+    <script type="text/javascript" src="./grid-graph.js"></script>
+    <script type="text/javascript" src="./grid.js"></script>
+    <script type="text/javascript" src="./html-helpers.js"></script>
+    <script type="text/javascript" src="./index.js"></script>
+    <script type="text/javascript" src="./virtual-board-worker.js"></script>
+</body>
+</html>
