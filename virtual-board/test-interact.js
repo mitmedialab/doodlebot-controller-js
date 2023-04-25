@@ -206,7 +206,7 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
-    let { image, width, height, type } =
+    let { image, width, height, type, relative_anchor } =
       ALL_ASSETS[element.getAttribute("template_id")];
     console.log(`New ${type}, adding to grid!`);
 
@@ -221,7 +221,7 @@ function onDropHandler(event) {
         width: width,
         height: height,
         angle: 0,
-        relative_anchor: [1, 1], //TODO: Get from div element
+        relative_anchor: relative_anchor,
       });
     } else if (type === OBSTACLE_TYPE) {
       let id = grid.getNewObstacleId();
