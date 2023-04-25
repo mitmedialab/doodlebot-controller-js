@@ -21,6 +21,9 @@ if (selectedOption == "City") {
 } else if (selectedOption == "Pacman") {
   body.className =
     "background3 d-flex justify-content-center align-items-center vh-100";
+} else {
+  body.className =
+    "background1 d-flex justify-content-center align-items-center vh-100";
 }
 
 //get the divs of bots, obstacles, and coins to display the images
@@ -33,8 +36,8 @@ let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
 var rows = 10; //was 10
-var cols = 17; //was 20
-var cell_size = 45; //was 60
+var cols = 16; //was 20
+var cell_size = 40; //was 60
 // Just so that they become global variables
 window.rows = rows;
 window.cols = cols;
@@ -258,14 +261,27 @@ const createDOMGrid = (rows, cols, cell_size) => {
   if (selectedOption == "None") {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
+    gridContainer.style.height = "400px";
+    gridContainer.style.width = "640px";
   } else if (selectedOption == "City") {
     gridContainer.style.backgroundImage = "url(../assets/DB_CityGridBG_2.png)";
+    gridContainer.style.height = "400px";
+    gridContainer.style.width = "560px";
   } else if (selectedOption == "Pacman") {
     gridContainer.style.backgroundImage =
       "url(../assets/DB_PacmanGridBG_1.png)";
+    gridContainer.style.height = "400px";
+    gridContainer.style.width = "560px";
   } else if (selectedOption == "School") {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
+    gridContainer.style.height = "400px";
+    gridContainer.style.width = "560px";
+  } else {
+    gridContainer.style.backgroundImage =
+      "url(../assets/None_background_cropped.png)";
+    gridContainer.style.height = "400px";
+    gridContainer.style.width = "640px";
   }
 
   let colNumbersDiv = document.createElement("div");
@@ -356,10 +372,9 @@ const addBotsDiv = (template_id) => {
   console.log("I will add the image now");
   botsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
-
-  //add the images based on theme in their correct div
 };
 
+//Add obstacles
 const addObstaclesDiv = (template_id) => {
   if (!(template_id in ALL_ASSETS)) {
     console.error(`Template ${template_id} is not valid`);
@@ -383,10 +398,9 @@ const addObstaclesDiv = (template_id) => {
   console.log("I will add the image now");
   obstaclesDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
-
-  //add the images based on theme in their correct div
 };
 
+//Add coins
 const addCoinsDiv = (template_id) => {
   if (!(template_id in ALL_ASSETS)) {
     console.error(`Template ${template_id} is not valid`);
@@ -410,8 +424,6 @@ const addCoinsDiv = (template_id) => {
   console.log("I will add the image now");
   coinsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
-
-  //add the images based on theme in their correct div
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -490,6 +502,26 @@ document.addEventListener("DOMContentLoaded", () => {
     bots = ["car_1", "car_2", "car_3", "truck_1"];
     obstacles = ["river", "bush"];
     coins = ["pizza", "coffee"];
+  } else {
+    templates_to_show = [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+      "building",
+      "coin",
+      "star",
+    ];
+    bots = [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+    ];
+    obstacles = ["building"];
+    coins = ["coin", "star"];
   }
   // for (let template_id of templates_to_show) {
   //   addTemplateDiv(template_id);
@@ -694,23 +726,8 @@ function changeMovingBot(bot_id) {
     document.getElementById("objects").style.visibility = "visible";
     document.getElementById("mySidebar").style.width = "500px";
     document.getElementById("main").style.marginLeft = "500px";
-    // createDOMGrid("10", "16", "40");
+
     stopMovingBot(bot_id);
-    // if (startBotsButton.innerHTML === "Start!" || "Start moving") {
-    //   startButton.innerHTML = "Stop";
-    //   document.getElementById("mySidebar").style.width = "0";
-    //   document.getElementById("controls").style.visibility = "hidden";
-    //   document.getElementById("objects").style.visibility = "hidden";
-    //   document.getElementById("main").style.marginLeft = "250px";
-    //   // startButton.className = "startbtn btn btn-danger";
-    // } else {
-    //   startButton.innerHTML = "Stop moving";
-    //   document.getElementById("controls").style.visibility = "visible";
-    //   document.getElementById("objects").style.visibility = "visible";
-    //   document.getElementById("mySidebar").style.width = "500px";
-    //   document.getElementById("main").style.marginLeft = "500px";
-    //   // startButton.className = "startbtn btn btn-success";
-    // }
   } else {
     //Start
     // socket.emit("start_bot", "")
@@ -719,12 +736,7 @@ function changeMovingBot(bot_id) {
     document.getElementById("controls").style.visibility = "hidden";
     document.getElementById("objects").style.visibility = "hidden";
     document.getElementById("main").style.marginLeft = "250px";
-    // gridContainer.style.width = `700px`;
-    // gridContainer.style.height = `940px`;
-    // createDOMGrid("14", "18", "50");
-    // var rows = 10; //was 10
-    // var cols = 16; //was 20 to get width
-    // var cell_size = 40; //was 60
+
     startMovingBot(bot_id);
   }
 }
