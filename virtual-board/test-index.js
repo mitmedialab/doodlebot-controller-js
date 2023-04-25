@@ -44,16 +44,25 @@ window.cols = cols;
 window.cell_size = cell_size;
 
 let ASSETS_FOLDER = "../assets/";
+const COIN_COLLECT_TYPES = {
+  COIN: "Coin",
+  PIZZA: "Pizza",
+  COFFEE: "Coffee",
+  STAR: "Star",
+  CHERRY: "Cherry",
+  FOOD: "Food",
+};
+window.COIN_COLLECT_TYPES = COIN_COLLECT_TYPES;
 // Should place everything here.
 // There will be no resizing, so the width and height are fixed.
 const ALL_ASSETS = {
   ///////////////////////None theme//////////////////////
   doodlebot_alone: {
     image: ASSETS_FOLDER + "None_DoodleBot.png",
-    width: 3, //1.9,
-    height: 3, //1.7,
+    width: 2, //1.9,
+    height: 2, //1.7,
     type: BOT_TYPE,
-    relative_anchor: [1, 1],
+    relative_anchor: [0, 0],
     theme: "None",
   },
   doodlebot_cowboy: {
@@ -102,6 +111,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "None",
+    coin_collect_type: COIN_COLLECT_TYPES.COIN,
   },
   star: {
     image: ASSETS_FOLDER + "Star_1.png",
@@ -109,6 +119,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "None",
+    coin_collect_type: COIN_COLLECT_TYPES.STAR,
   },
   ///////////////////////City theme//////////////////////
   car_1: {
@@ -173,6 +184,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "City",
+    coin_collect_type: COIN_COLLECT_TYPES.COFFEE,
   },
   pizza: {
     image: ASSETS_FOLDER + "DB_Pizza_1.png",
@@ -180,6 +192,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "City",
+    coin_collect_type: COIN_COLLECT_TYPES.PIZZA,
   },
   ///////////////////////Pacman theme//////////////////////
   pacman: {
@@ -235,6 +248,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "Pacman",
+    coin_collect_type: COIN_COLLECT_TYPES.CHERRY,
   },
   pacman_food: {
     image: ASSETS_FOLDER + "DB_PacmanFood_1.png",
@@ -242,6 +256,7 @@ const ALL_ASSETS = {
     height: 1, //1.5,
     type: COIN_TYPE,
     theme: "Pacman",
+    coin_collect_type: COIN_COLLECT_TYPES.FOOD,
   },
   ///////////////////////School theme//////////////////////
 };
@@ -538,11 +553,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupDraggable(".template", cell_size); //Make all templates draggable
   setupGridDropzone(cell_size); // To style the grid when an object can be dropped
-
-  // grid.add_random_bot({
-  //   image: "../assets/None_Doodlebot.png",
-  //   policies: new Set(["Get coins"]), //Need the checkbox, hardcode for now
-  // });
 });
 /**
  * If a coin has been picked up, remove it from the screen
@@ -632,7 +642,10 @@ const onAddBot = (bot) => {
 
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
+
+  addBotToSelect(bot);
 };
+const addBotToSelect = (bot) => {};
 /**
  * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
  *
@@ -706,8 +719,25 @@ const onAddCoin = (coin) => {
 
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
+
+  addCoinTypeToSelect(coin);
 };
 
+const addCoinTypeToSelect = (coin) => {
+  let { coin_collect_type } = coin;
+  if (!coin_collect_type) {
+    alert("Error: Undefined coin type, please add it on ALL_ASSETS");
+    return;
+  }
+  if (collect_select.querySelector(`[value="${coin_collect_type}"]`)) {
+    //Already exists, don't add it
+    return;
+  }
+  let option = document.createElement("option");
+  option.setAttribute("value", coin.coin_collect_type);
+  option.innerText = coin.coin_collect_type;
+  collect_select.appendChild(option);
+};
 //--------------------------- Below code controls moving -------------------------------------///
 let intervals = {}; //bot_id -> interval
 /**
@@ -753,6 +783,10 @@ function startMovingBot(bot_id) {
     console.log("-------------------------MOVING-------------------");
     let num_turns = 1;
     let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
+    if (!next_move) {
+      // No more moves, so don't do anything
+      return;
+    }
     console.log(next_move);
     grid.apply_next_move_to_bot(bot_id, next_move);
     // Now updte the view of the bot
@@ -794,4 +828,49 @@ check_gridlines.addEventListener("change", (evt) => {
   } else {
     all_grid.forEach((grid) => grid.classList.remove("hide-grid"));
   }
+});
+
+//------------------------Bot policy checkbox handlers----------------------------------------//
+random_checkbox.addEventListener("change", (evt) => {
+  let checked = evt.target.checked;
+  let parent = evt.target.parentNode;
+  if (checked) {
+    parent.classList.remove("policy-inactive");
+  } else {
+    parent.classList.add("policy-inactive");
+  }
+});
+follow_checkbox.addEventListener("change", (evt) => {
+  let checked = evt.target.checked;
+  let parent = evt.target.parentNode;
+  if (checked) {
+    parent.classList.remove("policy-inactive");
+  } else {
+    parent.classList.add("policy-inactive");
+  }
+});
+run_away_from_checkbox.addEventListener("change", (evt) => {
+  let checked = evt.target.checked;
+  let parent = evt.target.parentNode;
+  if (checked) {
+    parent.classList.remove("policy-inactive");
+  } else {
+    parent.classList.add("policy-inactive");
+  }
+});
+collect_checkbox.addEventListener("change", (evt) => {
+  let checked = evt.target.checked;
+  let parent = evt.target.parentNode;
+  if (checked) {
+    parent.classList.remove("policy-inactive");
+  } else {
+    parent.classList.add("policy-inactive");
+  }
+});
+
+//---------------------------Bot policy select handlers-------------------------------------//
+collect_select.addEventListener("change", (evt) => {
+  let type = evt.target.value;
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_collect(bot_id, type);
 });

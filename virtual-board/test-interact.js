@@ -210,8 +210,15 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
-    let { image, image_rotate_90, width, height, type, relative_anchor } =
-      ALL_ASSETS[element.getAttribute("template_id")];
+    let {
+      image,
+      image_rotate_90,
+      width,
+      height,
+      type,
+      relative_anchor,
+      coin_collect_type,
+    } = ALL_ASSETS[element.getAttribute("template_id")];
     console.log(`New ${type}, adding to grid!`);
 
     if (type === BOT_TYPE) {
@@ -222,11 +229,13 @@ function onDropHandler(event) {
         real_bottom_left: [gridX, gridY],
         image: image,
         image_rotate_90: image_rotate_90,
-        policies: new Set(["Get coins"]), //TODO: Don't hardcode this
+        policies: new Set(["collect"]), //TODO: Don't hardcode this
         width: width,
         height: height,
         angle: 0,
         relative_anchor: relative_anchor,
+        // only_reachable: true, //TODO: Don't hardcode this
+        targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
     } else if (type === OBSTACLE_TYPE) {
       let id = grid.getNewObstacleId();
@@ -247,6 +256,7 @@ function onDropHandler(event) {
         image: image,
         width: width,
         height: height,
+        coin_collect_type: coin_collect_type,
       });
     } else {
       console.log(`Invalid type: ${type}`);

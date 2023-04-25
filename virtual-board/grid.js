@@ -25,17 +25,17 @@ const BOT_POLICIES = {
     value: "random",
     text: "Random",
   },
-  GET_CLOSER: {
-    value: "Get closer",
-    text: "Get closer",
+  FOLLOW: {
+    value: "follow",
+    text: "Follow",
   },
-  GET_FARTHER: {
-    value: "Get farther",
-    text: "Get farther",
+  RUN_AWAY_FROM: {
+    value: "run_away_from",
+    text: "Run away from",
   },
-  GET_COINS: {
-    value: "Get coins",
-    text: "Get coins",
+  COLLECT: {
+    value: "collect",
+    text: "Collect",
   },
 };
 
@@ -204,7 +204,7 @@ class VirtualGrid {
         policies: new Set(),
         distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
         only_reachable: false, //Whether to only calculate distance to reachable points
-        targets: [],
+        targets: [], //coin_collect_types
         isMoving: false,
         angle: ANGLE_DIRS.RIGHT, // Looking to the right
         ...newObject,
@@ -290,6 +290,14 @@ class VirtualGrid {
     let bot_index = 0;
     this.bots[bot_id][bot_index].isMoving =
       !this.bots[bot_id][bot_index].isMoving;
+  }
+  update_bot_collect(bot_id, collect_type) {
+    let bot_index = 0;
+    let targets = collect_type === "None" ? [] : [collect_type];
+
+    this.bots[bot_id][bot_index].targets = targets;
+
+    //TODO: See if bots can have multiple targets
   }
   /**
    * Moves the bots that have `isMoving` set to true. It won't do anything to the ones
@@ -560,8 +568,13 @@ class VirtualGrid {
       //If crashed with coins then pick them up
       for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]) {
         //TODO: Change bot state (e.g., give it more points)
+        let coin = this.coins[coin_id][coin_index];
+        if (!bot.targets.includes(coin.coin_collect_type)) {
+          //Don't pickup if its not a valid coin
+          continue;
+        }
         bot.coins.push([coin_id, coin_index]);
-        coinsPicked.push(this.coins[coin_id][coin_index]);
+        coinsPicked.push(coin);
         this.remove_coin(coin_id, coin_index);
       }
     }
@@ -867,10 +880,19 @@ class VirtualGrid {
    * @returns the minimum distance from the bot to all the coins
    */
   min_distance_to_coins(future_bot) {
+    let targets = future_bot.targets;
+
     let res = null;
     for (let coin_id in this.coins) {
       for (let coin_index in this.coins[coin_id]) {
         let coin_obj = this.coins[coin_id][coin_index];
+        if (!targets.includes(coin_obj.coin_collect_type)) {
+          // Only consider coins of the correct type
+          console.log(
+            `[BOT ${future_bot.id}] Skipping coin with type ${coin_obj.coin_collect_type}`
+          );
+          continue;
+        }
         // if it's reachable (or if it doesnt matter), consider this coin
         // if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin_obj)){
         if (!future_bot.only_reachable) {
@@ -1239,7 +1261,7 @@ class VirtualGrid {
       return this.get_next_move_to_be_inside_board(bot_id);
     }
     // return null; //TODO: get rid of this, testing
-    if (bot.policies.has(BOT_POLICIES.GET_COINS.value)) {
+    if (bot.policies.has(BOT_POLICIES.COLLECT.value)) {
       //Only do this if there are coins to move to
       if (Object.keys(this.coins).length !== 0) {
         return this.get_next_move_using_get_coins(bot_id, num_turns);
@@ -1249,9 +1271,9 @@ class VirtualGrid {
       }
     }
 
-    if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)) {
+    if (bot.policies.has(BOT_POLICIES.RUN_AWAY_FROM.value)) {
       return this.get_next_move_closer_or_farther(bot_id, false);
-    } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER.value)) {
+    } else if (bot.policies.has(BOT_POLICIES.FOLLOW.value)) {
       // Default is to move rand
       return this.get_next_move_closer_or_farther(bot_id, true);
     } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)) {
@@ -1401,16 +1423,16 @@ class VirtualGrid {
    */
   move_bot_using_policies(bot_id, bot_index = 0, num_turns) {
     let bot = this.bots[bot_id][bot_index];
-    if (bot.policies.has(BOT_POLICIES.GET_COINS.value)) {
+    if (bot.policies.has(BOT_POLICIES.COLLECT.value)) {
       //Only do this if there are coins to move to
       if (Object.keys(this.coins).length !== 0) {
         return this.move_bot_using_get_coins(bot_id, bot_index, num_turns);
       }
     }
 
-    if (bot.policies.has(BOT_POLICIES.GET_FARTHER.value)) {
+    if (bot.policies.has(BOT_POLICIES.RUN_AWAY_FROM.value)) {
       return this.move_bot_closer_or_farther(bot_id, bot_index, false);
-    } else if (bot.policies.has(BOT_POLICIES.GET_CLOSER.value)) {
+    } else if (bot.policies.has(BOT_POLICIES.FOLLOW.value)) {
       // Default is to move rand
       return this.move_bot_closer_or_farther(bot_id, bot_index, true);
     } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)) {
