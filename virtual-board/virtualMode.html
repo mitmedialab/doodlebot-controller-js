@@ -28,24 +28,47 @@
                     <div class="row">
                         <div class="col p-1">
                             <p style="font-size: 14px; margin-bottom: 0;">Select policy</p>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="random" name="random" value="random">
+                            <div class="form-check policy-inactive">
+                                <input type="checkbox" class="form-check-input" id="random_checkbox" name="random_checkbox" value="random_checkbox">
                                 <label class="form-check-label" for="check1" style="font-size: 14px;">Random</label>
                             </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="getCloser" name="getCloser" value="getCloser">
-                                <label class="form-check-label" for="check2" style="font-size: 14px;">Follow _select_</label>
+                            <div class="form-check policy-inactive">
+                                <input type="checkbox" class="form-check-input" id="follow_checkbox" name="follow_checkbox" value="follow_checkbox">
+                                <label class="form-check-label" for="check2" style="font-size: 14px;">
+                                    Follow 
+                                    <select class="form-select-sm" id="follow_select" name="follow_select">
+                                        <option value="None">-- Select a bot to follow --</option>
+                                        <!-- <option value="euclidian">Random</option> -->
+                                        <!-- <option value="euclidian">Euclidean</option>
+                                        <option value="euclidian">Manhattan</option>
+                                        <option value="euclidian">Dijkstra</option> -->
+                                    </select>
+                                </label>
                             </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="getFarther" name="getFarther" value="getFarther">
-                                <label class="form-check-label" style="font-size: 14px;">Run away from _select_</label>
+                            <div class="form-check policy-inactive">
+                                <input type="checkbox" class="form-check-input" id="run_away_from_checkbox" name="run_away_from_checkbox" value="run_away_from_checkbox">
+                                <label class="form-check-label" style="font-size: 14px;">
+                                    Run away from
+                                    <select class="form-select-sm" id="run_away_from_select" name="run_away_from_select">
+                                        <option value="None">-- Select a bot to run from--</option>
+                                        <!-- <option value="euclidian">Random</option> -->
+                                        <!-- <option value="euclidian">Euclidean</option>
+                                        <option value="euclidian">Manhattan</option>
+                                        <option value="euclidian">Dijkstra</option> -->
+                                    </select>
+                                </label>
                             </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="collectCoins" name="collectCoins" value="collectCoins">
-                                <label class="form-check-label" style="font-size: 14px;">Collect _select_</label>
+                            <div class="form-check policy-inactive">
+                                <input type="checkbox" class="form-check-input" id="collect_checkbox" name="collect_checkbox" value="collect_checkbox">
+                                <label class="form-check-label" style="font-size: 14px;">
+                                    Collect
+                                    <select class="form-select-sm" id="collect_select" name="collect_select">
+                                        <option value="None">-- Select a type to collect--</option>
+                                    </select>
+                                </label>
                             </div>
                             <label for="sel1" class="form-label" style="font-size: 14px; margin-top: 20px;">
-                                Navigation Algorithm
+                                Distance Type
                             </label>
                             <select class="form-select form-select-sm" id="distanceType" name="distanceType" style="width:80%;">
                                 <!-- <option value="euclidian">Random</option> -->

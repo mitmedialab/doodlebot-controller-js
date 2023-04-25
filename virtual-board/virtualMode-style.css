@@ -1,89 +1,95 @@
 #body {
-    font-family: "Audiowide", sans-serif;
-    color:#f1f1f1;
-    /* overflow: -moz-scrollbars-horizontal;
+  font-family: "Audiowide", sans-serif;
+  color: #f1f1f1;
+  /* overflow: -moz-scrollbars-horizontal;
     overflow-y: hidden;
     overflow-x: auto; */
 }
 
 .card {
-    margin:20px;
-    color:black;
-    
+  margin: 20px;
+  color: black;
 }
 
-.card-header{
-    /* background-color: rgb(236, 190, 190); */
+.card-header {
+  /* background-color: rgb(236, 190, 190); */
 }
 
 .card-body {
-    background-color:rgb(195, 220, 225);
+  background-color: rgb(195, 220, 225);
 }
 
 .background1 {
-    background-image: url('../assets/DB_NoThemeControlPanel_1.png');
-    background-size: cover;
+  background-image: url("../assets/DB_NoThemeControlPanel_1.png");
+  background-size: cover;
 }
 
 .background2 {
-    background-image: url('../assets/DoodleBot_CityTheme_Background.png');
-    background-size: cover;
+  background-image: url("../assets/DoodleBot_CityTheme_Background.png");
+  background-size: cover;
 }
 
 .background3 {
-    background-image: url('../assets/DoodleBot_PacmanTheme_Background_1.png');
-    background-size: cover;
+  background-image: url("../assets/DoodleBot_PacmanTheme_Background_1.png");
+  background-size: cover;
 }
 #gridSpace {
-    width:600px;
-    height: 500px;
-    margin-top: 2%;
+  width: 600px;
+  height: 500px;
+  margin-top: 2%;
 }
 .sidebar {
-    height: 100%;
-    width: 500px;
-    position: fixed;
-    z-index: 1;
-    top: 0;
-    left: 0;
-    background-color:#160f31;
-    overflow-x: hidden;
-    transition: 0.5s;
-    padding-top: 10px;
-    
+  height: 100%;
+  width: 500px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #160f31;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 10px;
 }
 
 .sidebar .closebtn {
-    position: absolute;
-    top: 0;
-    right: 25px;
-    font-size: 36px;
-    margin-left: 50px;
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
 }
 
 .startbtn {
-    font-size: 20px;
-    cursor: pointer;
-    color: white;
-    padding: 10px 15px;
-    border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: white;
+  padding: 10px 15px;
+  border: none;
 }
 
 .startbtn:hover {
-    background-color: #444;
+  background-color: #444;
 }
 
 #main {
-    margin-left:500px;
-    transition: margin-left .5s;
-    padding: 16px;
+  margin-left: 500px;
+  transition: margin-left 0.5s;
+  padding: 16px;
 }
 @media screen and (max-height: 450px) {
-    .sidebar {
-        padding-top: 15px;
-    }
+  .sidebar {
+    padding-top: 15px;
+  }
 
-    .sidebar a {
-        font-size: 18px;
-    }
+  .sidebar a {
+    font-size: 18px;
+  }
+}
+
+.policy-inactive select {
+  display: none;
+}
+
+.policy-inactive {
+  opacity: 0.5;
 }
