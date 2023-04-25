@@ -27,49 +27,45 @@
                     <center><small>Select a bot with your mouse</small></center>
                     <div class="row">
                         <div class="col p-1">
-                            <p style="font-size: 14px; margin-bottom: 0;">Select behavior</p>
+                            <p style="font-size: 14px; margin-bottom: 0;">Select policy</p>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="random" name="random" value="random">
                                 <label class="form-check-label" for="check1" style="font-size: 14px;">Random</label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="getCloser" name="getCloser" value="getCloser">
-                                <label class="form-check-label" for="check2" style="font-size: 14px;">Get Closer</label>
+                                <label class="form-check-label" for="check2" style="font-size: 14px;">Follow _select_</label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="getFarther" name="getFarther" value="getFarther">
-                                <label class="form-check-label" style="font-size: 14px;">Get Farther</label>
+                                <label class="form-check-label" style="font-size: 14px;">Run away from _select_</label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="collectCoins" name="collectCoins" value="collectCoins">
-                                <label class="form-check-label" style="font-size: 14px;">Collect Coins</label>
+                                <label class="form-check-label" style="font-size: 14px;">Collect _select_</label>
                             </div>
                             <label for="sel1" class="form-label" style="font-size: 14px; margin-top: 20px;">
-                                Select distance type
+                                Navigation Algorithm
                             </label>
                             <select class="form-select form-select-sm" id="distanceType" name="distanceType" style="width:80%;">
-                                <option value="euclidian">Euclidian</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
+                                <!-- <option value="euclidian">Random</option> -->
+                                <option value="euclidian">Euclidean</option>
+                                <option value="euclidian">Manhattan</option>
+                                <option value="euclidian">Dijkstra</option>
                             </select>
-                            <div class="form-check mt-4">
+                            <!-- <div class="form-check mt-4">
                                 <input type="checkbox" class="form-check-input" id="check1" name="option1" value="something">
                                 <label class="form-check-label" for="check1" style="font-size: 14px;">Only consider reachable points</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="check_gridlines" name="option2">
-                                <label class="form-check-label" for="check_gridlines" style="font-size: 14px;">Hide gridlines</label>
-                            </div>
+                            </div> -->
                             
                         </div>
-                        <div class="col p-3">
+                        <!-- <div class="col p-3">
                             <center><small>Manual Controls</small></center>
                             <center>
                             <img alt="controls" src="../assets/DB_Controls_1.png" style="width:170px; height:170px; margin-top: 15px;">
                             </center>
                            
-                        </div>
+                        </div> -->
                         
                     </div>
                 </div>
@@ -104,7 +100,12 @@
             <div id="waitingRoom">
             </div>
             <button id="startBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;">Start!</button>
+
             <div id="gridContainer" id="outer-dropzone" class="dropzone"></div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="check_gridlines" name="option2">
+                <label class="form-check-label" for="check_gridlines" style="font-size: 14px;">Hide gridlines</label>
+            </div>
             <!--Integration html code-->
 
         </div>
