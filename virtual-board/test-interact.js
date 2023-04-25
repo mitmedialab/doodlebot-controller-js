@@ -51,6 +51,10 @@ const setupDraggable = (selector, cell_size) => {
           let { left, top } = original.getBoundingClientRect();
           clone.style.left = `${left}px`;
           clone.style.top = `${top}px`;
+          let template_id = original.getAttribute("template_id");
+          let { width, height } = ALL_ASSETS[template_id];
+          clone.style.width = `${cell_size * width}px`;
+          clone.style.height = `${cell_size * height}px`;
           //adding z-index
           clone.style.zIndex = "10";
           clone.classList.remove("template"); //To make sure it's no the original

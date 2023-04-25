@@ -115,6 +115,7 @@ const ALL_ASSETS = {
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "City",
+    template_cell_size: 40,
   },
   car_2: {
     image: ASSETS_FOLDER + "DB_Car_2.png",
@@ -124,6 +125,7 @@ const ALL_ASSETS = {
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "City",
+    template_cell_size: 40,
   },
   car_3: {
     image: ASSETS_FOLDER + "DB_Car_3.png",
@@ -133,6 +135,7 @@ const ALL_ASSETS = {
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "City",
+    template_cell_size: 40,
   },
   truck_1: {
     image: ASSETS_FOLDER + "DB_Truck_1.png",
@@ -142,13 +145,15 @@ const ALL_ASSETS = {
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "City",
+    template_cell_size: 40,
   },
   bush: {
     image: ASSETS_FOLDER + "DB_Bush_1.png",
-    width: 2, //1.7,
-    height: 2, //1.7,
+    width: 1, //1.7,
+    height: 1, //1.7,
     type: OBSTACLE_TYPE,
     theme: "City",
+    template_cell_size: 40,
   },
   river: {
     image: ASSETS_FOLDER + "DB_River_1.png",
@@ -156,6 +161,7 @@ const ALL_ASSETS = {
     height: 2,
     type: OBSTACLE_TYPE,
     theme: "City",
+    template_cell_size: 40,
   },
   coffee: {
     image: ASSETS_FOLDER + "DB_Coffee_1.png",
@@ -332,14 +338,18 @@ const addBotsDiv = (template_id) => {
     return;
   }
   console.log("the template id is: " + template_id);
-  let { image, width, height, type } = ALL_ASSETS[template_id];
+  let { image, width, height, type, template_cell_size } =
+    ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
-  imageEl.style.width = `${cell_size * width}px`;
-  imageEl.style.height = `${cell_size * height}px`;
+  if (!template_cell_size) {
+    template_cell_size = 20;
+  }
+  imageEl.style.width = `${template_cell_size * width}px`;
+  imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
   console.log("I will add the image now");
@@ -355,14 +365,18 @@ const addObstaclesDiv = (template_id) => {
     return;
   }
   console.log("the template id is: " + template_id);
-  let { image, width, height, type } = ALL_ASSETS[template_id];
+  let { image, width, height, type, template_cell_size } =
+    ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
-  imageEl.style.width = `${cell_size * width}px`;
-  imageEl.style.height = `${cell_size * height}px`;
+  if (!template_cell_size) {
+    template_cell_size = 30;
+  }
+  imageEl.style.width = `${template_cell_size * width}px`;
+  imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
   console.log("I will add the image now");
@@ -378,14 +392,18 @@ const addCoinsDiv = (template_id) => {
     return;
   }
   console.log("the template id is: " + template_id);
-  let { image, width, height, type } = ALL_ASSETS[template_id];
+  let { image, width, height, type, template_cell_size } =
+    ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
-  imageEl.style.width = `${cell_size * width}px`;
-  imageEl.style.height = `${cell_size * height}px`;
+  if (!template_cell_size) {
+    template_cell_size = 40;
+  }
+  imageEl.style.width = `${template_cell_size * width}px`;
+  imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
   console.log("I will add the image now");

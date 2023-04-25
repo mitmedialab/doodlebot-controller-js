@@ -104,21 +104,21 @@
 
 .bot-container {
   position: absolute;
-  border: 2px solid green;
+  /* border: 2px solid green; */
 }
 .bot-image {
   object-fit: scale-down;
 }
 .obstacle-container {
   position: absolute;
-  border: 2px solid red;
+  /* border: 2px solid red; */
 }
 .obstacle-image {
   object-fit: scale-down;
 }
 .coin-container {
   position: absolute;
-  border: 2px solid yellow;
+  /* border: 2px solid yellow; */
 }
 .coin-image {
   object-fit: scale-down;
@@ -161,6 +161,7 @@
 .template {
   position: relative;
   margin: 0;
+  object-fit: contain;
   /* margin: 0px;
   width: 100%;
   height: 100%; */
@@ -184,4 +185,15 @@
   /* position: absolute;
   display: "flex";
   flex-direction: row; */
+}
+#bots,
+#obstacles,
+#coins {
+  /* max-height: 90px; */
+  /* max-width: 500px; */
+  /* height: 90px; */
+  /* width: 500px; */
+  /* display: "flex"; */
+  /* flex-direction: column; */
+  /* flex: 1; */
 }
