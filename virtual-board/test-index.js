@@ -91,6 +91,7 @@ const ALL_ASSETS = {
     height: 2,
     type: OBSTACLE_TYPE,
     theme: "None",
+    template_cell_size: 40,
   },
   coin: {
     image: ASSETS_FOLDER + "None_Coin.png",
@@ -462,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "coffee",
     ];
     bots = ["car_1", "car_2", "car_3", "truck_1"];
-    obstacles = ["river", "bush"];
+    obstacles = ["building", "river", "bush"];
     coins = ["pizza", "coffee"];
   } else if (selectedOption == "Pacman") {
     templates_to_show = [
