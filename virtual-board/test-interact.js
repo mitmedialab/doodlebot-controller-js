@@ -206,7 +206,7 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
-    let { image, width, height, type, relative_anchor } =
+    let { image, image_rotate_90, width, height, type, relative_anchor } =
       ALL_ASSETS[element.getAttribute("template_id")];
     console.log(`New ${type}, adding to grid!`);
 
@@ -217,6 +217,7 @@ function onDropHandler(event) {
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
+        image_rotate_90: image_rotate_90,
         policies: new Set(["Get coins"]), //TODO: Don't hardcode this
         width: width,
         height: height,

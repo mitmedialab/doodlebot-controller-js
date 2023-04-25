@@ -109,6 +109,7 @@ const ALL_ASSETS = {
   ///////////////////////City theme//////////////////////
   car_1: {
     image: ASSETS_FOLDER + "DB_Car_1.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_Car_1_rotate_90.png",
     width: 1, //1.3,
     height: 2,
     type: BOT_TYPE,
@@ -117,6 +118,7 @@ const ALL_ASSETS = {
   },
   car_2: {
     image: ASSETS_FOLDER + "DB_Car_2.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_Car_2_rotate_90.png",
     width: 1, //1.3,
     height: 2,
     type: BOT_TYPE,
@@ -125,6 +127,7 @@ const ALL_ASSETS = {
   },
   car_3: {
     image: ASSETS_FOLDER + "DB_Car_3.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_Car_3_rotate_90.png",
     width: 1, //1.3,
     height: 2,
     type: BOT_TYPE,
@@ -133,6 +136,7 @@ const ALL_ASSETS = {
   },
   truck_1: {
     image: ASSETS_FOLDER + "DB_Truck_1.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_Truck_1_rotate_90.png",
     width: 1, //1.3,
     height: 2,
     type: BOT_TYPE,
@@ -534,6 +538,7 @@ const onAddBot = (bot) => {
     width,
     height,
     image,
+    image_rotate_90,
     real_bottom_left: [i, j],
     angle,
   } = bot;
@@ -558,14 +563,18 @@ const onAddBot = (bot) => {
   bot_dom.appendChild(rotateArrow);
 
   // Creates the underlying image, with the given dimensions and orientation
+  let default_angle = angle % 180 === 0 ? 0 : 90;
+  let image_src = default_angle === 0 ? image : image_rotate_90;
+  let diff_angle = (360 + angle - default_angle) % 360; //0 or 180
+
   let imageEl = document.createElement("img");
   imageEl.classList.add("bot-image");
   imageEl.setAttribute(`id`, `${DOM_ID}-image`);
-  imageEl.setAttribute("src", image);
+  imageEl.setAttribute("src", image_src);
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
   // Angle defined in bot is not same direction as transform expects
-  imageEl.style.transform = `rotate(${360 - angle}deg)`;
+  imageEl.style.transform = `rotate(${360 - diff_angle}deg)`; //transform of 0 or 180 doesn't change width or height
   bot_dom.appendChild(imageEl);
 
   gridContainer.appendChild(bot_dom);
