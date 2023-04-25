@@ -754,3 +754,13 @@ startBotsButton.addEventListener("click", () => {
     changeMovingBot(bot_id);
   }
 });
+
+check_gridlines.addEventListener("change", (evt) => {
+  let checked = evt.target.checked;
+  let all_grid = document.querySelectorAll(".grid-column");
+  if (checked) {
+    all_grid.forEach((grid) => grid.classList.add("hide-grid"));
+  } else {
+    all_grid.forEach((grid) => grid.classList.remove("hide-grid"));
+  }
+});

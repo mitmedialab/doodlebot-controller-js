@@ -87,6 +87,9 @@
   color: white;
   border: 0.01px dashed white;
 }
+.grid-column.hide-grid {
+  border: 0;
+}
 
 .cell-row-text,
 .cell-column-text {
