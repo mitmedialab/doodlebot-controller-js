@@ -229,7 +229,8 @@ function onDropHandler(event) {
         real_bottom_left: [gridX, gridY],
         image: image,
         image_rotate_90: image_rotate_90,
-        policies: new Set(["collect"]), //TODO: Don't hardcode this
+        // policies: new Set(["collect"]), //TODO: Don't hardcode this
+        policies: new Set(), //TODO: Don't hardcode this
         width: width,
         height: height,
         angle: 0,

@@ -886,7 +886,10 @@ class VirtualGrid {
     for (let coin_id in this.coins) {
       for (let coin_index in this.coins[coin_id]) {
         let coin_obj = this.coins[coin_id][coin_index];
-        if (!targets.includes(coin_obj.coin_collect_type)) {
+        let is_collecting = future_bot.policies.has(BOT_POLICIES.COLLECT.value);
+        console.log(`is_collecting: ${is_collecting}`);
+
+        if (is_collecting && !targets.includes(coin_obj.coin_collect_type)) {
           // Only consider coins of the correct type
           console.log(
             `[BOT ${future_bot.id}] Skipping coin with type ${coin_obj.coin_collect_type}`

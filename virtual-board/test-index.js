@@ -860,6 +860,11 @@ run_away_from_checkbox.addEventListener("change", (evt) => {
 });
 collect_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
+  // TODO: Only do this for the current user's bot_id
+  for (let bot_id in grid.bots) {
+    console.log("Updating policy");
+    grid.update_bot_policy(bot_id, "COLLECT", checked);
+  }
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
