@@ -563,9 +563,9 @@ const onAddBot = (bot) => {
   bot_dom.appendChild(rotateArrow);
 
   // Creates the underlying image, with the given dimensions and orientation
-  let default_angle = angle % 180 === 0 ? 0 : 90;
-  let image_src = default_angle === 0 ? image : image_rotate_90;
-  let diff_angle = (360 + angle - default_angle) % 360; //0 or 180
+  let default_angle = image_rotate_90 && angle % 180 === 90 ? 90 : 0;
+  let image_src = default_angle === 90 ? image_rotate_90 : image;
+  let diff_angle = (360 + angle - default_angle) % 360;
 
   let imageEl = document.createElement("img");
   imageEl.classList.add("bot-image");
