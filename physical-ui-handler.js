@@ -49,3 +49,6 @@ bluetooth_button.addEventListener("click", async (evt) => {
   await onRequestBluetoothDeviceButtonClick();
 });
 //-------------------------------Camera handlers-----------------------------------------------//
+let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
+let cameraController;
+let videoObj = document.getElementById("videoId");

@@ -5,6 +5,8 @@ var body = document.getElementById("body");
 var urlParams = new URLSearchParams(window.location.search);
 var selectedOption = urlParams.get("option");
 var selectedMode = urlParams.get("mode");
+body.setAttribute("current-mode", selectedMode);
+
 console.log(selectedOption);
 console.log(selectedMode);
 
@@ -33,15 +35,15 @@ if (selectedOption == "City") {
 var activate_camera_checkbox = document.getElementById("activate_camera_div");
 var bluetooth_button = document.getElementById("bluetooth_button");
 var camera_settings = document.getElementById("camera_settings");
-if (selectedMode == "camera") {
-  activate_camera_checkbox.style.display = "block";
-  bluetooth_button.style.display = "block";
-  camera_settings.style.display = "block";
-} else if (selectedMode == "virtual") {
-  activate_camera_checkbox.style.display = "none";
-  bluetooth_button.style.display = "none";
-  camera_settings.style.display = "none";
-}
+// if (selectedMode == "camera") {
+//   activate_camera_checkbox.style.display = "block";
+//   bluetooth_button.style.display = "block";
+//   camera_settings.style.display = "block";
+// } else if (selectedMode == "virtual") {
+//   activate_camera_checkbox.style.display = "none";
+//   bluetooth_button.style.display = "none";
+//   camera_settings.style.display = "none";
+// }
 
 //handle the modal
 // const camera_settings = document.getElementById("camera_settings");

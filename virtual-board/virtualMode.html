@@ -36,7 +36,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <div id = "controls" class="card">
                 <div class="card-header">
                     <div style="display:flex; align-items: center;"><h5 style="margin-left: 20%;">Controls and Settings</h5>
-                    <a id="camera_settings" href="#" style="margin-left: 12%; display:none;" class="material-symbols-outlined">
+                    <a valid-mode="camera" id="camera_settings" href="#" style="margin-left: 12%;" class="material-symbols-outlined">
                     settings_photo_camera</a>
                     
                     </div>
@@ -58,7 +58,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 <!--Modal end-->
                 
                 <div class="card-body">
-                    <center><button id="bluetooth_button" class="btn btn-outline-success mb-3" style="display: none;">Connect to Bluetooth <i class="fa fa-bluetooth"></i></button></center>
+                    <center><button valid-mode="camera" id="bluetooth_button" class="btn btn-outline-success mb-3">Connect to Bluetooth <i class="fa fa-bluetooth"></i></button></center>
                     <center><small>Select a bot with your mouse</small></center>
                     <div class="row">
                         <div class="col p-1">
@@ -160,13 +160,18 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <div style="display:flex; align-items: center;">
                 <button id="startBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;">Start Moving!</button>
                 <div style="width:280px;"></div>
-                <div id="activate_camera_div" style="display:flex; align-items: center;">
+                <div valid-mode="camera" id="activate_camera_div">
                     <label class="form-check-label mt-1" for="activate_camera" style="font-size: 14px; margin-right:5px;">Activate Camera</label>
                     <input type="checkbox" class="form-check-input" id="activate_camera" name="activate_camera">
                 </div>
             </div>
+            <!--If virtual mode-->
+            <div id="gridContainer" valid-mode="virtual" id="outer-dropzone" class="dropzone"></div>
+            <!--If camera mode-->
+            <video valid-mode="camera" id="videoId" autoplay></video>
+            <canvas valid-mode="camera" id="arucoCanvasOutput" class="dropzone"></canvas>
+            <!----------------->
 
-            <div id="gridContainer" id="outer-dropzone" class="dropzone"></div>
             <div class="form-check" style="padding-top:20px;">
                 <input type="checkbox" class="form-check-input" id="check_gridlines" name="option2">
                 <label class="form-check-label" for="check_gridlines" style="font-size: 14px;">Hide gridlines</label>
