@@ -4,6 +4,9 @@ import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 var body = document.getElementById("body");
 var urlParams = new URLSearchParams(window.location.search);
 var selectedOption = urlParams.get("option");
+var selectedMode = urlParams.get("mode");
+console.log(selectedOption);
+console.log(selectedMode);
 
 if (selectedOption == "City") {
   body.className =
@@ -25,6 +28,48 @@ if (selectedOption == "City") {
   body.className =
     "background1 d-flex justify-content-center align-items-center vh-100";
 }
+
+//if the mode is Real Video Stream --> Display blutooth, camera_settings, and activate_camera buttons
+var activate_camera_checkbox = document.getElementById("activate_camera_div");
+var bluetooth_button = document.getElementById("bluetooth_button");
+var camera_settings = document.getElementById("camera_settings");
+if (selectedMode == "camera") {
+  activate_camera_checkbox.style.display = "block";
+  bluetooth_button.style.display = "block";
+  camera_settings.style.display = "block";
+} else if (selectedMode == "virtual") {
+  activate_camera_checkbox.style.display = "none";
+  bluetooth_button.style.display = "none";
+  camera_settings.style.display = "none";
+}
+
+//handle the modal
+// const camera_settings = document.getElementById("camera_settings");
+const myModal = document.getElementById("myModal");
+const close = document.getElementsByClassName("close")[0];
+
+// When the user clicks the link, open the modal
+camera_settings.onclick = function () {
+  myModal.style.display = "block";
+  document.getElementsByClassName("modal").style.backgroundColor = rgba(
+    0,
+    0,
+    0,
+    0.4
+  );
+};
+
+// When the user clicks on <span> (x), close the modal
+close.onclick = function () {
+  myModal.style.display = "none";
+};
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function (event) {
+  if (event.target == myModal) {
+    myModal.style.display = "none";
+  }
+};
 
 //get the divs of bots, obstacles, and coins to display the images
 var botsDiv = document.getElementById("bots");
@@ -59,8 +104,8 @@ const ALL_ASSETS = {
   ///////////////////////None theme//////////////////////
   doodlebot_alone: {
     image: ASSETS_FOLDER + "None_DoodleBot.png",
-    width: 2, //1.9,
-    height: 2, //1.7,
+    width: 3, //1.9,
+    height: 3, //1.7,
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "None",
@@ -277,26 +322,26 @@ const createDOMGrid = (rows, cols, cell_size) => {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
     gridContainer.style.height = "400px";
-    gridContainer.style.width = "640px";
+    gridContainer.style.width = "580px";
   } else if (selectedOption == "City") {
     gridContainer.style.backgroundImage = "url(../assets/DB_CityGridBG_2.png)";
     gridContainer.style.height = "400px";
-    gridContainer.style.width = "560px";
+    gridContainer.style.width = "580px";
   } else if (selectedOption == "Pacman") {
     gridContainer.style.backgroundImage =
       "url(../assets/DB_PacmanGridBG_1.png)";
     gridContainer.style.height = "400px";
-    gridContainer.style.width = "560px";
+    gridContainer.style.width = "580px";
   } else if (selectedOption == "School") {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
     gridContainer.style.height = "400px";
-    gridContainer.style.width = "560px";
+    gridContainer.style.width = "580px";
   } else {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
     gridContainer.style.height = "400px";
-    gridContainer.style.width = "640px";
+    gridContainer.style.width = "580px";
   }
 
   let colNumbersDiv = document.createElement("div");

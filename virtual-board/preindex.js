@@ -14,71 +14,60 @@ for (let i = 0; i < themes.length; i++) {
       const value = this.value;
       if (value == "None") {
         virtualMode.setAttribute("name", "None");
+        realVideoStream.setAttribute("name", "None");
         body.className =
           "background1 d-flex justify-content-center align-items-center vh-100";
         console.log(virtualMode.getAttribute("name"));
+        console.log(realVideoStream.getAttribute("name"));
       } else if (value == "City") {
         virtualMode.setAttribute("name", "City");
+        realVideoStream.setAttribute("name", "City");
         body.className =
           "background2 d-flex justify-content-center align-items-center vh-100";
         console.log(virtualMode.getAttribute("name"));
+        console.log(realVideoStream.getAttribute("name"));
       } else if (value == "School") {
         virtualMode.setAttribute("name", "None");
+        realVideoStream.setAttribute("name", "None");
         body.className =
           "background1 d-flex justify-content-center align-items-center vh-100";
         console.log(virtualMode.getAttribute("name"));
+        console.log(realVideoStream.getAttribute("name"));
       } else if (value == "Pacman") {
         virtualMode.setAttribute("name", "Pacman");
+        realVideoStream.setAttribute("name", "Pacman");
         body.className =
           "background3 d-flex justify-content-center align-items-center vh-100";
         console.log(virtualMode.getAttribute("name"));
+        console.log(realVideoStream.getAttribute("name"));
       } else {
         virtualMode.setAttribute("name", "None");
+        realVideoStream.setAttribute("name", "None");
         body.className =
           "background1 d-flex justify-content-center align-items-center vh-100";
         console.log(virtualMode.getAttribute("name"));
+        console.log(realVideoStream.getAttribute("name"));
       }
     }
   });
 }
-
-// dropdownOptions.forEach(function (option) {
-//   option.addEventListener("click", function () {
-//     dropdownButton.innerText = option.innerText;
-//     var body = document.getElementById("body");
-//     console.log("test here");
-//     console.log(option.innerText);
-//     if (option.innerText == "City") {
-//       virtualMode.setAttribute("name", "City");
-//       body.className =
-//         "background2 d-flex justify-content-center align-items-center vh-100";
-//       console.log(virtualMode.getAttribute("name"));
-//     } else if (option.innerText == "None" || option.innerText == null) {
-//       console.log("im null");
-//       virtualMode.setAttribute("name", "None");
-//       body.className =
-//         "background1 d-flex justify-content-center align-items-center vh-100";
-//       console.log(virtualMode.getAttribute("name"));
-//     } else if (option.innerText == "Pacman") {
-//       virtualMode.setAttribute("name", "Pacman");
-//       body.className =
-//         "background3 d-flex justify-content-center align-items-center vh-100";
-//       console.log(virtualMode.getAttribute("name"));
-//     } else if (option.innerText == "School") {
-//       virtualMode.setAttribute("name", "School");
-//       body.className =
-//         "background1 d-flex justify-content-center align-items-center vh-100";
-//       console.log(virtualMode.getAttribute("name"));
-//     }
-//   });
-// });
 
 //Go to virtualMode page
 if (virtualMode) {
   virtualMode.addEventListener("click", function () {
     console.log(virtualMode.getAttribute("name"));
     var currentOption = virtualMode.getAttribute("name");
-    var url = "virtualMode.html?option=" + currentOption;
+    var url = "virtualMode.html?option=" + currentOption + "&mode=virtual";
+    window.location.href = url;
+  });
+}
+
+//Go to Real Video Stream Page
+if (realVideoStream) {
+  realVideoStream.addEventListener("click", function () {
+    console.log(realVideoStream.getAttribute("name"));
+    var currentOption = realVideoStream.getAttribute("name");
+    var url = "virtualMode.html?option=" + currentOption + "&mode=camera";
     window.location.href = url;
   });
 }
