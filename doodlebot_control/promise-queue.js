@@ -31,47 +31,49 @@
  */
 
 class PromiseQueue {
-    constructor(concurrent = 1) {
-        this.queue = [];
-        this.running = 0;
+  constructor(concurrent = 1) {
+    this.queue = [];
+    this.running = 0;
+  }
+
+  async pump() {
+    if (this.running >= this.concurrent) {
+      return;
+    }
+    // console.log(`Current length of queue = ${this.queue.length}`);
+    const promise = this.queue.shift();
+
+    if (!promise) {
+      return;
+    }
+    // console.log('Doing next!')
+
+    this.running++;
+
+    try {
+      const result = await promise.fn();
+      promise.resolve(result);
+    } catch (error) {
+      promise.reject(error);
     }
 
-    async pump() {
-        if (this.running >= this.concurrent) {
-            return;
-        }
-        // console.log(`Current length of queue = ${this.queue.length}`);
-        const promise = this.queue.shift();
+    this.running--;
 
-        if (!promise) {
-            return;
-        }
-        // console.log('Doing next!')
+    return this.pump();
+  }
 
-        this.running++;
+  add(fn) {
+    // console.log("Adding function")
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        fn,
+        resolve,
+        reject,
+      });
 
-        try {
-            const result = await promise.fn();
-            promise.resolve(result);
-        } catch (error) {
-            promise.reject(error);
-        }
-
-        this.running--;
-        
-        return this.pump();
-    }
-
-    add(fn) {
-        // console.log("Adding function")
-        return new Promise((resolve, reject) => {
-            this.queue.push({
-                fn,
-                resolve,
-                reject,
-            });
-
-            return this.pump();
-        });
-    }
+      return this.pump();
+    });
+  }
 }
+
+export { PromiseQueue };

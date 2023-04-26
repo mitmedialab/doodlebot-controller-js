@@ -17,9 +17,9 @@ class UartService {
 const PEN_DIRECTION_TO_ANGLE = {
   down: 10,
   up: 35,
-}
-class CustomEventTarget extends EventTarget{
-  constructor(){
+};
+class CustomEventTarget extends EventTarget {
+  constructor() {
     super();
   }
 }
@@ -40,6 +40,8 @@ function exponentialBackoff(max, delay, toTry, success, fail) {
       }, delay * 1000);
     });
 }
+
+import { PromiseQueue } from "./promise-queue.js";
 
 class Doodlebot {
   constructor(log = (msg) => {}, customOnReceiveValue = (evt) => {}) {
@@ -121,11 +123,11 @@ class Doodlebot {
     this.log("> Bluetooth Device disconnected");
     this.connect();
   }
-  onReceiveValue(evt){
+  onReceiveValue(evt) {
     let enc = new TextDecoder("utf-8"); // always utf-8
     let res = enc.decode(evt.target.value.buffer);
-    if (res === '(ms)'){
-      this.log('Stopped moving...');
+    if (res === "(ms)") {
+      this.log("Stopped moving...");
       let stopEvent = new CustomEvent("stop", {});
       this.motorEvent.dispatchEvent(stopEvent);
       this.isMoving = false;
@@ -133,28 +135,32 @@ class Doodlebot {
     this.customOnReceiveValue(evt);
   }
   /**
-   * 
+   *
    * @param {*} move ['move', x] where x > 0, or ['turn', angle]
-   * @returns 
+   * @returns
    */
-  async apply_next_move_to_bot(move){
-    console.log(`Tyring to apply move ${move} to (real) bot`)
+  async apply_next_move_to_bot(move) {
+    console.log(`Tyring to apply move ${move} to (real) bot`);
     let GRID_TO_PHYSICAL_COORDS = 227 / 8;
-    if (move[0] === 'move'){
-        await this.drive({NUM: move[1] * GRID_TO_PHYSICAL_COORDS});
-        return;
-    } else if (move[0] === 'turn'){
-        let angle = move[1] % 360;
-        if (angle < 0){angle+=360;}
-        if (angle <= 180){
-          await this.turn({NUM: angle, DIR:"left"});
-        } else {
-          await this.turn({NUM: 360-angle, DIR:"right"});
-        }
-        return;
+    if (move[0] === "move") {
+      await this.drive({ NUM: move[1] * GRID_TO_PHYSICAL_COORDS });
+      return;
+    } else if (move[0] === "turn") {
+      let angle = move[1] % 360;
+      if (angle < 0) {
+        angle += 360;
+      }
+      if (angle <= 180) {
+        await this.turn({ NUM: angle, DIR: "left" });
+      } else {
+        await this.turn({ NUM: 360 - angle, DIR: "right" });
+      }
+      return;
     } else {
-        console.log(`Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`);
-        return null;
+      console.log(
+        `Incorrect move. Should start with "move" or "turn" but started with ${move[0]}`
+      );
+      return null;
     }
   }
   // async init() {
@@ -162,62 +168,70 @@ class Doodlebot {
   //   await this.request_device();
   //   await this.connect();
   // }
-  async drive(args){
-    if (this.isMoving){
+  async drive(args) {
+    if (this.isMoving) {
       console.log("[Driving] It cannot be moving while already moving");
       return;
     }
     this.isMoving = true;
-    let {NUM, DIR} = args;
+    let { NUM, DIR } = args;
     //For left and right motor
     let leftSteps = NUM;
-    let rightSteps = NUM; 
-    if (DIR === 'left' || DIR === 'backward'){
+    let rightSteps = NUM;
+    if (DIR === "left" || DIR === "backward") {
       leftSteps *= -1;
     }
-    if (DIR === 'right' || DIR === 'backward'){
+    if (DIR === "right" || DIR === "backward") {
       rightSteps *= -1;
     }
     await this.sendCommandToRobot(`(m,100,100,${leftSteps},${rightSteps})`);
 
     // this.isMoving = false;
     return new Promise((resolve) => {
-      this.motorEvent.addEventListener("stop", ()=>{
-        resolve();
-      }, {once: true})
-    })
+      this.motorEvent.addEventListener(
+        "stop",
+        () => {
+          resolve();
+        },
+        { once: true }
+      );
+    });
   }
-  async turn(args){
-    if (this.isMoving){
+  async turn(args) {
+    if (this.isMoving) {
       console.log("[turning] It cannot be moving while already moving");
       return;
     }
     this.isMoving = true;
-    let {NUM, DIR} = args;
+    let { NUM, DIR } = args;
     let nDegrees = NUM;
-    if (DIR === 'right'){
+    if (DIR === "right") {
       nDegrees *= -1;
     }
     this.log(`Trying to turn ${nDegrees}`);
     await this.sendCommandToRobot(`(t,0,${nDegrees})`);
 
     return new Promise((resolve) => {
-      this.motorEvent.addEventListener("stop", ()=>{
-        resolve();
-      }, {once: true})
-    })
+      this.motorEvent.addEventListener(
+        "stop",
+        () => {
+          resolve();
+        },
+        { once: true }
+      );
+    });
   }
-  async movePen(args){
-    let {DIR} = args;
+  async movePen(args) {
+    let { DIR } = args;
     let angle = PEN_DIRECTION_TO_ANGLE[DIR];
     await this.sendCommandToRobot(`(u,${angle})`);
   }
   /**
-   * Users should not call this function, but rather the function-specific methods 
+   * Users should not call this function, but rather the function-specific methods
    * like this.drive(), this.turn()
-   * @param {*} commands 
-   * @param {*} delayInMs 
-   * @returns 
+   * @param {*} commands
+   * @param {*} delayInMs
+   * @returns
    */
   async sendCommandToRobot(commands) {
     let delayInMs = 100;
@@ -239,7 +253,9 @@ class Doodlebot {
           this.log("ArrayData");
           this.log(arrayData);
           let value = new Uint8Array(arrayData).buffer;
-          await this.commands_queue.add(async ()=>characteristic.writeValueWithoutResponse(value));
+          await this.commands_queue.add(async () =>
+            characteristic.writeValueWithoutResponse(value)
+          );
           // await characteristic.writeValueWithoutResponse(value);
           // let res = characteristic.writeValueWithResponse(value);
         } else this.log("Robot not available");
@@ -253,3 +269,4 @@ class Doodlebot {
   }
 }
 // module.exports = Doodlebot;
+export { Doodlebot };
