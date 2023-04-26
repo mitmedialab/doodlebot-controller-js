@@ -51,12 +51,8 @@ const close = document.getElementsByClassName("close")[0];
 // When the user clicks the link, open the modal
 camera_settings.onclick = function () {
   myModal.style.display = "block";
-  document.getElementsByClassName("modal").style.backgroundColor = rgba(
-    0,
-    0,
-    0,
-    0.4
-  );
+  document.getElementsByClassName("modal").style.backgroundColor =
+    "rgba(0,0,0,0.6)";
 };
 
 // When the user clicks on <span> (x), close the modal
