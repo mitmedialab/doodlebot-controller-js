@@ -58,6 +58,7 @@ import {
 } from "./marker_detector/constants.js";
 
 let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
+window.currentVectors = currentVectors;
 let cameraController;
 let videoObj = document.getElementById("videoId");
 // document.addEventListener("DOMContentLoaded", () => {
@@ -228,7 +229,11 @@ function show2dProjection() {
     return;
   }
   try {
-    let dsize = new cv.Size(width, height); //new cv.Size(cameraController.src.cols, cameraController.src.rows);
+    // let dsize = new cv.Size(width, height);
+    let dsize = new cv.Size(
+      cameraController.src.cols,
+      cameraController.src.rows
+    );
     cv.warpPerspective(
       cameraController.src,
       canvasProjectionOut,
@@ -238,8 +243,7 @@ function show2dProjection() {
       cv.BORDER_CONSTANT,
       scalarProjection
     );
-    drawGrid();
-    cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
+    // cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
     // dsize.release();
     return;
   } catch (e) {
@@ -278,6 +282,81 @@ function drawGridLines() {
   //   p1.delete();
   //   p2.delete();
 }
+/**
+ * @returns true iff all the corners defined in BORDER_IDS have been detected by Aruco
+ */
+function allCornersFound() {
+  for (let key in BORDER_IDS) {
+    if (!currentVectors[BORDER_IDS[key]]) {
+      return false;
+    }
+  }
+  return true;
+}
+/**
+ *
+ * @param {*} point 3d point, usually from a tvec.data64F
+ * @returns
+ */
+function get2D(point) {
+  let rvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
+  let tvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
+  let out = new cv.Mat();
+  let pt = cv.matFromArray(3, 1, cv.CV_64F, point);
+  cv.projectPoints(pt, rvec, tvec, cameraMatrix, distCoeffs, out);
+  let res = out.data64F;
+  return res;
+}
+function findHomographicMatrix() {
+  console.log("Finding homographic matrix");
+  let worldx = cell_size * cols; //640; //3;
+  let worldy = cell_size * rows; //640; //2;
+  if (
+    !currentVectors[BORDER_IDS.BOTTOM_LEFT] ||
+    !currentVectors[BORDER_IDS.BOTTOM_RIGHT] ||
+    !currentVectors[BORDER_IDS.TOP_RIGHT] ||
+    !currentVectors[BORDER_IDS.TOP_LEFT]
+  ) {
+    console.log("Not 4 corners have been found yet");
+    return;
+  }
+  //TODO: Figure out why bottom left and top left, and bottom right and top right are flipped!
+  let bl = get2D(currentVectors[BORDER_IDS.BOTTOM_LEFT].tvec.data64F);
+  let br = get2D(currentVectors[BORDER_IDS.BOTTOM_RIGHT].tvec.data64F);
+
+  let tl = get2D(currentVectors[BORDER_IDS.TOP_LEFT].tvec.data64F);
+  let tr = get2D(currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
+
+  console.log(`Bottom left = ${bl}`);
+  console.log(`Bottom right = ${br}`);
+  console.log(`Top left: ${tl}`);
+  console.log(`Top right: ${tr}`);
+
+  let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+    bl[0],
+    bl[1],
+    br[0],
+    br[1],
+    tl[0],
+    tl[1],
+    tr[0],
+    tr[1],
+  ]);
+  let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+    0,
+    0,
+    worldx,
+    0,
+    0,
+    worldy,
+    worldx,
+    worldy,
+  ]);
+  homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri); //, dstTri); //cv.findHomography(srcTri, dstTri);
+
+  //   srcTri.remove();
+  //   dstTri.remove();
+}
 function processVideo() {
   if (!cameraController.isCameraActive) {
     return;
@@ -293,18 +372,33 @@ function processVideo() {
   );
   canvasProjectionOut = cameraController.src;
   if (context) {
-    // cv.imshow("arucoCanvasOutputGrid", cameraController.dst); // canvasOutput is the id of another <canvas>;
-    // show2dProjection(); //Show image
-    let hide_grid = arucoCanvasOutputGrid.hasAttribute("hide-grid");
-    if (!hide_grid) {
-      drawGridLines(); //Show lines
-    }
-    // drawGridObjectsOnCanvas(); //Show objects
+    if (!markersInfo) {
+      console.log("No markers detected");
+    } else {
+      if (allCornersFound() && !homographicMatrix) {
+        findHomographicMatrix();
+      }
+      for (let marker_id in markersInfo) {
+        marker_id = Number(marker_id);
+        // foundArucoIds.add(marker_id);
+        currentVectors[marker_id] = markersInfo[marker_id];
+      }
+      for (let color in currentColors) {
+        colorInfo[color] = currentColors[color]; //Storing [x, y, w, h]
+      }
+      //   cv.imshow("arucoCanvasOutputGrid", cameraController.dst); // canvasOutput is the id of another <canvas>;
+      show2dProjection(); //Show image
+      let hide_grid = arucoCanvasOutputGrid.hasAttribute("hide-grid");
+      if (!hide_grid) {
+        drawGridLines(); //Show lines
+      }
+      // drawGridObjectsOnCanvas(); //Show objects
 
-    //TODO: Figure out why is this necessary, maybe because the camera coefficients
-    //TODO 2: Maybe create a copy before moving
-    cv.flip(canvasProjectionOut, canvasProjectionOut, 0);
-    cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
+      //TODO: Figure out why is this necessary, maybe because the camera coefficients
+      //TODO 2: Maybe create a copy before moving
+      cv.flip(canvasProjectionOut, canvasProjectionOut, 0);
+      cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
+    }
   }
   // schedule next one.
   let delay = 1000 / FPS - (Date.now() - begin);
@@ -312,3 +406,5 @@ function processVideo() {
   setTimeout(processVideo, delay);
   return markersInfo;
 }
+
+updateCornersButton.addEventListener("click", findHomographicMatrix);

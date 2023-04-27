@@ -81,7 +81,7 @@ class CameraController {
     // Threshold the image to extract yellow objects
     let mask = new cv.Mat();
     cv.inRange(hsv, hsvMin, hsvMax, mask);
-    cv.imshow("arucoCanvasOutputGrid", mask);
+    // cv.imshow("arucoCanvasOutputGrid", mask);
     // return;
     let morphKernel = cv.getStructuringElement(
       cv.MORPH_ELLIPSE,
@@ -129,7 +129,7 @@ class CameraController {
       );
       // console.log(`Center = ${x+w/2}, ${y+h/2}`);
     }
-    cv.imshow("arucoCanvasOutputGrid", this.src);
+    // cv.imshow("arucoCanvasOutputGrid", this.src);
 
     // Free memory
     // src.delete();
@@ -196,8 +196,8 @@ class CameraController {
     cv.estimatePoseSingleMarkers(
       markerCorners,
       markerSize,
-      cameraMatrix,
-      distCoeffs,
+      this.cameraMatrix,
+      this.distCoeffs,
       rvecs,
       tvecs
     );
