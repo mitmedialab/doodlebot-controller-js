@@ -10,6 +10,9 @@ window.selectedMode = selectedMode; //make it global
 
 console.log(selectedOption);
 console.log(selectedMode);
+let context = arucoCanvasOutputGrid.getContext("2d", {
+  willReadFrequently: true,
+});
 
 if (selectedOption == "City") {
   body.className =
@@ -305,6 +308,95 @@ const ALL_ASSETS = {
   ///////////////////////School theme//////////////////////
 };
 window.ALL_ASSETS = ALL_ASSETS;
+//---------------------- Socket setup------------------------------------------
+const SERVER_LINK = "localhost:5001";
+let socket;
+
+function setupSocket() {
+  socket = io(SERVER_LINK, { autoConnect: false });
+  socket.connect();
+  socket.on("message_received", (message) => {
+    console.log("received message");
+    console.log(message);
+  });
+  socket.on("not_valid_room", ({ roomId }) => {
+    alert(`The room ${roomId} is not valid`);
+  });
+  socket.on("joined_room", async ({ roomId, virtualGrid }) => {
+    console.log(`Detecting joining room: ${roomId}`);
+    // currentBotId = 2; //TODO: For now hardoded, later there should be a select to have students decide which bot to claim
+    // roomNameSpan.innerHTML = roomId;
+    // let { rows, cols, bots, obstacles, coins } = virtualGrid;
+
+    // grid = new VirtualGrid(rows, cols, {
+    //   bots,
+    //   obstacles,
+    //   coins,
+    //   ...REAL_GRID_CALLBACKS,
+    // });
+    // drawBoard();
+
+    // grid = new VirtualGrid(rows, cols, {bots, obstacles, coins, ...VIRTUAL_GRID_CALLBACKS});
+    // drawBoard();
+  });
+  socket.on("added_bot", (bot) => {
+    grid.add_bot(bot);
+    drawBoard();
+    // create_bot_options(bot) //Don't show this since it won't be editable by user.
+  });
+  // si es que se va el
+  socket.on("added_obstacle", (obstacle) => {
+    grid.add_obstacle(obstacle);
+    drawBoard();
+  });
+  socket.on("added_coin", (coin) => {
+    grid.add_coin(coin);
+    drawBoard();
+  });
+  socket.on("moved_bot", ({ bot_id, move }) => {
+    grid.apply_next_move_to_bot(bot_id, move, { noSocket: true });
+    drawBoard();
+  });
+  socket.on("started_bot", async () => {
+    // await apply_next_move_to_bot(currentBotId);
+    // startMovingButton_ClickHandler(currentBotId);
+    changeMovingBot({ noSocket: true });
+  });
+  socket.on("stopped_bot", () => {
+    // let bot = this.bots[currentBotId][0];
+    // bot.isMoving = false;
+    // getRealBotFromArucoId(currentBotId).isMoving = false;
+    changeMovingBot({ noSocket: true });
+    // stopMovingButton_ClickHandler(currentBotId);
+  });
+  socket.on("updated_bot", ({ id, update }) => {
+    grid.update_bot(id, update);
+    drawBoard();
+  });
+  socket.on("updated_obstacle", ({ id, update }) => {
+    grid.update_obstacle(id, update);
+    drawBoard();
+  });
+  socket.on("updated_coin", ({ id, update }) => {
+    grid.update_coin(id, update);
+    drawBoard();
+  });
+  socket.on("removed_coin", ({ coin }) => {
+    grid.remove_coin(coin.id);
+  });
+  socket.on("received_stream", (data) => {
+    let img = new Image();
+    img.src = data;
+    img.onload = () => {
+      // TODO: Get this information from
+      let cameraWidth = cell_size * cols;
+      let cameraHeight = cell_size * rows;
+      context.drawImage(img, 0, 0, cameraWidth, cameraHeight);
+    };
+  });
+}
+
+//----------------------------------------------------------------//
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
  * and places it on `gridContainer`
@@ -460,9 +552,12 @@ const addCoinsDiv = (template_id) => {
   // waitingRoom.appendChild(imageEl);
 };
 let videoObj = document.getElementById("videoId");
-
 document.addEventListener("DOMContentLoaded", () => {
-  //   setupSocket();
+  setupSocket();
+  socket.emit("create_room");
+
+  socket.emit("join_room", "TEST_ROOM");
+
   if (selectedMode === "virtual") {
     createDOMGrid(rows, cols, cell_size);
   } else {
@@ -958,3 +1053,7 @@ collect_select.addEventListener("change", (evt) => {
   let bot_id = 1; //TODO: Change this to the bot_id for this user
   grid.update_bot_collect(bot_id, type);
 });
+
+const get_socket = () => socket;
+
+export { get_socket };

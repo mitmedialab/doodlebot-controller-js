@@ -56,13 +56,15 @@ import {
   cameraConstraints,
   FPS,
 } from "./marker_detector/constants.js";
+import { get_socket } from "./virtual-board/test-index.js";
 
 let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
 let cameraController;
 let videoObj = document.getElementById("videoId");
-// document.addEventListener("DOMContentLoaded", () => {
-
-// })
+let socket;
+document.addEventListener("DOMContentLoaded", () => {
+  socket = get_socket();
+});
 
 let cameraWidth;
 let cameraHeight;
@@ -195,6 +197,9 @@ activate_camera.addEventListener("change", async (evt) => {
   if (activate) {
     cameraWidth = cell_size * cols;
     cameraHeight = cell_size * rows;
+    window.cameraWidth = cameraWidth;
+    window.cameraHeight = cameraHeight;
+
     videoObj.setAttribute("width", cameraWidth);
     videoObj.setAttribute("height", cameraHeight);
     cameraController = new CameraController(
@@ -284,6 +289,8 @@ function processVideo() {
   }
   let begin = Date.now();
   context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  socket.emit("stream", arucoCanvasOutputGrid.toDataURL("image/webp"));
+
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
   let markersInfo = cameraController.findArucoCodes(imageData);
   let currentColors = cameraController.filterColor(
