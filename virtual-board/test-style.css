@@ -70,6 +70,10 @@
   position: relative;
   object-fit: scale-down;
 }
+#canvasContainer {
+  position: relative;
+  object-fit: scale-down;
+}
 /* for bots*/
 .grid-row {
   display: flex;
@@ -197,4 +201,3 @@
   /* flex-direction: column; */
   /* flex: 1; */
 }
-

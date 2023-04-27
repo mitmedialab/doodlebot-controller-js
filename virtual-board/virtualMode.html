@@ -162,14 +162,18 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 <div style="width:280px;"></div>
                 <div valid-mode="camera" id="activate_camera_div">
                     <label class="form-check-label mt-1" for="activate_camera" style="font-size: 14px; margin-right:5px;">Activate Camera</label>
-                    <input type="checkbox" class="form-check-input" id="activate_camera" name="activate_camera">
+                    <input type="checkbox" class="form-check-input" id="activate_camera" name="activate_camera" disabled>
                 </div>
             </div>
             <!--If virtual mode-->
             <div id="gridContainer" valid-mode="virtual" id="outer-dropzone" class="dropzone"></div>
+
             <!--If camera mode-->
-            <video valid-mode="camera" id="videoId" autoplay></video>
-            <canvas valid-mode="camera" id="arucoCanvasOutput" class="dropzone"></canvas>
+            
+            <video valid-mode="camera" id="videoId" autoplay style="display: none"></video>
+            <div id="canvasContainer">
+            <canvas valid-mode="camera" id="arucoCanvasOutputGrid" class="dropzone"></canvas>
+            </div>
             <!----------------->
 
             <div class="form-check" style="padding-top:20px;">
@@ -192,7 +196,17 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
     <script type="text/javascript" src="./grid-graph.js"></script>
     <script type="text/javascript" src="./grid.js"></script>
     <script type="module" src="./test-index.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+
+    <!-- Specific to camera mode-->
     <script type="module" src="../physical-ui-handler.js"></script>
+    <script
+        async
+        src="../marker_detector/opencv_compiled.js"
+        id="opencvjs"
+        type="text/javascript"
+    ></script>
     
     <script type="module">
         import "https://cdn.interactjs.io/v1.9.20/auto-start/index.js";

@@ -6,6 +6,7 @@ var urlParams = new URLSearchParams(window.location.search);
 var selectedOption = urlParams.get("option");
 var selectedMode = urlParams.get("mode");
 body.setAttribute("current-mode", selectedMode);
+window.selectedMode = selectedMode; //make it global
 
 console.log(selectedOption);
 console.log(selectedMode);
@@ -105,7 +106,7 @@ const ALL_ASSETS = {
     width: 3, //1.9,
     height: 3, //1.7,
     type: BOT_TYPE,
-    relative_anchor: [0, 0],
+    relative_anchor: [1, 1],
     theme: "None",
   },
   doodlebot_cowboy: {
@@ -378,32 +379,7 @@ const createDOMGrid = (rows, cols, cell_size) => {
   }
   gridContainer.appendChild(colNumbersDiv);
 };
-/**
- * Used to create a `template` image that is draggable into the grid.
- * @param {*} template_id a valid key of ALL_ASSETS
- */
-const addTemplateDiv = (template_id) => {
-  if (!(template_id in ALL_ASSETS)) {
-    console.error(`Template ${template_id} is not valid`);
-    return;
-  }
-  console.log("the template id is: " + template_id);
-  let { image, width, height, type } = ALL_ASSETS[template_id];
 
-  let imageEl = document.createElement("img");
-  imageEl.setAttribute("template_id", template_id); //for later access
-  imageEl.classList.add("template"); // For making it interactive later
-  imageEl.setAttribute("src", image);
-  imageEl.style.width = `${cell_size * width}px`;
-  imageEl.style.height = `${cell_size * height}px`;
-  imageEl.style.padding = `5px`;
-
-  botsDiv.appendChild(imageEl);
-  console.log("I will add the image now");
-  waitingRoom.appendChild(imageEl);
-
-  //add the images based on theme in their correct div --> Ive done this each in its separate function
-};
 /////////////////////////////////////////////////////////////////////
 
 //Add Bots
@@ -483,10 +459,20 @@ const addCoinsDiv = (template_id) => {
   coinsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
+let videoObj = document.getElementById("videoId");
 
 document.addEventListener("DOMContentLoaded", () => {
   //   setupSocket();
-  createDOMGrid(rows, cols, cell_size);
+  if (selectedMode === "virtual") {
+    createDOMGrid(rows, cols, cell_size);
+  } else {
+    canvasContainer.style.width = `${cell_size * cols}px`;
+    canvasContainer.style.height = `${cell_size * rows}px`;
+
+    videoObj.setAttribute("width", cell_size * cols);
+    videoObj.setAttribute("height", cell_size * rows);
+  }
+
   grid = new VirtualGrid(rows, cols, {
     onAddBot,
     onAddObstacle,
@@ -632,12 +618,12 @@ const onUpdateObject = (updatedObject) => {
     onAddCoin(updatedObject);
   }
 };
+
 /**
- * A bot has been created on the VirtualGrid system. This method:
- * 1. Creates the image in the grid at the necessary position
- * 2. Makes the created image draggable
+ * A bot has been created on the VirtualGrid system. This method
+ * creates the image in the grid at the necessary position with a turn handler
  */
-const onAddBot = (bot) => {
+const drawBot = (bot) => {
   let {
     width,
     height,
@@ -681,20 +667,21 @@ const onAddBot = (bot) => {
   imageEl.style.transform = `rotate(${360 - diff_angle}deg)`; //transform of 0 or 180 doesn't change width or height
   bot_dom.appendChild(imageEl);
 
+  let gridContainer;
+  if (selectedMode === "virtual") {
+    gridContainer = document.getElementById("gridContainer");
+  } else {
+    gridContainer = document.getElementById("canvasContainer");
+  }
   gridContainer.appendChild(bot_dom);
 
-  //Makes the created div draggable
-  setupDraggable(`#${DOM_ID}`, cell_size);
-
-  addBotToSelect(bot);
+  return DOM_ID;
 };
-const addBotToSelect = (bot) => {};
 /**
- * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
- *
- * @param {*} obstacle
+ * An obstacle has been created on the VirtualGrid system. This method
+ * creates the image in the grid at the necessary position.
  */
-const onAddObstacle = (obstacle) => {
+const drawObstacle = (obstacle) => {
   let {
     width,
     height,
@@ -721,17 +708,21 @@ const onAddObstacle = (obstacle) => {
   imageEl.style.height = `${cell_size * height}px`;
 
   obstacle_dom.appendChild(imageEl);
+  let gridContainer;
+  if (selectedMode === "virtual") {
+    gridContainer = document.getElementById("gridContainer");
+  } else {
+    gridContainer = document.getElementById("canvasContainer");
+  }
   gridContainer.appendChild(obstacle_dom);
 
-  //Makes the created div draggable
-  setupDraggable(`#${DOM_ID}`, cell_size);
+  return DOM_ID;
 };
 /**
- * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
- *
- * @param {*} obstacle
+ * A coin has been created on the VirtualGrid system. This method
+ * creates the image in the grid at the necessary position.
  */
-const onAddCoin = (coin) => {
+const drawCoin = (coin) => {
   let {
     width,
     height,
@@ -758,8 +749,45 @@ const onAddCoin = (coin) => {
   imageEl.style.height = `${cell_size * height}px`;
 
   coin_dom.appendChild(imageEl);
+  let gridContainer;
+  if (selectedMode === "virtual") {
+    gridContainer = document.getElementById("gridContainer");
+  } else {
+    gridContainer = document.getElementById("canvasContainer");
+  }
   gridContainer.appendChild(coin_dom);
+  return DOM_ID;
+};
+/**
+ * A bot has been created on the VirtualGrid system. This method:
+ * 1. Creates the image in the grid at the necessary position
+ * 2. Makes the created image draggable
+ */
+const onAddBot = (bot) => {
+  let DOM_ID = drawBot(bot);
+  //Makes the created div draggable
+  setupDraggable(`#${DOM_ID}`, cell_size);
 
+  addBotToSelect(bot);
+};
+const addBotToSelect = (bot) => {};
+/**
+ * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
+ *
+ * @param {*} obstacle
+ */
+const onAddObstacle = (obstacle) => {
+  let DOM_ID = drawObstacle(obstacle);
+  //Makes the created div draggable
+  setupDraggable(`#${DOM_ID}`, cell_size);
+};
+/**
+ * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
+ *
+ * @param {*} obstacle
+ */
+const onAddCoin = (coin) => {
+  let DOM_ID = drawCoin(coin);
   //Makes the created div draggable
   setupDraggable(`#${DOM_ID}`, cell_size);
 
@@ -864,12 +892,20 @@ startBotsButton.addEventListener("click", () => {
 });
 
 check_gridlines.addEventListener("change", (evt) => {
-  let checked = evt.target.checked;
+  let checked = evt.target.checked; //checked means hide it
   let all_grid = document.querySelectorAll(".grid-column");
   if (checked) {
     all_grid.forEach((grid) => grid.classList.add("hide-grid"));
   } else {
     all_grid.forEach((grid) => grid.classList.remove("hide-grid"));
+  }
+
+  //This is relevant for CAMERA mode
+
+  if (checked) {
+    arucoCanvasOutputGrid.setAttribute("hide-grid", true);
+  } else {
+    arucoCanvasOutputGrid.removeAttribute("hide-grid");
   }
 });
 

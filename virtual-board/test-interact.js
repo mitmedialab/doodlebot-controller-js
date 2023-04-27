@@ -181,9 +181,13 @@ function onDropHandler(event) {
   // let element = event.relatedTarget;
 
   let element = event.target;
-  let gridDiv = document.getElementById("gridContainer");
-
-  let [dx, dy] = getRelativeBottomLeft(gridDiv, element);
+  let gridContainer;
+  if (selectedMode === "virtual") {
+    gridContainer = document.getElementById("gridContainer");
+  } else {
+    gridContainer = document.getElementById("arucoCanvasOutputGrid");
+  }
+  let [dx, dy] = getRelativeBottomLeft(gridContainer, element);
   let gridX = Math.round(dx / cell_size); //Have cell_size be part of the info
   let gridY = Math.round(dy / cell_size); //Have cell_size
   console.log([gridX, gridY]);
@@ -235,7 +239,7 @@ function onDropHandler(event) {
         height: height,
         angle: 0,
         relative_anchor: relative_anchor,
-        // only_reachable: true, //TODO: Don't hardcode this
+        only_reachable: true, //TODO: Don't hardcode this
         targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
     } else if (type === OBSTACLE_TYPE) {
