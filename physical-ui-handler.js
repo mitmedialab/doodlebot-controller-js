@@ -526,4 +526,6 @@ function processVideo() {
   setTimeout(processVideo, delay);
 }
 
-updateCornersButton.addEventListener("click", findHomographicMatrix);
+updateCornersButton.addEventListener("click", () =>
+  cameraController.findProjectionMatrix()
+);
