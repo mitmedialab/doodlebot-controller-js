@@ -17,7 +17,23 @@ import { Doodlebot } from "./doodlebot_control/doodlebot.js";
 
 let currentDoodlebot; //Current Doodlebot object that has been connected to the device through Bluetooth
 let allDoodlebots = {}; // Doodlebot name -> doodlebot object for control the REAl doodlebots
-
+let DOODLEBOT_ID_TO_ARUCO_ID = {
+  "Doodlebot Samba\r\n": 1,
+  "Doodlebot Banksy": 2,
+  // "Doodlebot Bluefruit52": 2,
+};
+/*
+  Mapping between doodlebot BLE ids to aruco ids
+  This allows the connection between physical bots and virtual bots
+*/
+let ARUCO_ID_TO_DOODLEBOT_ID = {
+  // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
+  // 1: "90pOM2ntPK3x6YVsJD0UBA==",
+  // 2: "rNmwnlbopAuiAnTpSxnPRw=="
+  1: "Doodlebot Samba\r\n",
+  2: "Doodlebot Banksy",
+  // 2: "Doodlebot Bluefruit52",
+};
 async function onRequestBluetoothDeviceButtonClick() {
   try {
     let newDoodlebot = new Doodlebot(log);
@@ -68,23 +84,6 @@ let context = arucoCanvasOutputGrid.getContext("2d", {
 });
 
 //OpenCv variables
-let DOODLEBOT_ID_TO_ARUCO_ID = {
-  "Doodlebot Samba\r\n": 1,
-  "Doodlebot Banksy": 2,
-  // "Doodlebot Bluefruit52": 2,
-};
-/*
-  Mapping between doodlebot BLE ids to aruco ids
-  This allows the connection between physical bots and virtual bots
-*/
-let ARUCO_ID_TO_DOODLEBOT_ID = {
-  // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
-  // 1: "90pOM2ntPK3x6YVsJD0UBA==",
-  // 2: "rNmwnlbopAuiAnTpSxnPRw=="
-  1: "Doodlebot Samba\r\n",
-  2: "Doodlebot Banksy",
-  // 2: "Doodlebot Bluefruit52",
-};
 
 // Number of frames to check to figure out whether a marker is still on the board
 let numFrames = 20;
@@ -203,15 +202,6 @@ const COLOR_SIZES = {
 window.OBJECT_SIZES = OBJECT_SIZES;
 window.COLOR_SIZES = COLOR_SIZES;
 
-let MARKERS_INFO = {};
-for (let marker_id in OBJECT_SIZES) {
-  MARKERS_INFO[marker_id] = {};
-}
-for (let color in COLOR_SIZES) {
-  let { id } = COLOR_SIZES[color];
-  MARKERS_INFO[id] = {};
-}
-
 /**
  * Camera controllers
  */
@@ -243,7 +233,8 @@ activate_camera.addEventListener("change", async (evt) => {
       cameraHeight,
       cameraWidth,
       { ...cameraConstraints, width: cameraWidth },
-      log
+      log,
+      numFrames // to detect dissapeared frames
     );
     let stream = await cameraController.activateCamera();
     videoObj.srcObject = stream;
@@ -470,6 +461,13 @@ function updateVirtualObjects() {
     updateVirtualCoin(color, true);
   }
 }
+function updateAppearInfo() {}
+/**
+ * Runs through every frames, and detects updates in position
+ * for the objects.
+ *
+ * @returns
+ */
 function processVideo() {
   if (!cameraController.isCameraActive) {
     return;
@@ -477,8 +475,12 @@ function processVideo() {
   let begin = Date.now();
   context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
-  cameraController.findArucoCodes(imageData);
-  cameraController.filterColor(imageData, [0, 0, 0], [0, 0, 255]);
+  let currentMarkers = cameraController.findArucoCodes(imageData);
+  let currentColors = cameraController.filterColor(
+    imageData,
+    [0, 0, 0],
+    [0, 0, 255]
+  );
   if (
     cameraController.foundAllCorners() &&
     !cameraController.foundProjectionMatrix()
@@ -494,6 +496,18 @@ function processVideo() {
     if (!hide_grid) {
       cameraController.drawGridLines();
     }
+
+    //Updating appear info of the newly found
+    for (let possible_marker_id in OBJECT_SIZES) {
+      let appeared = currentMarkers[possible_marker_id] ? 1 : 0;
+      cameraController.updateMarkerAppear(possible_marker_id, appeared);
+    }
+    for (let color in COLOR_SIZES) {
+      let appeared = currentColors[color] ? 1 : 0;
+      let { id } = COLOR_SIZES[color];
+      cameraController.updateMarkerAppear(id, appeared);
+    }
+
     updateVirtualObjects(); //Use new aruco positions/colors to update Virtual objects
 
     try {

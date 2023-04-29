@@ -7,6 +7,9 @@ let BORDER_IDS = {
   TOP_RIGHT: 33, //top right
   TOP_LEFT: 34, //top left
 };
+
+const APPEAR_THRESHOLD = 0.01;
+
 class CameraController {
   constructor(
     cameraMatrix,
@@ -14,7 +17,8 @@ class CameraController {
     cameraHeight,
     cameraWidth,
     cameraConstraints,
-    log
+    log,
+    numFrames
   ) {
     console.log("start");
     console.log(cameraMatrix);
@@ -44,6 +48,19 @@ class CameraController {
     this.currentVectors = {}; ///id -> {rvec: , tvec: }. id is the aruco id
     this.homographicMatrix = null;
     this.colorInfo = {}; //color -> [x, y, w, h]
+
+    //To keep track of all the detection, and whether they appear in the board
+    let MARKERS_INFO = {};
+    for (let marker_id in OBJECT_SIZES) {
+      MARKERS_INFO[marker_id] = {};
+    }
+    for (let color in COLOR_SIZES) {
+      let { id } = COLOR_SIZES[color];
+      MARKERS_INFO[id] = {};
+    }
+
+    this.appear_info = MARKERS_INFO;
+    this.numFrames = numFrames;
   }
   async activateCamera() {
     this.isCameraActive = true;
@@ -202,7 +219,7 @@ class CameraController {
     cv.detectMarkers(this.debug, dictionary, markerCorners, markerIds);
     if (markerIds.rows === 0) {
       //Nothing detected
-      return;
+      return {};
     }
     let response = {}; //id -> {rvec: [], tvec: []}
 
@@ -582,6 +599,41 @@ class CameraController {
         real_bottom_left: [minX, minY],
       };
     }
+  }
+  /**
+   * update marker_id's "appear" array of 1s and 0s. It makes sure the length is up to numFrames
+   * @param {*} marker_id aruco marker
+   * @param {*} appeared 1 if marker was detected, 0 otherwise
+   */
+  updateMarkerAppear(marker_id, appeared) {
+    let appear = this.appear_info[marker_id].appear;
+    if (!appear) {
+      appear = [];
+    }
+    appear.push(appeared);
+    if (appear.length > this.numFrames) {
+      //Need to delete oldest entry
+      appear = appear.slice(1, appear.length);
+    }
+    this.appear_info[marker_id].appear = appear;
+  }
+
+  /**
+   *
+   * @param {*} marker_id aruco marker
+   * @returns true iff the given marker is considered to be in the board, according to APPEAR_THRESHOLD
+   */
+  isInBoard(marker_id) {
+    if (!(marker_id in this.appear_info)) {
+      return false;
+    }
+    let appear = this.appear_info[marker_id].appear;
+    if (!appear) {
+      return false;
+    }
+    let timesDetected = appear.reduce((a, b) => a + b, 0);
+    let avg = timesDetected / appear.length;
+    return avg > APPEAR_THRESHOLD;
   }
 }
 
