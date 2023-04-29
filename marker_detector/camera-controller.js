@@ -1,26 +1,49 @@
 function diff(a, b) {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
-
+let BORDER_IDS = {
+  BOTTOM_LEFT: 31, //bottom left
+  BOTTOM_RIGHT: 32, // bottom righ
+  TOP_RIGHT: 33, //top right
+  TOP_LEFT: 34, //top left
+};
 class CameraController {
-  constructor(cameraMatrix, distCoeffs, height, width, cameraConstraints) {
+  constructor(
+    cameraMatrix,
+    distCoeffs,
+    cameraHeight,
+    cameraWidth,
+    cameraConstraints,
+    log
+  ) {
     console.log("start");
     console.log(cameraMatrix);
     console.log(distCoeffs);
-    console.log(height);
-    console.log(width);
+    console.log(cameraHeight);
+    console.log(cameraWidth);
     console.log(cameraConstraints);
     console.log("yay!");
     this.cameraMatrix = cameraMatrix;
     this.distCoeffs = distCoeffs;
     this.isCameraActive = false;
-    this.height = height;
-    this.width = width;
+    this.cameraHeight = cameraHeight;
+    this.cameraWidth = cameraWidth;
     this.cameraConstraints = cameraConstraints;
     this.stream = null;
+    this.log = log;
 
-    this.src = new cv.Mat(height, width, cv.CV_8UC4);
-    this.dst = new cv.Mat(height, width, cv.CV_8UC1);
+    this.rows = rows;
+    this.cols = cols;
+    this.cell_size = cell_size;
+
+    this.src = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC4); //original camera frame
+    this.debug = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC1); // original frame + aruco detection
+    this.dst = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC1); // Only the grid (2D flattened) shown in the UI
+
+    // Below information related to the Aruco Codes
+    this.currentVectors = {}; ///id -> {rvec: , tvec: }. id is the aruco id
+    this.homographicMatrix = null;
+    this.colorInfo = {}; //color -> [x, y, w, h]
   }
   async activateCamera() {
     this.isCameraActive = true;
@@ -28,13 +51,9 @@ class CameraController {
       this.stream = await window.navigator.mediaDevices.getUserMedia(
         this.cameraConstraints
       );
-      console.log(this.cameraConstraints);
-      console.log(this.stream);
       return this.stream; //TODO: use it for videoObj.srcObject = stream;
     } catch {
-      function handle(err) {
-        console.log(err);
-      }
+      console.log(err);
     }
   }
   deactivateCamera() {
@@ -45,9 +64,6 @@ class CameraController {
     // let low_mat = cv.matFromArray(3, 1, cv.CV_64F, low);
     // let high_mat = cv.matFromArray(3, 1, cv.CV_64F, high);
     this.src.data.set(imageData.data);
-    // cv.cvtColor(this.src, this.dst, cv.COLOR_BGR2HSV);
-    // cv.cvtColor(this.dst, this.dst, cv.COLOR_BGR2GRAY);
-
     // this.src = cv.imread(arucoCanvasOutput);
     // Convert the image to HSV color space
     let hsv = new cv.Mat();
@@ -121,7 +137,7 @@ class CameraController {
     if (maxRect) {
       let [x, y, w, h] = maxRect;
       cv.rectangle(
-        this.dst,
+        this.debug,
         new cv.Point(x, y),
         new cv.Point(x + w, y + h),
         [255, 0, 0, 255],
@@ -142,6 +158,7 @@ class CameraController {
     morphKernel.delete();
 
     if (maxRect) {
+      this.colorInfo.PINK = maxRect;
       return { PINK: maxRect };
     } else {
       return {};
@@ -175,21 +192,21 @@ class CameraController {
    */
   findArucoCodes(imageData) {
     //, cameraMatrix, distCoeffs) {
-    //   let src = new cv.Mat(height, width, cv.CV_8UC4);
-    //   let dst = new cv.Mat(height, width, cv.CV_8UC1);
+    //   let src = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC4);
+    //   let dst = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC1);
     this.src.data.set(imageData.data);
-    cv.cvtColor(this.src, this.dst, cv.COLOR_RGBA2RGB, 0);
+    cv.cvtColor(this.src, this.debug, cv.COLOR_RGBA2RGB, 0);
     let dictionary = new cv.aruco_Dictionary(cv.DICT_6X6_250); //TODO: Try 4x4, april tags dictionary
     let markerCorners = new cv.MatVector();
     let markerIds = new cv.Mat();
-    cv.detectMarkers(this.dst, dictionary, markerCorners, markerIds);
+    cv.detectMarkers(this.debug, dictionary, markerCorners, markerIds);
     if (markerIds.rows === 0) {
       //Nothing detected
       return;
     }
     let response = {}; //id -> {rvec: [], tvec: []}
 
-    cv.drawDetectedMarkers(this.dst, markerCorners, markerIds);
+    cv.drawDetectedMarkers(this.debug, markerCorners, markerIds);
     let rvecs = new cv.Mat();
     let tvecs = new cv.Mat();
     let markerSize = 0.1;
@@ -231,7 +248,7 @@ class CameraController {
       // console.log("markerCorner");
       // console.log(markerCorner);
       cv.drawFrameAxes(
-        this.dst,
+        this.debug,
         this.cameraMatrix,
         this.distCoeffs,
         rvec,
@@ -242,6 +259,7 @@ class CameraController {
       //   cv.drawAxis(this.dst, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
       let marker_id = markerIds.data[4 * i]; //ßTODO: FIgure out a way this can generalize for bigger ids
       response[marker_id] = { rvec, tvec, corners: markerCorners.get(i) };
+      this.currentVectors[Number(marker_id)] = response[marker_id]; //Saving for future use
       // console.log(markerCorners.get(i))
       //   // rvec.delete();
       //   // tvec.delete();
@@ -252,7 +270,318 @@ class CameraController {
 
     //   console.log(diff(response[1]["tvec"].data64F, response[12]["tvec"].data64F));
     // }
+
     return response;
+  }
+  /**
+   * @returns true iff all the corners defined in BORDER_IDS have been detected by Aruco
+   */
+  foundAllCorners() {
+    for (let key in BORDER_IDS) {
+      if (!this.currentVectors[BORDER_IDS[key]]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  foundProjectionMatrix() {
+    return this.homographicMatrix != null;
+  }
+  /**
+   *
+   * @param {*} point 3d point, usually from a tvec.data64F
+   * @returns
+   */
+  get2D(point) {
+    let rvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
+    let tvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
+    let out = new cv.Mat();
+    let pt = cv.matFromArray(3, 1, cv.CV_64F, point);
+    cv.projectPoints(pt, rvec, tvec, this.cameraMatrix, this.distCoeffs, out);
+    let res = out.data64F;
+    return res;
+  }
+  /**
+   * Finds the projection matrix to go from the camera frame to the 2D grid
+   * @returns
+   */
+  findProjectionMatrix() {
+    console.log("Finding homographic matrix");
+    if (
+      !this.currentVectors[BORDER_IDS.BOTTOM_LEFT] ||
+      !this.currentVectors[BORDER_IDS.BOTTOM_RIGHT] ||
+      !this.currentVectors[BORDER_IDS.TOP_RIGHT] ||
+      !this.currentVectors[BORDER_IDS.TOP_LEFT]
+    ) {
+      console.log("Not 4 corners have been found yet");
+      return;
+    }
+    //TODO: Figure out why bottom left and top left, and bottom right and top right are flipped!
+    let bl = this.get2D(
+      this.currentVectors[BORDER_IDS.BOTTOM_LEFT].tvec.data64F
+    );
+    let br = this.get2D(
+      this.currentVectors[BORDER_IDS.BOTTOM_RIGHT].tvec.data64F
+    );
+
+    let tl = this.get2D(this.currentVectors[BORDER_IDS.TOP_LEFT].tvec.data64F);
+    let tr = this.get2D(this.currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
+
+    console.log(`Bottom left = ${bl}`);
+    console.log(`Bottom right = ${br}`);
+    console.log(`Top left: ${tl}`);
+    console.log(`Top right: ${tr}`);
+
+    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+      bl[0],
+      bl[1],
+      br[0],
+      br[1],
+      tl[0],
+      tl[1],
+      tr[0],
+      tr[1],
+    ]);
+    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+      0,
+      0,
+      cameraWidth,
+      0,
+      0,
+      cameraHeight,
+      cameraWidth,
+      cameraHeight,
+    ]);
+    this.homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri); //, dstTri); //cv.findHomography(srcTri, dstTri);
+
+    //   srcTri.remove();
+    //   dstTri.remove();
+  }
+  /**
+   * Projects the frame into a "flat" 2d version and saves it on this.dst
+   */
+  projectFrameToGrid() {
+    if (!this.foundProjectionMatrix()) {
+      this.log("Cannot do until homographicMatrix is defined");
+      return;
+    }
+    if (!this.src || !this.src.data) {
+      this.log("Src canvas not ready..");
+      return;
+    }
+    try {
+      // let dsize = new cv.Size(width, height);
+      let dsize = new cv.Size(this.src.cols, this.src.rows);
+      let scalarProjection = new cv.Scalar();
+      cv.warpPerspective(
+        this.src,
+        this.dst, // canvasProjectionOut //new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC4);
+        this.homographicMatrix,
+        dsize,
+        cv.INTER_LINEAR,
+        cv.BORDER_CONSTANT,
+        scalarProjection
+      );
+      return;
+    } catch (e) {
+      this.log("[show2dProjection] Uh oh..there was an error:");
+      this.log(e);
+      return;
+    }
+  }
+  /**
+   * Draws horizontal and vertical lines in the 2D projection, representing the grid
+   */
+  drawGridLines() {
+    let color = [0, 0, 255, 128];
+    let thickness = 1;
+    let p1;
+    let p2;
+    //Draw vertical lines
+    for (let i = 0; i <= cols; i += 1) {
+      let x_1 = Math.floor(((cameraWidth - 1) / this.cols) * i);
+      let y_1 = 0;
+      let x_2 = Math.floor(((cameraWidth - 1) / this.cols) * i);
+      let y_2 = cameraHeight - 1;
+      p1 = new cv.Point(x_1, y_1);
+      p2 = new cv.Point(x_2, y_2);
+      cv.line(this.dst, p1, p2, color, thickness);
+    }
+
+    //For horizontal lines
+    for (let i = 0; i <= rows; i += 1) {
+      let x_1 = 0;
+      let y_1 = Math.floor(((cameraHeight - 1) / this.rows) * i);
+      let x_2 = cameraWidth - 1;
+      let y_2 = Math.floor(((cameraHeight - 1) / this.rows) * i);
+      p1 = new cv.Point(x_1, y_1);
+      p2 = new cv.Point(x_2, y_2);
+      cv.line(this.dst, p1, p2, color, thickness);
+    }
+
+    //   p1.delete();
+    //   p2.delete();
+  }
+  /**
+   *
+   * @param {*} id aruco marker
+   * @returns 2d position of the 3d coordinates (from tvec) of a given marker
+   */
+  getReal2dPosition(id_or_color, is_color = false) {
+    let point; //2D point
+    if (!is_color) {
+      point = this.get2D(this.currentVectors[id_or_color].tvec.data64F);
+    } else {
+      point = this.colorInfo[id_or_color];
+    }
+    let point3D = cv.matFromArray(3, 1, cv.CV_64F, [point[0], point[1], 1]);
+    let outPoint3D = new cv.Mat();
+    let useless = new cv.Mat(); //to be multiplied by 0
+    cv.gemm(this.homographicMatrix, point3D, 1, useless, 0, outPoint3D); //-rot^t * tvec
+    let [tx, ty, t] = outPoint3D.data64F;
+    let outPoint2D = [tx / t, ty / t];
+    return outPoint2D;
+  }
+  /**
+   * Transforms real [x, y] into [i, j] grid coordinates
+   * @param {*} pos
+   * @returns
+   */
+  getGridPositionFromReal(pos) {
+    let [x, y] = pos;
+    let [gridX, gridY] = [
+      Math.floor((x / this.cameraWidth) * this.cols),
+      Math.floor((y / this.cameraWidth) * this.rows),
+    ];
+    return [gridX, gridY];
+  }
+  /**
+   *
+   * @param {*} id aruco marker
+   * @returns 2d position in the 2D grid of a given marker
+   */
+  getGridPosition(id_or_color, is_color = false) {
+    let [x, y] = this.getReal2dPosition(id_or_color, is_color);
+    return this.getGridPositionFromReal([x, y]);
+  }
+  /**
+   *
+   * @param {*} rvec
+   * @returns  The 2d angle direction of the rotation vector, in the [0, 360) range
+   */
+  getRotation2DAngle(rvec) {
+    let rot = new cv.Mat();
+    cv.Rodrigues(rvec, rot);
+    //TODO: Figure out if you only need to do the 2d projection of the direction
+    let dir = rot.row(1).data64F; // * halfSide;
+    let dir2D = this.get2D(dir);
+    let angle = Math.atan2(dir2D[1], dir2D[0]);
+    angle = (angle * 180) / Math.PI;
+    if (angle < 0) {
+      angle += 360;
+    } //Make sure angle is on [0. 360)
+    return angle;
+  }
+  /**
+   *
+   * @param {*} p1: [x1, y1]
+   * @param {*} p2: [x2, y2]
+   * @returns the angle of the vector that starts at p1 and ends at p2
+   */
+  getDirectionFrom(p1, p2) {
+    let [x1, y1] = p1;
+    let [x2, y2] = p2;
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    let angle = Math.atan2(dy, dx);
+    angle = (angle * 180) / Math.PI;
+    if (angle < 0) {
+      angle += 360;
+    } //Make sure angle is [0, 360), not [-180, 180)
+
+    return angle;
+  }
+  /**
+   *
+   * @param {*} realAngle
+   * @returns get angle from 0, 90, 180, 270 that is closest to realAngle
+   * Might be broken, since angles calculated from camera are funky
+   */
+  getClosestAngle(realAngle) {
+    //Adding the 360 so that if its > 300 then it detects as close to 0
+    let possibilities = [...Object.values(ANGLE_DIRS), 360].sort(
+      (a, b) => Math.abs(a - realAngle) - Math.abs(b - realAngle)
+    );
+    return possibilities[0] % 360; //the closest to realAngle
+  }
+  /**
+   * Assumes `aruco_bot_id` is part of `this.currentVectors`
+   *
+   * returns {angle: , realAngle:} where angle is one of [0, 90, 180, 270] and realAngle is anything in [0, 360) range
+   */
+  getBotAngle(aruco_bot_id) {
+    let { direction_id } = OBJECT_SIZES[aruco_bot_id];
+    let realAngle;
+
+    if (!this.currentVectors[direction_id]) {
+      //If no direction, use the traditional way (somewhat broken sadly)
+      realAngle = this.getRotation2DAngle(
+        this.currentVectors[aruco_bot_id].rvec
+      );
+    } else {
+      //Find angle from unit vector bot_id -> direction_id
+      let [bot_x, bot_y] = this.getReal2dPosition(aruco_bot_id);
+      let [dir_x, dir_y] = this.getReal2dPosition(direction_id);
+      realAngle = this.getDirectionFrom([bot_x, bot_y], [dir_x, dir_y]);
+    }
+
+    let gridAngle = this.getClosestAngle(realAngle);
+    return {
+      angle: gridAngle,
+      realAngle: realAngle,
+    };
+  }
+  /**
+   * This method is only valid for Obstacle or Coins, as with Bot the info
+   * from aruco code is not necessarily the real_bottom_left
+   *
+   * @param {*} id aruco id
+   * @returns {object} {width, height, real_bottom_left}, that either come form OBJECT_SIZES
+   * or, if object has another corner detected, uses that info
+   *
+   */
+  getObjectPositionInfo(id) {
+    if (!(id in OBJECT_SIZES)) {
+      console.log(`Couldnt find size information for id =${id} `);
+      return {};
+    }
+    if (OBJECT_SIZES[id].type === BOT_TYPE) {
+      console.log(
+        `[getObjectPositionInfo] This method is not valid for Bots. `
+      );
+      return {};
+    }
+    let { other_corner_id, width, height } = OBJECT_SIZES[id];
+    let [x1, y1] = this.getGridPosition(id);
+    if (!other_corner_id || !this.currentVectors[other_corner_id]) {
+      //If there is no set other corner, or it hasn't been detected
+      return {
+        width,
+        height,
+        real_bottom_left: [x1, y1],
+      };
+    } else {
+      let [x2, y2] = this.getGridPosition(other_corner_id);
+      let minX = Math.min(x1, x2);
+      let maxX = Math.max(x1, x2);
+      let minY = Math.min(y1, y2);
+      let maxY = Math.max(y1, y2);
+      return {
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+        real_bottom_left: [minX, minY],
+      };
+    }
   }
 }
 

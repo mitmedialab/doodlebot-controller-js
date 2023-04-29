@@ -4,6 +4,7 @@ import { setupDraggable, setupGridDropzone } from "./test-interact.js";
 var body = document.getElementById("body");
 var urlParams = new URLSearchParams(window.location.search);
 var selectedOption = urlParams.get("option");
+window.selectedOption = selectedOption;
 var selectedMode = urlParams.get("mode");
 body.setAttribute("current-mode", selectedMode);
 window.selectedMode = selectedMode; //make it global
@@ -79,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 10; //was 10
+var rows = 16; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
@@ -316,26 +317,28 @@ window.ALL_ASSETS = ALL_ASSETS;
 const createDOMGrid = (rows, cols, cell_size) => {
   //TODO: Have this info come from the theme previously chosen
   console.log(selectedOption);
+  gridContainer.style.height = `${rows * cell_size}px`;
+  gridContainer.style.width = `${cols * cell_size}px`;
 
   if (selectedOption == "None") {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
-    gridContainer.style.height = "400px";
-    gridContainer.style.width = "580px";
+    // gridContainer.style.height = "400px";
+    // gridContainer.style.width = "580px";
   } else if (selectedOption == "City") {
     gridContainer.style.backgroundImage = "url(../assets/DB_CityGridBG_2.png)";
-    gridContainer.style.height = "400px";
-    gridContainer.style.width = "580px";
+    // gridContainer.style.height = "400px";
+    // gridContainer.style.width = "580px";
   } else if (selectedOption == "Pacman") {
     gridContainer.style.backgroundImage =
       "url(../assets/DB_PacmanGridBG_1.png)";
-    gridContainer.style.height = "400px";
-    gridContainer.style.width = "580px";
+    // gridContainer.style.height = "400px";
+    // gridContainer.style.width = "580px";
   } else if (selectedOption == "School") {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
-    gridContainer.style.height = "400px";
-    gridContainer.style.width = "580px";
+    // gridContainer.style.height = "400px";
+    // gridContainer.style.width = "580px";
   } else {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
@@ -604,7 +607,6 @@ const onPickupCoin = (bot, coin) => {
  * @param {*} updatedObject
  */
 const onUpdateObject = (updatedObject) => {
-  console.log("Detected update, changing object shown!");
   let DOM_ID = `${updatedObject.type}-${updatedObject.id}`;
   let div = document.getElementById(DOM_ID);
   div.remove(); //Not needed anymore, but paint the object again
@@ -797,6 +799,8 @@ const onAddCoin = (coin) => {
 const addCoinTypeToSelect = (coin) => {
   let { coin_collect_type } = coin;
   if (!coin_collect_type) {
+    console.log("------------------------------------------------");
+    console.log(coin);
     alert("Error: Undefined coin type, please add it on ALL_ASSETS");
     return;
   }

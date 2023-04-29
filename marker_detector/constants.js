@@ -3,8 +3,8 @@ let distCoeffs;
 let cameraConstraints = {
   audio: false,
   video: {
-    width: 640,
-    height: 640,
+    // width: 640,
+    // height: 640,
     frameRate: 30,
     kind: "videoinput",
     // label:"Logitech Webcam C930e (046d:0843)",

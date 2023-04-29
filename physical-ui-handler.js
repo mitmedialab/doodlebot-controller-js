@@ -61,10 +61,6 @@ let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
 window.currentVectors = currentVectors;
 let cameraController;
 let videoObj = document.getElementById("videoId");
-// document.addEventListener("DOMContentLoaded", () => {
-
-// })
-
 let cameraWidth;
 let cameraHeight;
 let context = arucoCanvasOutputGrid.getContext("2d", {
@@ -72,22 +68,6 @@ let context = arucoCanvasOutputGrid.getContext("2d", {
 });
 
 //OpenCv variables
-let homographicMatrix; // to transform camera stream into a "flat" 2D frame
-let canvasProjectionOut; //Opencv matrix to store projection of 2d - needs to be global variable because otherwise opencv complains after a few seconds
-let scalarProjection; //unclear if needed
-//To be used in the drawObjectOnCanvas method
-let bottom_left;
-let bottom_right;
-let top_left;
-let top_right;
-
-let BORDER_IDS = {
-  BOTTOM_LEFT: 31, //bottom left
-  BOTTOM_RIGHT: 32, // bottom righ
-  TOP_RIGHT: 33, //top right
-  TOP_LEFT: 34, //top left
-};
-let colorInfo = {}; //color -> [x, y, w, h]
 let DOODLEBOT_ID_TO_ARUCO_ID = {
   "Doodlebot Samba\r\n": 1,
   "Doodlebot Banksy": 2,
@@ -118,6 +98,9 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 51,
+    images: {
+      None: "doodlebot_alone",
+    },
   },
   2: {
     type: BOT_TYPE,
@@ -125,6 +108,9 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 52,
+    images: {
+      None: "doodlebot_cowboy",
+    },
   },
   3: {
     type: BOT_TYPE,
@@ -148,21 +134,75 @@ const OBJECT_SIZES = {
     direction_id: 55,
   }, //TODO: Put back when obstacle's other_corner is set to another id
   // obstacles
-  11: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 61 },
+  11: {
+    type: OBSTACLE_TYPE,
+    width: 1,
+    height: 1,
+    other_corner_id: 61,
+    images: {
+      None: "building",
+    },
+  },
   12: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 62 },
   13: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 63 },
   14: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 64 },
   15: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 65 },
   // coins
-  21: { type: COIN_TYPE, width: 1, height: 1 },
-  22: { type: COIN_TYPE, width: 1, height: 1 },
-  23: { type: COIN_TYPE, width: 1, height: 1 },
-  24: { type: COIN_TYPE, width: 1, height: 1 },
-  25: { type: COIN_TYPE, width: 1, height: 1 },
+  21: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    images: {
+      None: "coin",
+    },
+  },
+  22: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    images: {
+      None: "coin",
+    },
+  },
+  23: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    images: {
+      None: "coin",
+    },
+  },
+  24: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    images: {
+      None: "coin",
+    },
+  },
+  25: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    images: {
+      None: "coin",
+    },
+  },
 };
 const COLOR_SIZES = {
-  PINK: { id: 26, type: COIN_TYPE, width: 3, height: 3 },
+  PINK: {
+    id: 26,
+    type: COIN_TYPE,
+    width: 3,
+    height: 3,
+    images: {
+      None: "coin",
+    },
+  },
 };
+window.OBJECT_SIZES = OBJECT_SIZES;
+window.COLOR_SIZES = COLOR_SIZES;
+
 let MARKERS_INFO = {};
 for (let marker_id in OBJECT_SIZES) {
   MARKERS_INFO[marker_id] = {};
@@ -184,10 +224,6 @@ if (typeof cv !== "undefined") {
 async function onReady() {
   console.log("Opencv is ready!");
   cv = await cv;
-
-  canvasProjectionOut = new cv.Mat();
-  scalarProjection = new cv.Scalar();
-
   activate_camera.disabled = false;
 }
 
@@ -196,6 +232,9 @@ activate_camera.addEventListener("change", async (evt) => {
   if (activate) {
     cameraWidth = cell_size * cols;
     cameraHeight = cell_size * rows;
+    window.cameraWidth = cameraWidth;
+    window.cameraHeight = cameraHeight;
+
     videoObj.setAttribute("width", cameraWidth);
     videoObj.setAttribute("height", cameraHeight);
     cameraController = new CameraController(
@@ -203,11 +242,12 @@ activate_camera.addEventListener("change", async (evt) => {
       distCoeffs,
       cameraHeight,
       cameraWidth,
-      { ...cameraConstraints, width: cameraWidth, height: cameraHeight }
+      { ...cameraConstraints, width: cameraWidth },
+      log
     );
     let stream = await cameraController.activateCamera();
     videoObj.srcObject = stream;
-    // //create grid
+    //create grid
     // currentBotId = 1; //TODO: For now hardcode, later change
     processVideo();
   } else {
@@ -217,145 +257,218 @@ activate_camera.addEventListener("change", async (evt) => {
   }
 });
 /**
- * Projects the frame into a "flat" 2d version, adds grid lines and shows it in the canvas
+ *
+ * @param {*} id aruco marker
+ * @returns BOT_TYPE, OBSTACLE_TYPE or COIN_TYPE, accordingly
  */
-function show2dProjection() {
-  if (!homographicMatrix) {
-    log("Cannot do until homographicMatrix is defined");
-    return;
+function getTypeObject(id) {
+  if (!(id in OBJECT_SIZES)) {
+    return null; //not object we care about
   }
-  if (!cameraController.src || !cameraController.src.data) {
-    log("Src canvas not ready..");
-    return;
-  }
-  try {
-    // let dsize = new cv.Size(width, height);
-    let dsize = new cv.Size(
-      cameraController.src.cols,
-      cameraController.src.rows
-    );
-    cv.warpPerspective(
-      cameraController.src,
-      canvasProjectionOut,
-      homographicMatrix,
-      dsize,
-      cv.INTER_LINEAR,
-      cv.BORDER_CONSTANT,
-      scalarProjection
-    );
-    // cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
-    // dsize.release();
-    return;
-  } catch (e) {
-    log("[show2dProjection] Uh oh..there was an error:");
-    log(e);
-    return;
-  }
+  return OBJECT_SIZES[id].type;
 }
-function drawGridLines() {
-  let color = [0, 0, 255, 128];
-  let thickness = 1;
-  let p1;
-  let p2;
-  //Draw vertical lines
-  for (let i = 0; i <= cols; i += 1) {
-    let x_1 = Math.floor(((cameraWidth - 1) / cols) * i);
-    let y_1 = 0;
-    let x_2 = Math.floor(((cameraWidth - 1) / cols) * i);
-    let y_2 = cameraHeight - 1;
-    p1 = new cv.Point(x_1, y_1);
-    p2 = new cv.Point(x_2, y_2);
-    cv.line(canvasProjectionOut, p1, p2, color, thickness);
-  }
+const getAssetImages = (aruco_id, is_color = false) => {
+  let info = is_color ? COLOR_SIZES : OBJECT_SIZES;
 
-  //For horizontal lines
-  for (let i = 0; i <= rows; i += 1) {
-    let x_1 = 0;
-    let y_1 = Math.floor(((cameraHeight - 1) / rows) * i);
-    let x_2 = cameraWidth - 1;
-    let y_2 = Math.floor(((cameraHeight - 1) / rows) * i);
-    p1 = new cv.Point(x_1, y_1);
-    p2 = new cv.Point(x_2, y_2);
-    cv.line(canvasProjectionOut, p1, p2, color, thickness);
+  if (!(aruco_id in info)) {
+    console.log(`Invalid ${aruco_id}: not in OBJECT_SIZES`);
+    return {};
   }
-
-  //   p1.delete();
-  //   p2.delete();
-}
+  if (!info[aruco_id].images) {
+    console.log(`Invalid ${aruco_id}: no images`);
+    return {};
+  }
+  if (!info[aruco_id].images[selectedOption]) {
+    console.log(`Invalid ${aruco_id}: no images.${selectedOption}`);
+    return {};
+  }
+  return ALL_ASSETS[info[aruco_id].images[selectedOption]];
+};
 /**
- * @returns true iff all the corners defined in BORDER_IDS have been detected by Aruco
+ * Updates position of a given bot in the virtual grid. If the bot is not there then it
+ * will create one
+ * @param {*} id aruco marker
  */
-function allCornersFound() {
-  for (let key in BORDER_IDS) {
-    if (!currentVectors[BORDER_IDS[key]]) {
-      return false;
+function updateVirtualBot(id) {
+  let [gridX, gridY] = cameraController.getGridPosition(id);
+  let { angle, realAngle } = cameraController.getBotAngle(id);
+
+  if (!(id in OBJECT_SIZES)) {
+    console.log(`Couldnt find size information for id = ${id} `);
+  }
+  let { relative_anchor, width, height } = OBJECT_SIZES[id];
+
+  let { image, image_rotate_90 } = getAssetImages(id);
+
+  let [anchor_x, anchor_y] = relative_anchor;
+  //If its not there, create one
+  if (!grid.bots[id]) {
+    //virtual bot doesnt exist, so create one
+    let bot_to_add = {
+      id: id,
+      real_bottom_left: [-anchor_x, -anchor_y], //So that real anchor = [0, 0] //TODO: make real_bottom_left correct
+      angle: 0,
+      relative_anchor: [anchor_x, anchor_y], //wont change
+      width: width, //wont change
+      height: height, //wont change
+      image,
+      image_rotate_90,
+    };
+    //This assumes angle is 0, need to turn it if necessary
+    bot_to_add = grid.future_position_after_turn(bot_to_add, angle);
+
+    //This was assuming that real_anchor = [0, 0], so now need to move it to [gridX, gridY] (where the aruco code is)
+    bot_to_add.real_bottom_left = [
+      bot_to_add.real_bottom_left[0] + gridX,
+      bot_to_add.real_bottom_left[1] + gridY,
+    ];
+    bot_to_add.realAngle = realAngle;
+
+    let { bot, success, message } = grid.add_bot(bot_to_add);
+    if (!success) {
+      console.log(`Couldn't add bot ${id}: ${message}`);
+    } else {
+      //   socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
+    }
+  } else {
+    //If it already exists, just update accordingly
+    let update = {
+      angle: angle,
+      realAngle: realAngle,
+      real_anchor: [gridX, gridY],
+    };
+    let { success, message } = grid.update_bot(id, update);
+    if (!success) {
+      console.log(`Couldn't update bot ${id}: ${message}`);
+    } else {
+      //   socket.emit("update_bot", { id, update, virtualGrid: grid.toJSON() });
     }
   }
-  return true;
 }
 /**
- *
- * @param {*} point 3d point, usually from a tvec.data64F
- * @returns
+ * Updates position of a given obstacle in the virtual grid. If the obstacle is not there then it
+ * will create one
+ * @param {*} id aruco marker
  */
-function get2D(point) {
-  let rvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
-  let tvec = cv.matFromArray(3, 1, cv.CV_64F, [0, 0, 0]);
-  let out = new cv.Mat();
-  let pt = cv.matFromArray(3, 1, cv.CV_64F, point);
-  cv.projectPoints(pt, rvec, tvec, cameraMatrix, distCoeffs, out);
-  let res = out.data64F;
-  return res;
+function updateVirtualObstacle(id) {
+  let { width, height, real_bottom_left } =
+    cameraController.getObjectPositionInfo(id);
+
+  let { image, image_rotate_90 } = getAssetImages(id);
+
+  if (!grid.obstacles[id]) {
+    if (!(id in OBJECT_SIZES)) {
+      console.log(`Couldnt find size information for id =${id} `);
+    }
+
+    let { success, obstacle } = grid.add_obstacle({
+      id: id,
+      real_bottom_left: real_bottom_left,
+      relative_anchor: [0, 0], //All obstacles will be created this way
+      width: width,
+      height: height,
+      image,
+      image_rotate_90,
+    });
+    if (success) {
+      //   socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
+    }
+  } else {
+    let update = { width, height, real_bottom_left };
+    let { success } = grid.update_obstacle(id, update);
+    if (success) {
+      // socket.emit("update_obstacle", {
+      //   id,
+      //   update,
+      //   virtualGrid: grid.toJSON(),
+      // });
+    }
+  }
 }
-function findHomographicMatrix() {
-  console.log("Finding homographic matrix");
-  let worldx = cell_size * cols; //640; //3;
-  let worldy = cell_size * rows; //640; //2;
-  if (
-    !currentVectors[BORDER_IDS.BOTTOM_LEFT] ||
-    !currentVectors[BORDER_IDS.BOTTOM_RIGHT] ||
-    !currentVectors[BORDER_IDS.TOP_RIGHT] ||
-    !currentVectors[BORDER_IDS.TOP_LEFT]
-  ) {
-    console.log("Not 4 corners have been found yet");
+/**
+ * Updates position of a given coin in the virtual grid. If the coin is not there then it
+ * will create one
+ * @param {*} id aruco marker
+ */
+function updateVirtualCoin(id_or_color, is_color = false) {
+  let id, width, height, real_bottom_left;
+  let { image, image_rotate_90, coin_collect_type } = getAssetImages(
+    id_or_color,
+    is_color
+  );
+  //Regular Aruco detection
+  if (!is_color) {
+    id = id_or_color;
+    ({ width, height, real_bottom_left } =
+      cameraController.getObjectPositionInfo(id));
+  } else {
+    ({ id, width, height } = COLOR_SIZES[id_or_color]);
+    let [top_left_x, top_left_y] = cameraController.getGridPosition(
+      id_or_color,
+      true
+    );
+    //As coordinates returned for `getGridPosition` are for the top left corner of the colored
+    real_bottom_left = [top_left_x, top_left_y - height + 1];
+  }
+
+  if (!grid.coins[id]) {
+    if (!(id in OBJECT_SIZES)) {
+      console.log(`[COIN] Couldnt find size information for id =${id} `);
+    }
+
+    let res = grid.add_coin({
+      id: id,
+      real_bottom_left: real_bottom_left,
+      relative_anchor: [0, 0], //All coins will be created this way
+      width: width,
+      height: height,
+      image,
+      image_rotate_90,
+      coin_collect_type,
+    });
+    let { success, coin } = res;
+    if (!success) {
+      console.log(`Couldn't add object with id ${id}. Response:`);
+      console.log(res);
+    } else {
+      //   socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
+    }
+  } else {
+    let update = { width, height, real_bottom_left };
+    let res = grid.update_coin(id, update);
+    let { coin, success } = res;
+    if (!success) {
+      console.log(`Couldn't update object with id ${id}. Response:`);
+      console.log(res);
+    } else {
+      //   socket.emit("update_coin", { id, update, virtualGrid: grid.toJSON() });
+    }
+  }
+}
+/**
+ * Updates virtual positions of all aruco markers found in currentVectors
+ */
+function updateVirtualObjects() {
+  if (!cameraController.foundProjectionMatrix()) {
     return;
   }
-  //TODO: Figure out why bottom left and top left, and bottom right and top right are flipped!
-  let bl = get2D(currentVectors[BORDER_IDS.BOTTOM_LEFT].tvec.data64F);
-  let br = get2D(currentVectors[BORDER_IDS.BOTTOM_RIGHT].tvec.data64F);
-
-  let tl = get2D(currentVectors[BORDER_IDS.TOP_LEFT].tvec.data64F);
-  let tr = get2D(currentVectors[BORDER_IDS.TOP_RIGHT].tvec.data64F);
-
-  console.log(`Bottom left = ${bl}`);
-  console.log(`Bottom right = ${br}`);
-  console.log(`Top left: ${tl}`);
-  console.log(`Top right: ${tr}`);
-
-  let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-    bl[0],
-    bl[1],
-    br[0],
-    br[1],
-    tl[0],
-    tl[1],
-    tr[0],
-    tr[1],
-  ]);
-  let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-    0,
-    0,
-    worldx,
-    0,
-    0,
-    worldy,
-    worldx,
-    worldy,
-  ]);
-  homographicMatrix = cv.getPerspectiveTransform(srcTri, dstTri); //, dstTri); //cv.findHomography(srcTri, dstTri);
-
-  //   srcTri.remove();
-  //   dstTri.remove();
+  for (let id in cameraController.currentVectors) {
+    let typeObj = getTypeObject(id);
+    if (!typeObj) {
+      continue;
+    }
+    id = Number(id);
+    if (typeObj === BOT_TYPE) {
+      updateVirtualBot(id);
+    } else if (typeObj === OBSTACLE_TYPE) {
+      updateVirtualObstacle(id);
+    } else if (typeObj === COIN_TYPE) {
+      updateVirtualCoin(id);
+    }
+  }
+  for (let color in cameraController.colorInfo) {
+    updateVirtualCoin(color, true);
+  }
 }
 function processVideo() {
   if (!cameraController.isCameraActive) {
@@ -364,47 +477,39 @@ function processVideo() {
   let begin = Date.now();
   context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
-  let markersInfo = cameraController.findArucoCodes(imageData);
-  let currentColors = cameraController.filterColor(
-    imageData,
-    [0, 0, 0],
-    [0, 0, 255]
-  );
-  canvasProjectionOut = cameraController.src;
-  if (context) {
-    if (!markersInfo) {
-      console.log("No markers detected");
-    } else {
-      if (allCornersFound() && !homographicMatrix) {
-        findHomographicMatrix();
-      }
-      for (let marker_id in markersInfo) {
-        marker_id = Number(marker_id);
-        // foundArucoIds.add(marker_id);
-        currentVectors[marker_id] = markersInfo[marker_id];
-      }
-      for (let color in currentColors) {
-        colorInfo[color] = currentColors[color]; //Storing [x, y, w, h]
-      }
-      //   cv.imshow("arucoCanvasOutputGrid", cameraController.dst); // canvasOutput is the id of another <canvas>;
-      show2dProjection(); //Show image
-      let hide_grid = arucoCanvasOutputGrid.hasAttribute("hide-grid");
-      if (!hide_grid) {
-        drawGridLines(); //Show lines
-      }
-      // drawGridObjectsOnCanvas(); //Show objects
+  cameraController.findArucoCodes(imageData);
+  cameraController.filterColor(imageData, [0, 0, 0], [0, 0, 255]);
+  if (
+    cameraController.foundAllCorners() &&
+    !cameraController.foundProjectionMatrix()
+  ) {
+    cameraController.findProjectionMatrix();
+  }
+  if (!context) {
+    console.log("Not context!");
+  } else {
+    cv.imshow("arucoCanvasDebug", cameraController.debug);
+    cameraController.projectFrameToGrid(); //Populates cameraController.dst
+    let hide_grid = arucoCanvasOutputGrid.hasAttribute("hide-grid");
+    if (!hide_grid) {
+      cameraController.drawGridLines();
+    }
+    updateVirtualObjects(); //Use new aruco positions/colors to update Virtual objects
 
+    try {
       //TODO: Figure out why is this necessary, maybe because the camera coefficients
       //TODO 2: Maybe create a copy before moving
-      cv.flip(canvasProjectionOut, canvasProjectionOut, 0);
-      cv.imshow("arucoCanvasOutputGrid", canvasProjectionOut); // canvasOutput is the id of another <canvas>;
+      cv.flip(cameraController.dst, cameraController.dst, 0);
+      cv.imshow("arucoCanvasOutputGrid", cameraController.dst); // canvasOutput is the id of another <canvas>;
+    } catch (e) {
+      log("[processVideo] Uh oh..there was an error:");
+      log(e);
     }
   }
   // schedule next one.
   let delay = 1000 / FPS - (Date.now() - begin);
 
   setTimeout(processVideo, delay);
-  return markersInfo;
 }
 
 updateCornersButton.addEventListener("click", findHomographicMatrix);

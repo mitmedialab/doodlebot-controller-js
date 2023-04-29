@@ -48,6 +48,8 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                         <div style="display:flex; align-items: center;">
                             <h5 style="margin-top: 5px;">Camera Settings</h5><span style="margin-left: 50%;" class="close">&times;</span>
                         </div>
+                        <canvas id="arucoCanvasDebug" width="640" height="640"></canvas>
+
                         <hr>
                         <p>This is the modal content</p>
                         <textarea id="logBox" rows="10" cols="100"></textarea>
@@ -171,7 +173,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <!--If camera mode-->
             
             <video valid-mode="camera" id="videoId" autoplay style="display: none"></video>
-            <div id="canvasContainer">
+            <div valid-mode="camera" id="canvasContainer">
             <canvas valid-mode="camera" id="arucoCanvasOutputGrid" class="dropzone"></canvas>
             </div>
             <!----------------->
