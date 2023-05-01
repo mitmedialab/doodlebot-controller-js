@@ -814,6 +814,7 @@ const addCoinTypeToSelect = (coin) => {
   collect_select.appendChild(option);
 };
 //--------------------------- Below code controls moving -------------------------------------///
+
 let intervals = {}; //bot_id -> interval
 /**
  * If the bot is moving, it will stop (and vice versa)
@@ -821,39 +822,146 @@ let intervals = {}; //bot_id -> interval
  * @param {*} bot_id
  * @param {*} evt
  */
-function changeMovingBot(bot_id) {
-  let isMoving = bot_id in intervals;
-  if (isMoving) {
+async function changeMovingBot(bot_id, opt = {}) {
+  let bot = grid.bots[bot_id][0];
+  if (bot.isMoving) {
+    bot.isMoving = false;
+    if (!opt.noSocket) {
+      // socket.emit("stop_bot", "");
+    }
     //Stop
     console.log("stopping...");
-    // socket.emit("stop_bot", "")
     document.getElementById("controls").style.visibility = "visible";
     document.getElementById("objects").style.visibility = "visible";
     document.getElementById("mySidebar").style.width = "500px";
     document.getElementById("main").style.marginLeft = "500px";
+    //Changing button style
+    startBotsButton.innerHTML = "Start moving";
+    startBotsButton.classList.remove("bot-stop");
+    startBotsButton.classList.add("bot-start");
 
-    stopMovingBot(bot_id);
+    if (selectedMode === "camera") {
+      // await stopMovingBot_camera(currentBotId);
+      // TODO: Check if need to do anything here
+    } else {
+      stopMovingBot_virtual(bot_id);
+    }
   } else {
+    if (!opt.noSocket) {
+      // socket.emit("start_bot", "");
+    }
     //Start
-    // socket.emit("start_bot", "")
+    bot.isMoving = true;
     console.log("starting...");
     document.getElementById("mySidebar").style.width = "0";
     document.getElementById("controls").style.visibility = "hidden";
     document.getElementById("objects").style.visibility = "hidden";
     document.getElementById("main").style.marginLeft = "250px";
 
-    startMovingBot(bot_id);
+    startBotsButton.innerHTML = "Stop moving";
+    startBotsButton.classList.remove("bot-start");
+    startBotsButton.classList.add("bot-stop");
+
+    if (selectedMode === "camera") {
+      await startMovingBot_camera(bot_id);
+    } else {
+      startMovingBot_virtual(bot_id);
+    }
   }
 }
+function getRealBotFromArucoId(aruco_bot_id) {
+  let doodlebot_id = ARUCO_ID_TO_DOODLEBOT_ID[aruco_bot_id];
+  let realBot = allDoodlebots[doodlebot_id];
+  return realBot;
+}
+const MAX_ATTEMPTS_TO_ALIGN_BOT = 1; //ideally at most 1 should be enough
+const BOT_ANGLE_ALIGNMENT_THRESHOLD = 10; //Withing 10 degrees of the axis is still considered align
+/**
+ * Adjusts angle of a (real) doodlebot, making it align to one of the axis
+ *
+ * @param {*} aruco_bot_id
+ * @returns
+ */
+async function adjustAngleRealBot(aruco_bot_id) {
+  console.log("Adjusting angle!");
+  let realBot = getRealBotFromArucoId(aruco_bot_id);
+  if (!realBot) {
+    return;
+  }
+
+  for (let i = 1; i <= MAX_ATTEMPTS_TO_ALIGN_BOT; i++) {
+    console.log(`Attempt ${i}/${MAX_ATTEMPTS_TO_ALIGN_BOT}`);
+    let bot = grid.bots[aruco_bot_id][0];
+    let { angle, realAngle } = bot;
+    if (angle == 0 && realAngle > 270) {
+      angle = 360;
+    }
+    let dAngle = Math.round(angle - realAngle);
+    if (Math.abs(dAngle) < BOT_ANGLE_ALIGNMENT_THRESHOLD) {
+      //Already aligned, no need to keep going!
+      console.log("Done aligning!");
+      return;
+    }
+    //This method will turn right or left accordingly
+    console.log(`Adjusting an angle of ${dAngle}`);
+    await realBot.apply_next_move_to_bot(["turn", dAngle]);
+  }
+}
+async function startMovingBot_camera(bot_id) {
+  // Don't calculate next steps until bot has finished moving
+  //If the real bot is not connected then don't do anything
+  let did_bot_move = false;
+
+  let realBot = getRealBotFromArucoId(bot_id);
+
+  if (!realBot) {
+    console.log(`Not found real bot for id ${bot_id}`);
+    return;
+  }
+  if (realBot.isMoving) {
+    console.log(`Bot ${bot_id} already moving (real life), so dont move`);
+    return;
+  }
+  let bot = grid.bots[bot_id][0];
+  if (bot.isMoving) {
+    //TODO: This info should be stored in the grid object
+    // let num_turns = Number(
+    //   document.getElementById(`coins-policy-turns-${bot_id}`).value
+    // );
+    let num_turns = 1; //TODO: Add this as an option?
+    let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
+
+    if (next_move) {
+      await adjustAngleRealBot(bot_id);
+      await realBot.apply_next_move_to_bot(next_move);
+      // The video stream will update the virtual grid
+      console.log("---------------------------------------");
+      console.log("Making next move!");
+      did_bot_move = true;
+    } else {
+      //If not then stop moving
+      // Don't stop, just do random moves
+      // bot.isMoving = false;
+      // let realBot = getRealBotFromArucoId(bot_id);
+      // if (realBot){
+      //   realBot.isMoving = false;
+      // }
+    }
+  }
+  if (did_bot_move) {
+    //Keep moving
+    // await apply_next_move_to_bot(bot_id);
+    await startMovingBot_camera(bot_id);
+  }
+  // }
+}
+
 /** Starts bot by creating a code that runs every certain time */
-function startMovingBot(bot_id) {
+function startMovingBot_virtual(bot_id) {
   if (bot_id in intervals) {
     log("The bot is already moving!");
     return;
   }
-  startBotsButton.innerHTML = "Stop moving";
-  startBotsButton.classList.remove("bot-start");
-  startBotsButton.classList.add("bot-stop");
   function move() {
     console.log("-------------------------MOVING-------------------");
     let num_turns = 1;
@@ -881,18 +989,16 @@ function startMovingBot(bot_id) {
   intervals[bot_id] = setInterval(move, 500);
 }
 /** Stops bot by deleting the interval for the bot */
-function stopMovingBot(bot_id) {
+function stopMovingBot_virtual(bot_id) {
   clearInterval(intervals[bot_id]);
   delete intervals[bot_id];
-  //Changing button style
-  startBotsButton.innerHTML = "Start moving";
-  startBotsButton.classList.remove("bot-stop");
-  startBotsButton.classList.add("bot-start");
 }
-startBotsButton.addEventListener("click", () => {
+startBotsButton.addEventListener("click", async () => {
+  let promises = [];
   for (let bot_id in grid.bots) {
-    changeMovingBot(bot_id);
+    promises.push(changeMovingBot(bot_id));
   }
+  await Promise.all(promises);
 });
 
 check_gridlines.addEventListener("change", (evt) => {

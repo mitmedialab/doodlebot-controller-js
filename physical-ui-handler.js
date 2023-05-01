@@ -17,10 +17,12 @@ import { Doodlebot } from "./doodlebot_control/doodlebot.js";
 
 let currentDoodlebot; //Current Doodlebot object that has been connected to the device through Bluetooth
 let allDoodlebots = {}; // Doodlebot name -> doodlebot object for control the REAl doodlebots
+window.allDoodlebots = allDoodlebots;
+
 let DOODLEBOT_ID_TO_ARUCO_ID = {
-  "Doodlebot Samba\r\n": 1,
-  "Doodlebot Banksy": 2,
-  // "Doodlebot Bluefruit52": 2,
+  //   "Doodlebot Samba\r\n": 1,
+  //   "Doodlebot Banksy": 2,
+  "Doodlebot Bluefruit52": 1,
 };
 /*
   Mapping between doodlebot BLE ids to aruco ids
@@ -30,10 +32,14 @@ let ARUCO_ID_TO_DOODLEBOT_ID = {
   // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
   // 1: "90pOM2ntPK3x6YVsJD0UBA==",
   // 2: "rNmwnlbopAuiAnTpSxnPRw=="
-  1: "Doodlebot Samba\r\n",
-  2: "Doodlebot Banksy",
-  // 2: "Doodlebot Bluefruit52",
+  //   1: "Doodlebot Samba\r\n",
+  //   2: "Doodlebot Banksy",
+  1: "Doodlebot Bluefruit52",
 };
+
+window.DOODLEBOT_ID_TO_ARUCO_ID = DOODLEBOT_ID_TO_ARUCO_ID;
+window.ARUCO_ID_TO_DOODLEBOT_ID = ARUCO_ID_TO_DOODLEBOT_ID;
+
 async function onRequestBluetoothDeviceButtonClick() {
   try {
     let newDoodlebot = new Doodlebot(log);
@@ -476,11 +482,12 @@ function processVideo() {
   context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
   let currentMarkers = cameraController.findArucoCodes(imageData);
-  let currentColors = cameraController.filterColor(
-    imageData,
-    [0, 0, 0],
-    [0, 0, 255]
-  );
+  //   let currentColors = cameraController.filterColor(
+  //     imageData,
+  //     [0, 0, 0],
+  //     [0, 0, 255]
+  //   );
+  let currentColors = {};
   if (
     cameraController.foundAllCorners() &&
     !cameraController.foundProjectionMatrix()
