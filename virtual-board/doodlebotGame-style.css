@@ -1,0 +1,13 @@
+#body {
+    background-image: url('../assets/DoodleBot_NoTheme_Background_2.png');
+    background-size: cover;
+    font-family: "Audiowide", sans-serif;
+    color:antiquewhite;
+    
+}
+.center {
+    /* height: 100vh; */
+    margin-top: 22%;
+    /* Set height of container to 100% of viewport height */
+}
+
