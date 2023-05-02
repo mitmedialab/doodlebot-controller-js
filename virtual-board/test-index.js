@@ -80,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 10; //was 10
+var rows = 16; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
@@ -462,16 +462,16 @@ const createDOMGrid = (rows, cols, cell_size) => {
 /////////////////////////////////////////////////////////////////////
 
 //Add Bots
-const addBotsDiv = (template_id) => {
+const addBotTemplate = (template_id) => {
   if (!(template_id in ALL_ASSETS)) {
     console.error(`Template ${template_id} is not valid`);
     return;
   }
-  console.log("the template id is: " + template_id);
   let { image, width, height, type, template_cell_size } =
     ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
+  imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
@@ -482,22 +482,21 @@ const addBotsDiv = (template_id) => {
   imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
-  console.log("I will add the image now");
   botsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
 
 //Add obstacles
-const addObstaclesDiv = (template_id) => {
+const addObstacleTemplate = (template_id) => {
   if (!(template_id in ALL_ASSETS)) {
     console.error(`Template ${template_id} is not valid`);
     return;
   }
-  console.log("the template id is: " + template_id);
   let { image, width, height, type, template_cell_size } =
     ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
+  imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
@@ -508,22 +507,21 @@ const addObstaclesDiv = (template_id) => {
   imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
-  console.log("I will add the image now");
   obstaclesDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
 
 //Add coins
-const addCoinsDiv = (template_id) => {
+const addCoinTemplate = (template_id) => {
   if (!(template_id in ALL_ASSETS)) {
     console.error(`Template ${template_id} is not valid`);
     return;
   }
-  console.log("the template id is: " + template_id);
   let { image, width, height, type, template_cell_size } =
     ALL_ASSETS[template_id];
 
   let imageEl = document.createElement("img");
+  imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
@@ -534,7 +532,6 @@ const addCoinsDiv = (template_id) => {
   imageEl.style.height = `${template_cell_size * height}px`;
   imageEl.style.padding = `5px`;
 
-  console.log("I will add the image now");
   coinsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
@@ -653,18 +650,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // for (let template_id of templates_to_show) {
   //   addTemplateDiv(template_id);
   // }
-  for (let template_id of bots) {
-    addBotsDiv(template_id);
+  if (selectedMode === "virtual") {
+    for (let template_id of bots) {
+      addBotTemplate(template_id);
+    }
+    for (let template_id of obstacles) {
+      addObstacleTemplate(template_id);
+    }
+    for (let template_id of coins) {
+      addCoinTemplate(template_id);
+    }
+    setupDraggable(".template", cell_size); //Make all templates draggable
+    setupGridDropzone(cell_size); // To style the grid when an object can be dropped
   }
-  for (let template_id of obstacles) {
-    addObstaclesDiv(template_id);
-  }
-  for (let template_id of coins) {
-    addCoinsDiv(template_id);
-  }
-
-  setupDraggable(".template", cell_size); //Make all templates draggable
-  setupGridDropzone(cell_size); // To style the grid when an object can be dropped
 });
 /**
  * If a coin has been picked up, remove it from the screen
@@ -690,6 +688,11 @@ const onUpdateObject = (updatedObject) => {
   let DOM_ID = `${updatedObject.type}-${updatedObject.id}`;
   let div = document.getElementById(DOM_ID);
   div.remove(); //Not needed anymore, but paint the object again
+  if (selectedMode === "camera") {
+    //Also remove the template as it'll get created again
+    let template = document.getElementById(getAssetTemplate(updatedObject.id));
+    template.remove();
+  }
 
   let { type } = updatedObject;
   if (type === BOT_TYPE) {
@@ -700,7 +703,22 @@ const onUpdateObject = (updatedObject) => {
     onAddCoin(updatedObject);
   }
 };
-
+/**
+ * Assumes a bot with id `bot-id` exists
+ * @param {*} bot
+ */
+const addRotateBotIcon = (bot) => {
+  let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  let bot_dom = document.getElementById(DOM_ID);
+  let rotateArrow = document.createElement("div");
+  rotateArrow.innerText = "⟲";
+  rotateArrow.classList.add("rotation-handle");
+  rotateArrow.addEventListener("click", () => {
+    console.log("Tyring to turn 90");
+    grid.turn_bot(bot.id, 90);
+  });
+  bot_dom.appendChild(rotateArrow);
+};
 /**
  * A bot has been created on the VirtualGrid system. This method
  * creates the image in the grid at the necessary position with a turn handler
@@ -721,18 +739,10 @@ const drawBot = (bot) => {
   bot_dom.classList.add("bot-container");
   bot_dom.classList.add("grab");
   bot_dom.setAttribute("id", DOM_ID);
+  bot_dom.setAttribute("grid_object", "true");
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
   bot_dom.style.touchAction = "none";
-
-  let rotateArrow = document.createElement("div");
-  rotateArrow.innerText = "⟲";
-  rotateArrow.classList.add("rotation-handle");
-  rotateArrow.addEventListener("click", () => {
-    console.log("Tyring to turn 90");
-    grid.turn_bot(bot.id, 90);
-  });
-  bot_dom.appendChild(rotateArrow);
 
   // Creates the underlying image, with the given dimensions and orientation
   let default_angle = image_rotate_90 && angle % 180 === 90 ? 90 : 0;
@@ -777,6 +787,7 @@ const drawObstacle = (obstacle) => {
   obstacle_dom.classList.add("obstacle-container");
   obstacle_dom.classList.add("grab");
   obstacle_dom.setAttribute("id", DOM_ID);
+  obstacle_dom.setAttribute("grid_object", "true");
   obstacle_dom.style.left = `${cell_size * i}px`;
   obstacle_dom.style.bottom = `${cell_size * j}px`;
   obstacle_dom.style.touchAction = "none";
@@ -818,6 +829,7 @@ const drawCoin = (coin) => {
   coin_dom.classList.add("coin-container");
   coin_dom.classList.add("grab");
   coin_dom.setAttribute("id", DOM_ID);
+  coin_dom.setAttribute("grid_object", "true");
   coin_dom.style.left = `${cell_size * i}px`;
   coin_dom.style.bottom = `${cell_size * j}px`;
   coin_dom.style.touchAction = "none";
@@ -840,6 +852,9 @@ const drawCoin = (coin) => {
   gridContainer.appendChild(coin_dom);
   return DOM_ID;
 };
+const getAssetTemplate = (aruco_id) => {
+  return OBJECT_SIZES[aruco_id].images[selectedOption];
+};
 /**
  * A bot has been created on the VirtualGrid system. This method:
  * 1. Creates the image in the grid at the necessary position
@@ -847,8 +862,13 @@ const drawCoin = (coin) => {
  */
 const onAddBot = (bot) => {
   let DOM_ID = drawBot(bot);
-  //Makes the created div draggable
-  setupDraggable(`#${DOM_ID}`, cell_size);
+  if (selectedMode === "virtual") {
+    //Makes the created div draggable
+    addRotateBotIcon(bot);
+    setupDraggable(`#${DOM_ID}`, cell_size);
+  } else {
+    addBotTemplate(getAssetTemplate(bot.id));
+  }
 
   addBotToSelect(bot);
 };
@@ -860,8 +880,12 @@ const addBotToSelect = (bot) => {};
  */
 const onAddObstacle = (obstacle) => {
   let DOM_ID = drawObstacle(obstacle);
-  //Makes the created div draggable
-  setupDraggable(`#${DOM_ID}`, cell_size);
+  if (selectedMode === "virtual") {
+    //Makes the created div draggable
+    setupDraggable(`#${DOM_ID}`, cell_size);
+  } else {
+    addObstacleTemplate(getAssetTemplate(obstacle.id));
+  }
 };
 /**
  * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
@@ -870,8 +894,12 @@ const onAddObstacle = (obstacle) => {
  */
 const onAddCoin = (coin) => {
   let DOM_ID = drawCoin(coin);
-  //Makes the created div draggable
-  setupDraggable(`#${DOM_ID}`, cell_size);
+  if (selectedMode === "virtual") {
+    //Makes the created div draggable
+    setupDraggable(`#${DOM_ID}`, cell_size);
+  } else {
+    addCoinTemplate(getAssetTemplate(coin.id));
+  }
 
   addCoinTypeToSelect(coin);
 };

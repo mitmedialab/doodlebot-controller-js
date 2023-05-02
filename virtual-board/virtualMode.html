@@ -131,9 +131,11 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 </div>
             </div>
             <div id="objects" class="card">
-                <div class="card-header"><center><h5>Objects</h5></center></div>
-                <div class="card-body">
-                    <center><small>Drag and drop into the grid</small></center>
+                <div valid-mode="virtual" class="card-header"><center><h5>Available Objects</h5></center></div>
+                <div valid-mode="camera" class="card-header"><center><h5>Detected Objects</h5></center></div>
+
+                <div class="card-body" id="objects-inner">
+                    <center valid-mode="virtual"><small>Drag and drop into the grid</small></center>
                     <p style="margin-bottom: 0;">Bots</p>
                     <div id="bots" class="border border-dark p-2">
                         

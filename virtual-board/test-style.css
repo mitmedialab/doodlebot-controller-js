@@ -171,14 +171,17 @@
   height: 100%; */
   /* flex: 1; */
 }
-.template:hover {
+body[current-mode="virtual"] .template:hover {
   cursor: grab;
 }
-.grab:hover {
+body[current-mode="virtual"] .grab:hover {
   cursor: grab;
 }
-.grabbing:hover {
+body[current-mode="virtual"] .grabbing:hover {
   cursor: grabbing;
+}
+body[current-mode="camera"] #objects-inner {
+  opacity: 0.5;
 }
 /* .template img {
   width: 100%;

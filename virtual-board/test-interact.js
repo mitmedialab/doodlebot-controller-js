@@ -41,7 +41,7 @@ const setupDraggable = (selector, cell_size) => {
         //of the grid
         let is_clone =
           original.getAttribute("clone") === "true" ||
-          original.getAttribute("id") != null;
+          original.getAttribute("grid_object") === "true";
         if (!is_clone) {
           // create a clone of the currentTarget element
           let clone = event.currentTarget.cloneNode(true);
@@ -193,7 +193,8 @@ function onDropHandler(event) {
   console.log([gridX, gridY]);
   console.log([rows, cols]);
   //It only has an id if it's already part of the grid
-  let is_new = element.getAttribute("id") == null;
+  // let is_new = element.getAttribute("id") == null;
+  let is_new = element.getAttribute("grid_object") !== "true";
   let is_valid = !(0 > gridX || gridX >= cols || 0 > gridY || gridY >= rows);
 
   if (!is_new) {
