@@ -41,6 +41,10 @@ body[current-mode="camera"] [valid-mode="virtual"] {
   background-image: url("../assets/DoodleBot_PacmanTheme_Background_1.png");
   background-size: cover;
 }
+.background4 {
+  background-image: url('../assets/DoodleBot_SchoolTheme_Background_1-01.png');
+  background-size: cover;
+}
 #gridSpace {
   width: 600px;
   height: 500px;

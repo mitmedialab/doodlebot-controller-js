@@ -4,6 +4,7 @@ var themes = document.getElementsByName("theme");
 var body = document.getElementById("body");
 // var dropdownButton = document.getElementById("dropdownMenuButton");
 // var dropdownOptions = document.querySelectorAll(".dropdown-item");
+var heading2 = document.getElementById("heading2");
 var virtualMode = document.getElementById("virtualMode");
 var realVideoStream = document.getElementById("realVideoStream");
 
@@ -27,10 +28,12 @@ for (let i = 0; i < themes.length; i++) {
         console.log(virtualMode.getAttribute("name"));
         console.log(realVideoStream.getAttribute("name"));
       } else if (value == "School") {
-        virtualMode.setAttribute("name", "None");
-        realVideoStream.setAttribute("name", "None");
+        virtualMode.setAttribute("name", "School");
+        realVideoStream.setAttribute("name", "School");
         body.className =
-          "background1 d-flex justify-content-center align-items-center vh-100";
+          "background4 d-flex justify-content-center align-items-center vh-100";
+        // body.style.color = "black";
+        heading2.style.color = "black";
         console.log(virtualMode.getAttribute("name"));
         console.log(realVideoStream.getAttribute("name"));
       } else if (value == "Pacman") {

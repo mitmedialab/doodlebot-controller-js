@@ -24,7 +24,7 @@ if (selectedOption == "City") {
     "background1 d-flex justify-content-center align-items-center vh-100";
 } else if (selectedOption == "School") {
   body.className =
-    "background1 d-flex justify-content-center align-items-center vh-100";
+    "background4 d-flex justify-content-center align-items-center vh-100";
 } else if (selectedOption == "Pacman") {
   body.className =
     "background3 d-flex justify-content-center align-items-center vh-100";
@@ -80,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 16; //was 10
+var rows = 10; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
@@ -304,6 +304,82 @@ const ALL_ASSETS = {
     coin_collect_type: COIN_COLLECT_TYPES.FOOD,
   },
   ///////////////////////School theme//////////////////////
+  bicycle: {
+    image: ASSETS_FOLDER + "DB_Bicycle_1.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_Bicycle_1_rotate_90.png",
+    width: 1, //1.5,
+    height: 2, //1.5,
+    type: BOT_TYPE,
+    relative_anchor: [0, 0],
+    theme: "School",
+    template_cell_size: 40,
+  },
+  school_bus: {
+    image: ASSETS_FOLDER + "DB_SchoolBus_1.png",
+    image_rotate_90: ASSETS_FOLDER + "DB_SchoolBus_1_rotate_90.png",
+    width: 1, //1.5,
+    height: 2, //1.7,
+    type: BOT_TYPE,
+    relative_anchor: [0, 0],
+    theme: "School",
+    template_cell_size: 40,
+  },
+  brickwall: {
+    image: ASSETS_FOLDER + "DB_Brickwall_1.png",
+    width: 1, //1.5,
+    height: 2, //1.7,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 40,
+  },
+  building_roof_1: {
+    image: ASSETS_FOLDER + "DB_BuildingRoof_1.png",
+    width: 1, //1.5,
+    height: 1, //1.7,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 40,
+  },
+  building_roof_2: {
+    image: ASSETS_FOLDER + "DB_BuildingRoof_2.png",
+    width: 1, //1.5,
+    height: 2, //1.7,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 40,
+  },
+  hedge: {
+    image: ASSETS_FOLDER + "DB_Hedge_1.png",
+    width: 1, //0.7,
+    height: 2,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 40,
+  },
+  coffee_school: {
+    image: ASSETS_FOLDER + "DB_Coffee_1.png",
+    width: 1, //1.2,
+    height: 1, //1.5,
+    type: COIN_TYPE,
+    theme: "School",
+    coin_collect_type: COIN_COLLECT_TYPES.COFFEE,
+  },
+  pizza_school: {
+    image: ASSETS_FOLDER + "DB_Pizza_1.png",
+    width: 1, //1.5,
+    height: 1, //1.5,
+    type: COIN_TYPE,
+    theme: "School",
+    coin_collect_type: COIN_COLLECT_TYPES.PIZZA,
+  },
+  coin_school: {
+    image: ASSETS_FOLDER + "None_Coin.png",
+    width: 1, //1.5,
+    height: 1, //1.5,
+    type: COIN_TYPE,
+    theme: "None",
+    coin_collect_type: COIN_COLLECT_TYPES.COIN,
+  },
 };
 window.ALL_ASSETS = ALL_ASSETS;
 /**
@@ -336,14 +412,14 @@ const createDOMGrid = (rows, cols, cell_size) => {
     // gridContainer.style.width = "580px";
   } else if (selectedOption == "School") {
     gridContainer.style.backgroundImage =
-      "url(../assets/None_background_cropped.png)";
+      "url(../assets/DB_SchoolGridBG_1.png)";
     // gridContainer.style.height = "400px";
     // gridContainer.style.width = "580px";
   } else {
     gridContainer.style.backgroundImage =
       "url(../assets/None_background_cropped.png)";
-    gridContainer.style.height = "400px";
-    gridContainer.style.width = "580px";
+    // gridContainer.style.height = "400px";
+    // gridContainer.style.width = "580px";
   }
 
   let colNumbersDiv = document.createElement("div");
@@ -540,15 +616,19 @@ document.addEventListener("DOMContentLoaded", () => {
     coins = ["pacman_cherry", "pacman_food"];
   } else if (selectedOption == "School") {
     templates_to_show = [
-      "doodlebot_alone",
-      "doodlebot_cowboy",
-      "building",
-      "coin",
-      "star",
+      "bicycle",
+      "school_bus",
+      "building_roof_1",
+      "building_roof_2",
+      "hedge",
+      "brickwall",
+      "coffee_school",
+      "pizza_school",
+      "coin_school",
     ];
-    bots = ["car_1", "car_2", "car_3", "truck_1"];
-    obstacles = ["river", "bush"];
-    coins = ["pizza", "coffee"];
+    bots = ["bicycle", "school_bus"];
+    obstacles = ["building_roof_1", "building_roof_2", "hedge", "brickwall"];
+    coins = ["coffee_school", "pizza_school", "coin_school"];
   } else {
     templates_to_show = [
       "doodlebot_alone",

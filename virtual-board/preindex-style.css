@@ -1,5 +1,29 @@
 #body{
     font-family: "Audiowide", sans-serif;
+    /* color:antiquewhite; */
+}
+h2, h4, label {
+    /* color:antiquewhite; */
+    color:black;
+}
+#transparentBackground {
+    background-color: antiquewhite;
+    position: absolute;
+    /* top: 0;
+    left: 0; */
+    margin:auto;
+    width: 1200px;
+    height: 500px;
+    z-index: 1;
+    opacity: 0.3;
+    border: 1px solid white;
+    border-radius: 25px;
+}
+.container {
+    position: relative;
+    z-index: 2;
+        /* padding: 50px;
+        color: #000; */
 }
 .background1 {
     background-image: url('../assets/DB_NoThemeControlPanel_1.png');
@@ -11,6 +35,11 @@
 }
 .background3 {
     background-image: url('../assets/DoodleBot_PacmanTheme_Background_1.png');
+    background-size: cover;
+}
+.background4 {
+    background-image: url('../assets/DoodleBot_SchoolTheme_Background_1-01.png');
+    /* background-image: url('../assets/DB_NoThemeControlPanel_1.png'); */
     background-size: cover;
 }
 #virtualMode {
