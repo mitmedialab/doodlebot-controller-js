@@ -42,7 +42,7 @@ body[current-mode="camera"] [valid-mode="virtual"] {
   background-size: cover;
 }
 .background4 {
-  background-image: url('../assets/DoodleBot_SchoolTheme_Background_1-01.png');
+  background-image: url("../assets/DoodleBot_SchoolTheme_Background_1-01.png");
   background-size: cover;
 }
 #gridSpace {
@@ -171,4 +171,8 @@ body[current-mode="camera"] [valid-mode="virtual"] {
 #activate_camera_div {
   display: "flex";
   align-items: center;
+}
+
+.remote-ip-hidden {
+  display: none;
 }

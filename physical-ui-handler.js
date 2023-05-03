@@ -226,33 +226,47 @@ async function onReady() {
 activate_camera.addEventListener("change", async (evt) => {
   let activate = evt.target.checked;
   if (activate) {
-    cameraWidth = cell_size * cols;
-    cameraHeight = cell_size * rows;
-    window.cameraWidth = cameraWidth;
-    window.cameraHeight = cameraHeight;
-
-    let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
-    image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
-    image_from_stream.src = url; //+ "?" + new Date().getTime();
-
-    cameraController = new CameraController(
-      cameraMatrix,
-      distCoeffs,
-      cameraHeight,
-      cameraWidth,
-      { ...cameraConstraints, width: cameraWidth },
-      log,
-      numFrames // to detect dissapeared frames
-    );
-    cameraController.activateCamera();
-    //create grid
-    // currentBotId = 1; //TODO: For now hardcode, later change
-    processVideo();
+    // Show the Camera IP input
+    remote_ip_container.classList.remove("remote-ip-hidden");
+    remote_ip_connect.disabled = false;
+    remote_ip_input.disabled = false;
   } else {
     console.log("Deactivating camera");
-    cameraController.deactivateCamera();
-    // videoObj.srcObject = null;
+    remote_ip_container.classList.add("remote-ip-hidden");
+    if (cameraController) {
+      cameraController.deactivateCamera();
+    }
   }
+});
+remote_ip_connect.addEventListener("click", async (evt) => {
+  cameraWidth = cell_size * cols;
+  cameraHeight = cell_size * rows;
+  window.cameraWidth = cameraWidth;
+  window.cameraHeight = cameraHeight;
+
+  // let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
+  let ip = remote_ip_input.value;
+  let url = `http://${ip}/mjpeg`;
+  console.log(url);
+  image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
+  image_from_stream.src = url; //+ "?" + new Date().getTime();
+  //TODO: If it's invalid url, say so
+
+  cameraController = new CameraController(
+    cameraMatrix,
+    distCoeffs,
+    cameraHeight,
+    cameraWidth,
+    { ...cameraConstraints, width: cameraWidth },
+    log,
+    numFrames // to detect dissapeared frames
+  );
+  cameraController.activateCamera();
+  remote_ip_connect.disabled = true; //Once set don't do anything
+  remote_ip_input.disabled = true; //Once set don't do anything
+  //create grid
+  // currentBotId = 1; //TODO: For now hardcode, later change
+  processVideo();
 });
 /**
  *
