@@ -203,6 +203,9 @@ body[current-mode="virtual"] .grabbing:hover {
 body[current-mode="camera"] #objects-inner {
   opacity: 0.5;
 }
+body[is-moving="true"] .edit-icon {
+  display: none;
+}
 /* .template img {
   width: 100%;
   height: 100%;

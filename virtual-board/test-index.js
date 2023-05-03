@@ -716,6 +716,7 @@ const addRotateBotIcon = (bot) => {
   let rotateArrow = document.createElement("div");
   rotateArrow.innerText = "⟲";
   rotateArrow.classList.add("rotation-handle");
+  rotateArrow.classList.add("edit-icon");
   rotateArrow.addEventListener("click", () => {
     console.log("Tyring to turn 90");
     grid.turn_bot(bot.id, 90);
@@ -729,6 +730,7 @@ const addRemoveBotIcon = (bot) => {
   let removeIcon = document.createElement("div");
   removeIcon.innerText = "🗑️";
   removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing bot with id ${bot.id}`);
     grid.remove_bot(bot.id);
@@ -741,6 +743,7 @@ const addRemoveObstacleIcon = (obstacle) => {
   let removeIcon = document.createElement("div");
   removeIcon.innerText = "🗑️";
   removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${obstacle.id}`);
     grid.remove_obstacle(obstacle.id);
@@ -753,6 +756,7 @@ const addRemoveCoinIcon = (coin) => {
   let removeIcon = document.createElement("div");
   removeIcon.innerText = "🗑️";
   removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${coin.id}`);
     grid.remove_coin(coin.id);
@@ -1164,6 +1168,13 @@ function stopMovingBot_virtual(bot_id) {
   delete intervals[bot_id];
 }
 startBotsButton.addEventListener("click", async () => {
+  let was_moving = body.getAttribute("is-moving") === "true";
+  if (was_moving) {
+    body.removeAttribute("is-moving");
+  } else {
+    body.setAttribute("is-moving", "true");
+  }
+
   let promises = [];
   for (let bot_id in grid.bots) {
     promises.push(changeMovingBot(bot_id));
