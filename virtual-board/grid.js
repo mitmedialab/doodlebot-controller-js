@@ -207,6 +207,8 @@ class VirtualGrid {
         targets: [], //coin_collect_types
         isMoving: false,
         angle: ANGLE_DIRS.RIGHT, // Looking to the right
+        follow: [], // bots to follow
+        run_away_from: [], // bots to run away from
         ...newObject,
       };
     }
@@ -298,6 +300,16 @@ class VirtualGrid {
     this.bots[bot_id][bot_index].targets = targets;
 
     //TODO: See if bots can have multiple targets
+  }
+  update_bot_follow(bot_id, target_id) {
+    let bot_index = 0;
+    let follow = target_id == null ? [] : [target_id];
+    this.bots[bot_id][bot_index].follow = follow;
+  }
+  update_bot_run_away_from(bot_id, run_away_from_id) {
+    let bot_index = 0;
+    let run_away_from = run_away_from_id == null ? [] : [run_away_from_id];
+    this.bots[bot_id][bot_index].run_away_from = run_away_from;
   }
   /**
    * Moves the bots that have `isMoving` set to true. It won't do anything to the ones
@@ -1028,9 +1040,14 @@ class VirtualGrid {
     }
     let bot = this.bots[bot_id][bot_index];
     //TODO: Get this bots from bot.targets array
-    let other_bots = Object.keys(this.bots).filter(
-      (other_bot_id) => other_bot_id !== bot_id
-    );
+    // let other_bots = Object.keys(this.bots).filter(
+    //   (other_bot_id) => other_bot_id !== bot_id
+    // );
+    let other_bots = is_closer ? bot.follow : bot.run_away_from;
+    if (other_bots.length === 0) {
+      //No distance to move. Just move randomly
+      return this.get_next_move_randomly(bot_id);
+    }
     let extreme_distance = is_closer
       ? Number.MAX_SAFE_INTEGER
       : -Number.MAX_SAFE_INTEGER;
@@ -1072,15 +1089,16 @@ class VirtualGrid {
     }
     // If there was a tie, pick one direction at random
     let extreme_distance_move = this.random_from(extreme_directions);
+    let angle = ANGLE_DIRS[extreme_distance_move];
     console.log(
       `[Move bot closer] Moved bot ${bot_id} ${extreme_distance} deg`
     );
 
     // If the angle is the same, is a move. If not, it's a turn
-    if (extreme_distance_move === 0) {
+    if (angle === 0) {
       return ["move", 1];
     } else {
-      return ["turn", extreme_distance_move];
+      return ["turn", angle];
     }
 
     //Now that we know which direction to move, we can move the bot for real

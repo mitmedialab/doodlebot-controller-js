@@ -934,9 +934,29 @@ const onAddBot = (bot) => {
     addBotTemplate(getAssetTemplate(bot.id));
   }
 
-  addBotToSelect(bot);
+  addBotToFollowSelect(bot);
+  addBotToRunFromSelect(bot);
 };
-const addBotToSelect = (bot) => {};
+const addBotToFollowSelect = (bot) => {
+  if (follow_select.querySelector(`[value="${bot.id}"]`)) {
+    //Already exists, don't add it
+    return;
+  }
+  let option = document.createElement("option");
+  option.setAttribute("value", bot.id);
+  option.innerText = `Bot ${bot.id}`;
+  follow_select.appendChild(option);
+};
+const addBotToRunFromSelect = (bot) => {
+  if (run_away_from_select.querySelector(`[value="${bot.id}"]`)) {
+    //Already exists, don't add it
+    return;
+  }
+  let option = document.createElement("option");
+  option.setAttribute("value", bot.id);
+  option.innerText = `Bot ${bot.id}`;
+  run_away_from_select.appendChild(option);
+};
 /**
  * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
  *
@@ -1212,6 +1232,8 @@ random_checkbox.addEventListener("change", (evt) => {
 });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_policy(bot_id, "FOLLOW", checked);
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1221,6 +1243,9 @@ follow_checkbox.addEventListener("change", (evt) => {
 });
 run_away_from_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_policy(bot_id, "RUN_AWAY_FROM", checked);
+
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1248,4 +1273,16 @@ collect_select.addEventListener("change", (evt) => {
   let type = evt.target.value;
   let bot_id = 1; //TODO: Change this to the bot_id for this user
   grid.update_bot_collect(bot_id, type);
+});
+
+follow_select.addEventListener("change", (evt) => {
+  let follow_id = Number(evt.target.value);
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_follow(bot_id, follow_id);
+});
+
+run_away_from_select.addEventListener("change", (evt) => {
+  let run_away_from_id = Number(evt.target.value);
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_run_away_from(bot_id, run_away_from_id);
 });
