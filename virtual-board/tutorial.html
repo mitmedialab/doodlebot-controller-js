@@ -27,13 +27,26 @@
 
 <body id="body" class="d-flex justify-content-center align-items-center vh-100">
     <div class="container">
-        <div style="padding-left:20px;">
-            <video style="width: 1100px; height: 500px;" controls muted> <!--remove the muted attr later-->
-                <source src="../tutorials/integration.mp4" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-            <br>
-            <button class="btn btn-success btn-lg">Continue</button>
+        <div>
+            <center>
+                <!--
+                    To add the link to the uploaded tutorial:
+                    1. Upload the video to youtube
+                    2. Make note of the video ID 
+                        a. For example, when you play a video in youtube, the URL will be
+                        something like this --- "https://www.youtube.com/watch?v=rnf0q1zOTXs" 
+                        b. The video id here is "rnf0q1zOTXs"
+                    3. Use the following syntax with the correct ID
+                        "https://www.youtube.com/embed/my_id_here"
+                
+                -->
+                
+                <iframe width="1100" height="500" src="https://www.youtube.com/embed/rnf0q1zOTXs"> 
+                </iframe>
+                <br>
+                <button class="btn btn-success btn-lg">Continue</button>
+            </center>
+            
         </div>
     </div>
 </body>
