@@ -80,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 10; //was 10
+var rows = 16; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
@@ -555,6 +555,9 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddCoin,
     onPickupCoin,
     onUpdateObject,
+    onRemoveBot,
+    onRemoveObstacle,
+    onRemoveCoin,
   });
   window.grid = grid;
   // TODO: show the necessary templates given the selected theme
@@ -719,6 +722,62 @@ const addRotateBotIcon = (bot) => {
   });
   bot_dom.appendChild(rotateArrow);
 };
+
+const addRemoveBotIcon = (bot) => {
+  let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  let bot_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing bot with id ${bot.id}`);
+    grid.remove_bot(bot.id);
+  });
+  bot_dom.appendChild(removeIcon);
+};
+const addRemoveObstacleIcon = (obstacle) => {
+  let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  let obstacle_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing obstacle with id ${obstacle.id}`);
+    grid.remove_obstacle(obstacle.id);
+  });
+  obstacle_dom.appendChild(removeIcon);
+};
+const addRemoveCoinIcon = (coin) => {
+  let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  let coin_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing obstacle with id ${coin.id}`);
+    grid.remove_coin(coin.id);
+  });
+  coin_dom.appendChild(removeIcon);
+};
+
+const onRemoveBot = (bot) => {
+  // Remove the bot from the grid
+  let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  let bot_dom = document.getElementById(DOM_ID);
+  bot_dom.remove();
+};
+const onRemoveObstacle = (obstacle) => {
+  // Remove the obstacle from the grid
+  let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  let obstacle_dom = document.getElementById(DOM_ID);
+  obstacle_dom.remove();
+};
+const onRemoveCoin = (coin) => {
+  // Remove the coin from the grid
+  let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  let coin_dom = document.getElementById(DOM_ID);
+  coin_dom.remove();
+};
 /**
  * A bot has been created on the VirtualGrid system. This method
  * creates the image in the grid at the necessary position with a turn handler
@@ -865,6 +924,7 @@ const onAddBot = (bot) => {
   if (selectedMode === "virtual") {
     //Makes the created div draggable
     addRotateBotIcon(bot);
+    addRemoveBotIcon(bot);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addBotTemplate(getAssetTemplate(bot.id));
@@ -882,6 +942,7 @@ const onAddObstacle = (obstacle) => {
   let DOM_ID = drawObstacle(obstacle);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
+    addRemoveObstacleIcon(obstacle);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addObstacleTemplate(getAssetTemplate(obstacle.id));
@@ -896,6 +957,7 @@ const onAddCoin = (coin) => {
   let DOM_ID = drawCoin(coin);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
+    addRemoveCoinIcon(coin);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addCoinTemplate(getAssetTemplate(coin.id));
