@@ -80,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 10; //was 10
+var rows = 16; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
@@ -555,6 +555,9 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddCoin,
     onPickupCoin,
     onUpdateObject,
+    onRemoveBot,
+    onRemoveObstacle,
+    onRemoveCoin,
   });
   window.grid = grid;
   // TODO: show the necessary templates given the selected theme
@@ -713,11 +716,71 @@ const addRotateBotIcon = (bot) => {
   let rotateArrow = document.createElement("div");
   rotateArrow.innerText = "⟲";
   rotateArrow.classList.add("rotation-handle");
+  rotateArrow.classList.add("edit-icon");
   rotateArrow.addEventListener("click", () => {
     console.log("Tyring to turn 90");
     grid.turn_bot(bot.id, 90);
   });
   bot_dom.appendChild(rotateArrow);
+};
+
+const addRemoveBotIcon = (bot) => {
+  let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  let bot_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing bot with id ${bot.id}`);
+    grid.remove_bot(bot.id);
+  });
+  bot_dom.appendChild(removeIcon);
+};
+const addRemoveObstacleIcon = (obstacle) => {
+  let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  let obstacle_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing obstacle with id ${obstacle.id}`);
+    grid.remove_obstacle(obstacle.id);
+  });
+  obstacle_dom.appendChild(removeIcon);
+};
+const addRemoveCoinIcon = (coin) => {
+  let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  let coin_dom = document.getElementById(DOM_ID);
+  let removeIcon = document.createElement("div");
+  removeIcon.innerText = "🗑️";
+  removeIcon.classList.add("delete-icon");
+  removeIcon.classList.add("edit-icon");
+  removeIcon.addEventListener("click", () => {
+    console.log(`Removing obstacle with id ${coin.id}`);
+    grid.remove_coin(coin.id);
+  });
+  coin_dom.appendChild(removeIcon);
+};
+
+const onRemoveBot = (bot) => {
+  // Remove the bot from the grid
+  let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  let bot_dom = document.getElementById(DOM_ID);
+  bot_dom.remove();
+};
+const onRemoveObstacle = (obstacle) => {
+  // Remove the obstacle from the grid
+  let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
+  let obstacle_dom = document.getElementById(DOM_ID);
+  obstacle_dom.remove();
+};
+const onRemoveCoin = (coin) => {
+  // Remove the coin from the grid
+  let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  let coin_dom = document.getElementById(DOM_ID);
+  coin_dom.remove();
 };
 /**
  * A bot has been created on the VirtualGrid system. This method
@@ -865,14 +928,35 @@ const onAddBot = (bot) => {
   if (selectedMode === "virtual") {
     //Makes the created div draggable
     addRotateBotIcon(bot);
+    addRemoveBotIcon(bot);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addBotTemplate(getAssetTemplate(bot.id));
   }
 
-  addBotToSelect(bot);
+  addBotToFollowSelect(bot);
+  addBotToRunFromSelect(bot);
 };
-const addBotToSelect = (bot) => {};
+const addBotToFollowSelect = (bot) => {
+  if (follow_select.querySelector(`[value="${bot.id}"]`)) {
+    //Already exists, don't add it
+    return;
+  }
+  let option = document.createElement("option");
+  option.setAttribute("value", bot.id);
+  option.innerText = `Bot ${bot.id}`;
+  follow_select.appendChild(option);
+};
+const addBotToRunFromSelect = (bot) => {
+  if (run_away_from_select.querySelector(`[value="${bot.id}"]`)) {
+    //Already exists, don't add it
+    return;
+  }
+  let option = document.createElement("option");
+  option.setAttribute("value", bot.id);
+  option.innerText = `Bot ${bot.id}`;
+  run_away_from_select.appendChild(option);
+};
 /**
  * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
  *
@@ -882,6 +966,7 @@ const onAddObstacle = (obstacle) => {
   let DOM_ID = drawObstacle(obstacle);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
+    addRemoveObstacleIcon(obstacle);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addObstacleTemplate(getAssetTemplate(obstacle.id));
@@ -896,6 +981,7 @@ const onAddCoin = (coin) => {
   let DOM_ID = drawCoin(coin);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
+    addRemoveCoinIcon(coin);
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addCoinTemplate(getAssetTemplate(coin.id));
@@ -1102,6 +1188,13 @@ function stopMovingBot_virtual(bot_id) {
   delete intervals[bot_id];
 }
 startBotsButton.addEventListener("click", async () => {
+  let was_moving = body.getAttribute("is-moving") === "true";
+  if (was_moving) {
+    body.removeAttribute("is-moving");
+  } else {
+    body.setAttribute("is-moving", "true");
+  }
+
   let promises = [];
   for (let bot_id in grid.bots) {
     promises.push(changeMovingBot(bot_id));
@@ -1139,6 +1232,8 @@ random_checkbox.addEventListener("change", (evt) => {
 });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_policy(bot_id, "FOLLOW", checked);
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1148,6 +1243,9 @@ follow_checkbox.addEventListener("change", (evt) => {
 });
 run_away_from_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_policy(bot_id, "RUN_AWAY_FROM", checked);
+
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1175,4 +1273,16 @@ collect_select.addEventListener("change", (evt) => {
   let type = evt.target.value;
   let bot_id = 1; //TODO: Change this to the bot_id for this user
   grid.update_bot_collect(bot_id, type);
+});
+
+follow_select.addEventListener("change", (evt) => {
+  let follow_id = Number(evt.target.value);
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_follow(bot_id, follow_id);
+});
+
+run_away_from_select.addEventListener("change", (evt) => {
+  let run_away_from_id = Number(evt.target.value);
+  let bot_id = 1; //TODO: Change this to the bot_id for this user
+  grid.update_bot_run_away_from(bot_id, run_away_from_id);
 });
