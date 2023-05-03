@@ -231,9 +231,6 @@ activate_camera.addEventListener("change", async (evt) => {
     window.cameraWidth = cameraWidth;
     window.cameraHeight = cameraHeight;
 
-    // videoObj.setAttribute("width", cameraWidth);
-    // videoObj.setAttribute("height", cameraHeight);
-
     let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
     image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
     image_from_stream.src = url; //+ "?" + new Date().getTime();
@@ -248,80 +245,6 @@ activate_camera.addEventListener("change", async (evt) => {
       numFrames // to detect dissapeared frames
     );
     cameraController.activateCamera();
-    // let stream = await cameraController.activateCamera();
-
-    // creating the MediaSource, just with the "new" keyword, and the URL for it
-    // const myMediaSource = new MediaSource();
-    // const url = URL.createObjectURL(myMediaSource);
-    // attaching the MediaSource to the video tag
-    // videoObj.src = url;
-    // myMediaSource.addEventListener("sourceopen", async () => {
-    //   return;
-    //   console.log("Source is open!");
-    //   // const mimeCodec = "video/mp4 codecs='avc1.42401E'"; //, mp4a.40.2"';
-    //   const mimeCodec = 'video/mp4; codecs="avc1.64001e"';
-    //   // const mimeCodec = "video/webm;codecs='vp8'";
-    //   const videoSourceBuffer = myMediaSource.addSourceBuffer(mimeCodec);
-    //   // the same for the video SourceBuffer
-    //   // let stream_link = "http://192.168.41.240:56000/mjpeg";
-    //   let stream_link = "http://192.168.41.240:56000/mjpeg";
-    //   // the same for the video SourceBuffer
-    //   try {
-    //     let response = await fetch(stream_link);
-    //     console.log(response);
-    //     let videoData = await response.arrayBuffer();
-    //     console.log(videoData);
-    //     videoSourceBuffer.appendBuffer(videoData);
-    //   } catch (e) {
-    //     console.log("There was an error");
-    //     console.log(e);
-    //   }
-    //   // fetch(stream_link)
-    //   //   .then(function (response) {
-    //   //     console.log(response);
-    //   //     // The data has to be a JavaScript ArrayBuffer
-    //   //     return response.arrayBuffer();
-    //   //   })
-    //   //   .then(function (videoData) {
-    //   //     console.log(videoData);
-    //   //     videoSourceBuffer.appendBuffer(videoData);
-    //   //   })
-    //   //   .catch(function (err) {
-    //   //     console.log("There was an error");
-    //   //     console.log(error);
-    //   //   });
-    // });
-    // let cap = cv.VideoCapture("http://192.168.41.240:56000/mjpeg");
-    // cap.readAsync((frame) => {
-    //   // Process the frame here...
-    //   if (!frame.empty()) {
-    //     cv.imshow("arucoCanvasOutputGrid", frame);
-    //   }
-    //   // setTimeout(processVideo, 1000 / fps);
-    // });
-
-    // WebSocket can only work if cam2ip is set so
-    // that it can listen to this IP address
-    // https://github.com/gen2brain/cam2ip/blob/c177a0bb77a92d64e5b16a781eb32e325e703ead/handlers/socket.go#LL29C38-L29C40
-    // const ws = new WebSocket(`ws://192.168.41.240:56000/mjpeg`);
-    // let imageData;
-    // // let
-    // ws.onmessage = (event) => {
-    //   if (event.data instanceof Blob) {
-    //     const image = new Image();
-    //     image.onload = () => {
-    //       if (!imageData) {
-    //         imageData = ctx.createImageData(image.width, image.height);
-    //       }
-    //       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    //       context.getImageData(0, 0, image.width, image.height, imageData);
-    //       context.putImageData(imageData, 0, 0);
-    //     };
-    //     image.src = URL.createObjectURL(event.data);
-    //   }
-    // };
-
-    // videoObj.srcObject = stream;
     //create grid
     // currentBotId = 1; //TODO: For now hardcode, later change
     processVideo();
