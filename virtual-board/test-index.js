@@ -535,7 +535,7 @@ const addCoinTemplate = (template_id) => {
   coinsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
-let videoObj = document.getElementById("videoId");
+// let videoObj = document.getElementById("videoId");
 
 document.addEventListener("DOMContentLoaded", () => {
   //   setupSocket();
@@ -545,8 +545,11 @@ document.addEventListener("DOMContentLoaded", () => {
     canvasContainer.style.width = `${cell_size * cols}px`;
     canvasContainer.style.height = `${cell_size * rows}px`;
 
-    videoObj.setAttribute("width", cell_size * cols);
-    videoObj.setAttribute("height", cell_size * rows);
+    // videoObj.setAttribute("width", cell_size * cols);
+    // videoObj.setAttribute("height", cell_size * rows);
+
+    image_from_stream.setAttribute("width", cell_size * cols);
+    image_from_stream.setAttribute("height", cell_size * rows);
   }
 
   grid = new VirtualGrid(rows, cols, {

@@ -64,14 +64,22 @@ class CameraController {
   }
   async activateCamera() {
     this.isCameraActive = true;
-    try {
-      this.stream = await window.navigator.mediaDevices.getUserMedia(
-        this.cameraConstraints
-      );
-      return this.stream; //TODO: use it for videoObj.srcObject = stream;
-    } catch {
-      console.log(err);
-    }
+    // try {
+    //   //TODO: Change this on the client side
+    //   // .then(function (response) {
+    //   //   // The data has to be a JavaScript ArrayBuffer
+    //   //   return response.arrayBuffer();
+    //   // })
+    //   // .then(function (videoData) {
+    //   //   videoSourceBuffer.appendBuffer(videoData);
+    //   // });
+    //   // this.stream = await window.navigator.mediaDevices.getUserMedia(
+    //   //   this.cameraConstraints
+    //   // );
+    //   // return this.stream; //TODO: use it for videoObj.srcObject = stream;
+    // } catch {
+    //   console.log(err);
+    // }
   }
   deactivateCamera() {
     this.isCameraActive = false;

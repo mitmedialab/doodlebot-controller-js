@@ -82,7 +82,7 @@ import {
 let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
 window.currentVectors = currentVectors;
 let cameraController;
-let videoObj = document.getElementById("videoId");
+// let videoObj = document.getElementById("videoId");
 let cameraWidth;
 let cameraHeight;
 let context = arucoCanvasOutputGrid.getContext("2d", {
@@ -231,8 +231,13 @@ activate_camera.addEventListener("change", async (evt) => {
     window.cameraWidth = cameraWidth;
     window.cameraHeight = cameraHeight;
 
-    videoObj.setAttribute("width", cameraWidth);
-    videoObj.setAttribute("height", cameraHeight);
+    // videoObj.setAttribute("width", cameraWidth);
+    // videoObj.setAttribute("height", cameraHeight);
+
+    let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
+    image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
+    image_from_stream.src = url; //+ "?" + new Date().getTime();
+
     cameraController = new CameraController(
       cameraMatrix,
       distCoeffs,
@@ -242,15 +247,88 @@ activate_camera.addEventListener("change", async (evt) => {
       log,
       numFrames // to detect dissapeared frames
     );
-    let stream = await cameraController.activateCamera();
-    videoObj.srcObject = stream;
+    cameraController.activateCamera();
+    // let stream = await cameraController.activateCamera();
+
+    // creating the MediaSource, just with the "new" keyword, and the URL for it
+    // const myMediaSource = new MediaSource();
+    // const url = URL.createObjectURL(myMediaSource);
+    // attaching the MediaSource to the video tag
+    // videoObj.src = url;
+    // myMediaSource.addEventListener("sourceopen", async () => {
+    //   return;
+    //   console.log("Source is open!");
+    //   // const mimeCodec = "video/mp4 codecs='avc1.42401E'"; //, mp4a.40.2"';
+    //   const mimeCodec = 'video/mp4; codecs="avc1.64001e"';
+    //   // const mimeCodec = "video/webm;codecs='vp8'";
+    //   const videoSourceBuffer = myMediaSource.addSourceBuffer(mimeCodec);
+    //   // the same for the video SourceBuffer
+    //   // let stream_link = "http://192.168.41.240:56000/mjpeg";
+    //   let stream_link = "http://192.168.41.240:56000/mjpeg";
+    //   // the same for the video SourceBuffer
+    //   try {
+    //     let response = await fetch(stream_link);
+    //     console.log(response);
+    //     let videoData = await response.arrayBuffer();
+    //     console.log(videoData);
+    //     videoSourceBuffer.appendBuffer(videoData);
+    //   } catch (e) {
+    //     console.log("There was an error");
+    //     console.log(e);
+    //   }
+    //   // fetch(stream_link)
+    //   //   .then(function (response) {
+    //   //     console.log(response);
+    //   //     // The data has to be a JavaScript ArrayBuffer
+    //   //     return response.arrayBuffer();
+    //   //   })
+    //   //   .then(function (videoData) {
+    //   //     console.log(videoData);
+    //   //     videoSourceBuffer.appendBuffer(videoData);
+    //   //   })
+    //   //   .catch(function (err) {
+    //   //     console.log("There was an error");
+    //   //     console.log(error);
+    //   //   });
+    // });
+    // let cap = cv.VideoCapture("http://192.168.41.240:56000/mjpeg");
+    // cap.readAsync((frame) => {
+    //   // Process the frame here...
+    //   if (!frame.empty()) {
+    //     cv.imshow("arucoCanvasOutputGrid", frame);
+    //   }
+    //   // setTimeout(processVideo, 1000 / fps);
+    // });
+
+    // WebSocket can only work if cam2ip is set so
+    // that it can listen to this IP address
+    // https://github.com/gen2brain/cam2ip/blob/c177a0bb77a92d64e5b16a781eb32e325e703ead/handlers/socket.go#LL29C38-L29C40
+    // const ws = new WebSocket(`ws://192.168.41.240:56000/mjpeg`);
+    // let imageData;
+    // // let
+    // ws.onmessage = (event) => {
+    //   if (event.data instanceof Blob) {
+    //     const image = new Image();
+    //     image.onload = () => {
+    //       if (!imageData) {
+    //         imageData = ctx.createImageData(image.width, image.height);
+    //       }
+    //       context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    //       context.getImageData(0, 0, image.width, image.height, imageData);
+    //       context.putImageData(imageData, 0, 0);
+    //     };
+    //     image.src = URL.createObjectURL(event.data);
+    //   }
+    // };
+
+    // videoObj.srcObject = stream;
     //create grid
     // currentBotId = 1; //TODO: For now hardcode, later change
     processVideo();
   } else {
     console.log("Deactivating camera");
     cameraController.deactivateCamera();
-    videoObj.srcObject = null;
+    // videoObj.srcObject = null;
   }
 });
 /**
@@ -468,6 +546,7 @@ function updateVirtualObjects() {
   }
 }
 function updateAppearInfo() {}
+
 /**
  * Runs through every frames, and detects updates in position
  * for the objects.
@@ -479,9 +558,15 @@ function processVideo() {
     return;
   }
   let begin = Date.now();
-  context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  // context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
+  // processVideo();
+  // return;
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
+  // let imageData = context.getImageData();
   let currentMarkers = cameraController.findArucoCodes(imageData);
+  // console.log(imageData);
+  console.log(currentMarkers);
   //   let currentColors = cameraController.filterColor(
   //     imageData,
   //     [0, 0, 0],

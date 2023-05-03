@@ -173,8 +173,11 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <div id="gridContainer" valid-mode="virtual" id="outer-dropzone" class="dropzone"></div>
 
             <!--If camera mode-->
-            
-            <video valid-mode="camera" id="videoId" autoplay style="display: none"></video>
+            <image valid-mode="camera" id="image_from_stream" style="display: none"/>
+            <!-- <video valid-mode="camera" id="videoId" autoplay style="display: none" type="video/mp4"> -->
+                <!-- <source  src="http://192.168.41.240:56000/mjpeg" type="video/webm"></source> -->
+                <!-- <source src="http://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4" type="video/mp4"></source> -->
+            <!-- </video> -->
             <div valid-mode="camera" id="canvasContainer">
             <canvas valid-mode="camera" id="arucoCanvasOutputGrid" class="dropzone"></canvas>
             </div>
