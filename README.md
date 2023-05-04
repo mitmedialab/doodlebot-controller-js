@@ -24,11 +24,25 @@ To run the frontend:
 
 ### 1. Version with real bots
 
-First you'll have to connect a camera to your computer
+You'll have to connect a camera to your computer
 
 ```bash
 python3 -m http.server
 ```
+
+### 1.1 Important
+
+0. Install [cam2ip](https://github.com/gen2brain/cam2ip) on the computer that will have the camera connection. From the Readme, I downloaded `macOS 64bit OpenCV`, unzipped it, and executed it.
+1. In the computer that has the camera installed, run the following script in 2 different terminals:
+
+   ```
+   /Users/prg/Downloads/cam2ip-1.6-darwin-cv2/cam2ip -bind-addr :<port>
+   ```
+
+   Where `<port>` will be a diferent number in each address (I used `56000` and `56001`). Note the colon before the port number.
+   If you want to show the camera to more devices, use other terminals.
+
+2. For each computer, in the interface type the address `<ip_address>:<port>` with the available ports. You can find the `<ip_address>` by running the command `ifconfig | grep 192.168` (on the computer that has the camera connection).
 
 ### 2. Fully virtual version
 
@@ -47,7 +61,7 @@ To be run from the `doodlebot-controller-js` folder
 python3 -m http.server
 ```
 
-And then go to `http://localhost:8000/virtual-board/test.htm`
+And then go to `http://localhost:8000/virtual-board/test.html`
 
 ## Folder structure
 
