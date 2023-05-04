@@ -32,7 +32,7 @@ python3 -m http.server
 
 ### 1.1 Important
 
-0. Install [cam2ip](https://github.com/gen2brain/cam2ip) on the computer that will have the camera connection. From the Readme, I downloaded `macOS 64bit OpenCV`, unzipped it, and executed it.
+0. Install [cam2ip](https://github.com/gen2brain/cam2ip) on the computer that will have the camera connection. From the Readme, I downloaded [macOS 64bit OpenCV](https://github.com/gen2brain/cam2ip/releases/download/1.6/cam2ip-1.6-darwin-cv2.zip), unzipped it, and executed it.
 1. In the computer that has the camera installed, run the following script in 2 different terminals:
 
    ```
