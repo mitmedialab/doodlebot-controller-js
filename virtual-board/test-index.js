@@ -80,7 +80,7 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 10; //was 10
+var rows = 16; //was 10
 var cols = 16; //was 20
 var cell_size = 40; //was 60
 // Just so that they become global variables
