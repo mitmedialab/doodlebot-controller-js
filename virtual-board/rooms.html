@@ -29,10 +29,16 @@
             
         </div>
     </div>
-
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="../socket-handler.js" type="text/javascript"></script>
     <script>
         function createRoom() {
-            window.location.href = "tutorial.html";
+              //Creates and joins a random room
+            socket.emit("create_room");
+        }
+        function joinRoom() {
+            let room = roomID.value;
+            socket.emit("join_room", room);
         }
     </script>
 </body>
