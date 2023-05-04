@@ -3,12 +3,13 @@
     background-size: cover;
     font-family: "Audiowide", sans-serif;
     color: antiquewhite;
+    
 
 }
 
 .center {
     /* height: 100vh; */
-    margin-top: 18%;
+    /* margin-top: 18%; */
     /* Set height of container to 100% of viewport height */
 }
 
