@@ -68,11 +68,21 @@ class CameraController {
   deactivateCamera() {
     this.isCameraActive = false;
   }
+  setupFrame(imageData) {
+    this.src.data.set(imageData.data);
+  }
+  reduceGridOpacty() {
+    // let alpha = 0.5;
+    // let zeros = new cv.Mat(this.dst.rows, this.dst.cols, this.dst.type());
+    // cv.addWeighted(this.dst, 1 - alpha, zeros, alpha, 0, this.dst);
+  }
   filterColor(imageData, low, high) {
     // let mask = new cv.Mat();
     // let low_mat = cv.matFromArray(3, 1, cv.CV_64F, low);
     // let high_mat = cv.matFromArray(3, 1, cv.CV_64F, high);
-    this.src.data.set(imageData.data);
+
+    // this.src.data.set(imageData.data);
+
     // this.src = cv.imread(arucoCanvasOutput);
     // Convert the image to HSV color space
     let hsv = new cv.Mat();
@@ -203,7 +213,9 @@ class CameraController {
     //, cameraMatrix, distCoeffs) {
     //   let src = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC4);
     //   let dst = new cv.Mat(cameraHeight, cameraWidth, cv.CV_8UC1);
-    this.src.data.set(imageData.data);
+
+    // this.src.data.set(imageData.data);
+
     cv.cvtColor(this.src, this.debug, cv.COLOR_RGBA2RGB, 0);
     let dictionary = new cv.aruco_Dictionary(cv.DICT_6X6_250); //TODO: Try 4x4, april tags dictionary
     let markerCorners = new cv.MatVector();
