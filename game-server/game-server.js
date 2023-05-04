@@ -29,6 +29,14 @@ let DEFAULT_ROOM_INFO = {
   num_users: 0,
   min_users_to_move: 2,
   seen_tutorial: false,
+  page0: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  page1: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
 };
 //room_id -> JSON representation of the VirtualGrid in the given room
 let room_info = {};
@@ -80,6 +88,25 @@ socketIO.on("connection", (socket) => {
   socket.on("join_room", async (roomId) => {
     joinRoom(roomId);
   });
+
+  //help
+  //finish tutorial1 and wait for others, then go to game1
+  socket.on("finish_tutorial1", (roomId) => {
+    room_info[roomId].page0.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with tutorial1: ${room_info[roomId].page0.num_users}`
+    );
+    if (
+      room_info[roomId].page0.num_users ===
+      room_info[roomId].page0.min_users_to_move
+    ) {
+      console.log("redirecting to game1.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_game1", {});
+    }
+  });
+  //help
+
   /**
    * data has same field as a `ChatMessage`
    */

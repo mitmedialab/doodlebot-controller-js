@@ -17,6 +17,13 @@ function setupSocket() {
     alert(`The room ${roomId} is not valid`);
   });
   socket.on("room_ready_game", () => {});
+  // help
+  //done with tutorial1 go to game1
+  socket.on("room_ready_game1", () => {
+    console.log("redirecting from socket-handler.js");
+    window.location.href = `game1.html?room=${room}`;
+  });
+  // help
   socket.on("room_ready_tutorial", () => {
     window.location.href = `tutorial.html?room=${room}`;
   });
