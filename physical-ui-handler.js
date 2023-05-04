@@ -85,7 +85,7 @@ let cameraController;
 // let videoObj = document.getElementById("videoId");
 let cameraWidth;
 let cameraHeight;
-let context = arucoCanvasOutputGrid.getContext("2d", {
+let context = arucoCanvasOutputGridOriginal.getContext("2d", {
   willReadFrequently: true,
 });
 
@@ -105,6 +105,9 @@ const OBJECT_SIZES = {
     direction_id: 51,
     images: {
       None: "doodlebot_alone",
+      City: "car_1",
+      School: "bicycle",
+      Pacman: "pacman",
     },
   },
   2: {
@@ -115,6 +118,9 @@ const OBJECT_SIZES = {
     direction_id: 52,
     images: {
       None: "doodlebot_cowboy",
+      City: "car_2",
+      School: "school_bus",
+      Pacman: "ghost_blue",
     },
   },
   3: {
@@ -123,6 +129,12 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 53,
+    images: {
+      None: "doodlebot_alone",
+      City: "car_3",
+      School: "bicycle",
+      Pacman: "ghost_orange",
+    },
   },
   4: {
     type: BOT_TYPE,
@@ -130,6 +142,12 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 54,
+    images: {
+      None: "doodlebot_cowboy",
+      City: "truck_1",
+      School: "school_bus",
+      Pacman: "ghost_pink",
+    },
   },
   5: {
     type: BOT_TYPE,
@@ -137,6 +155,12 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 55,
+    images: {
+      None: "doodlebot_alone",
+      City: "car_1",
+      School: "bicycle",
+      Pacman: "ghost_red",
+    },
   }, //TODO: Put back when obstacle's other_corner is set to another id
   // obstacles
   11: {
@@ -146,12 +170,59 @@ const OBJECT_SIZES = {
     other_corner_id: 61,
     images: {
       None: "building",
+      City: "bush",
+      School: "building_roof_1",
+      Pacman: "pacman_wall",
     },
   },
-  12: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 62 },
-  13: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 63 },
-  14: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 64 },
-  15: { type: OBSTACLE_TYPE, width: 1, height: 1, other_corner_id: 65 },
+  12: {
+    type: OBSTACLE_TYPE,
+    width: 1,
+    height: 1,
+    other_corner_id: 62,
+    images: {
+      None: "building",
+      City: "river",
+      School: "brickwall",
+      Pacman: "pacman_wall",
+    },
+  },
+  13: {
+    type: OBSTACLE_TYPE,
+    width: 1,
+    height: 1,
+    other_corner_id: 63,
+    images: {
+      None: "building",
+      City: "bush",
+      School: "building_roof_1",
+      Pacman: "pacman_wall",
+    },
+  },
+  14: {
+    type: OBSTACLE_TYPE,
+    width: 1,
+    height: 1,
+    other_corner_id: 64,
+    images: {
+      None: "building",
+      City: "river",
+      School: "building_roof_2",
+      Pacman: "pacman_wall",
+    },
+  },
+  15: {
+    type: OBSTACLE_TYPE,
+    width: 1,
+    height: 1,
+    other_corner_id: 65,
+    images: {
+      None: "building",
+      City: "bush",
+      School: "hedge",
+      Pacman: "pacman_wall",
+    },
+  },
   // coins
   21: {
     type: COIN_TYPE,
@@ -159,6 +230,9 @@ const OBJECT_SIZES = {
     height: 1,
     images: {
       None: "coin",
+      City: "coffee",
+      School: "coffee_school",
+      Pacman: "pacman_food",
     },
   },
   22: {
@@ -167,6 +241,9 @@ const OBJECT_SIZES = {
     height: 1,
     images: {
       None: "coin",
+      City: "pizza",
+      School: "pizza_school",
+      Pacman: "pacman_cherry",
     },
   },
   23: {
@@ -175,6 +252,9 @@ const OBJECT_SIZES = {
     height: 1,
     images: {
       None: "coin",
+      City: "coffee",
+      School: "coin_school",
+      Pacman: "pacman_food",
     },
   },
   24: {
@@ -183,6 +263,9 @@ const OBJECT_SIZES = {
     height: 1,
     images: {
       None: "coin",
+      City: "pizza",
+      School: "coffee_school",
+      Pacman: "pacman_cherry",
     },
   },
   25: {
@@ -191,6 +274,9 @@ const OBJECT_SIZES = {
     height: 1,
     images: {
       None: "coin",
+      City: "coffee",
+      School: "pizza_school",
+      Pacman: "pacman_food",
     },
   },
 };
@@ -202,6 +288,9 @@ const COLOR_SIZES = {
     height: 3,
     images: {
       None: "coin",
+      City: "coffee",
+      School: "coin_school",
+      Pacman: "pacman_food",
     },
   },
 };
@@ -251,6 +340,9 @@ remote_ip_connect.addEventListener("click", async (evt) => {
   image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
   image_from_stream.src = url; //+ "?" + new Date().getTime();
   //TODO: If it's invalid url, say so
+
+  arucoCanvasOutputGridOriginal.setAttribute("height", cameraHeight + "px");
+  arucoCanvasOutputGridOriginal.setAttribute("width", cameraWidth + "px");
 
   cameraController = new CameraController(
     cameraMatrix,
@@ -496,14 +588,17 @@ function processVideo() {
   }
   let begin = Date.now();
   // context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  // context.globalAlpha = 0.5;
+  // context.clearRect(0, 0, context.canvas.width, context.canvas.height);
   context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
   // processVideo();
   // return;
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);
   // let imageData = context.getImageData();
+  cameraController.setupFrame(imageData); //Populates cameraController.src
   let currentMarkers = cameraController.findArucoCodes(imageData);
   // console.log(imageData);
-  console.log(currentMarkers);
+  // console.log(currentMarkers);
   //   let currentColors = cameraController.filterColor(
   //     imageData,
   //     [0, 0, 0],
@@ -521,6 +616,7 @@ function processVideo() {
   } else {
     cv.imshow("arucoCanvasDebug", cameraController.debug);
     cameraController.projectFrameToGrid(); //Populates cameraController.dst
+    cameraController.reduceGridOpacty();
     let hide_grid = arucoCanvasOutputGrid.hasAttribute("hide-grid");
     if (!hide_grid) {
       cameraController.drawGridLines();

@@ -382,6 +382,47 @@ const ALL_ASSETS = {
   },
 };
 window.ALL_ASSETS = ALL_ASSETS;
+
+const TEMPLATES_PER_THEME = {
+  None: {
+    bots: [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+    ],
+    obstacles: ["building"],
+    coins: ["coin", "star"],
+  },
+  City: {
+    bots: ["car_1", "car_2", "car_3", "truck_1"],
+    obstacles: ["building", "river", "bush"],
+    coins: ["pizza", "coffee"],
+  },
+  Pacman: {
+    bots: ["pacman", "ghost_pink", "ghost_blue", "ghost_orange", "ghost_red"],
+    obstacles: ["pacman_wall"],
+    coins: ["pacman_cherry", "pacman_food"],
+  },
+  School: {
+    bots: ["bicycle", "school_bus"],
+    obstacles: ["building_roof_1", "building_roof_2", "hedge", "brickwall"],
+    coins: ["coffee_school", "pizza_school", "coin_school"],
+  },
+  // Just in case
+  Defautt: {
+    bots: [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+    ],
+    obstacles: ["building"],
+    coins: ["coin", "star"],
+  },
+};
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
  * and places it on `gridContainer`
@@ -563,96 +604,8 @@ document.addEventListener("DOMContentLoaded", () => {
     onRemoveCoin,
   });
   window.grid = grid;
-  // TODO: show the necessary templates given the selected theme
-  // might need to add 'theme' key to ALL_ASSETS
-  let templates_to_show = [];
-  let bots = [];
-  let obstacles = [];
-  let coins = [];
-  if (selectedOption == "None") {
-    templates_to_show = [
-      "doodlebot_alone",
-      "doodlebot_cowboy",
-      "robot_1",
-      "robot_2",
-      "robot_3",
-      "building",
-      "coin",
-      "star",
-    ];
-    bots = [
-      "doodlebot_alone",
-      "doodlebot_cowboy",
-      "robot_1",
-      "robot_2",
-      "robot_3",
-    ];
-    obstacles = ["building"];
-    coins = ["coin", "star"];
-  } else if (selectedOption == "City") {
-    templates_to_show = [
-      "car_1",
-      "car_2",
-      "car_3",
-      "truck_1",
-      "river",
-      "bush",
-      "pizza",
-      "coffee",
-    ];
-    bots = ["car_1", "car_2", "car_3", "truck_1"];
-    obstacles = ["building", "river", "bush"];
-    coins = ["pizza", "coffee"];
-  } else if (selectedOption == "Pacman") {
-    templates_to_show = [
-      "pacman",
-      "ghost_pink",
-      "ghost_blue",
-      "ghost_orange",
-      "ghost_red",
-      "pacman_wall",
-      "pacman_cherry",
-      "pacman_food",
-    ];
-    bots = ["pacman", "ghost_pink", "ghost_blue", "ghost_orange", "ghost_red"];
-    obstacles = ["pacman_wall"];
-    coins = ["pacman_cherry", "pacman_food"];
-  } else if (selectedOption == "School") {
-    templates_to_show = [
-      "bicycle",
-      "school_bus",
-      "building_roof_1",
-      "building_roof_2",
-      "hedge",
-      "brickwall",
-      "coffee_school",
-      "pizza_school",
-      "coin_school",
-    ];
-    bots = ["bicycle", "school_bus"];
-    obstacles = ["building_roof_1", "building_roof_2", "hedge", "brickwall"];
-    coins = ["coffee_school", "pizza_school", "coin_school"];
-  } else {
-    templates_to_show = [
-      "doodlebot_alone",
-      "doodlebot_cowboy",
-      "robot_1",
-      "robot_2",
-      "robot_3",
-      "building",
-      "coin",
-      "star",
-    ];
-    bots = [
-      "doodlebot_alone",
-      "doodlebot_cowboy",
-      "robot_1",
-      "robot_2",
-      "robot_3",
-    ];
-    obstacles = ["building"];
-    coins = ["coin", "star"];
-  }
+  let { bots, obstacles, coins } = TEMPLATES_PER_THEME[selectedOption];
+
   // for (let template_id of templates_to_show) {
   //   addTemplateDiv(template_id);
   // }
