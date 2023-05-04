@@ -33,7 +33,8 @@ python3 -m http.server
 ### 1.1 Important
 
 0. Install [cam2ip](https://github.com/gen2brain/cam2ip) on the computer that will have the camera connection. From the Readme, I downloaded [macOS 64bit OpenCV](https://github.com/gen2brain/cam2ip/releases/download/1.6/cam2ip-1.6-darwin-cv2.zip), unzipped it, and executed it.
-1. In the computer that has the camera installed, run the following script in 2 different terminals:
+1. To avoid problems with CORS, activate the [Chrome](https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en) or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/access-control-allow-origin/) "allow CORS" extensions.
+2. In the computer that has the camera installed, run the following script in 2 different terminals:
 
    ```
    /Users/prg/Downloads/cam2ip-1.6-darwin-cv2/cam2ip -bind-addr :<port>
@@ -42,7 +43,7 @@ python3 -m http.server
    Where `<port>` will be a diferent number in each terminal (I used `56000` and `56001`). Note the colon before the port number.
    If you want to show the camera to more devices, use other terminals.
 
-2. For each computer, in the interface type the address `<ip_address>:<port>` with the available ports. You can find the `<ip_address>` by running the command `ifconfig | grep 192.168` (on the computer that has the camera connection).
+3. For each computer, in the interface type the address `<ip_address>:<port>` with the available ports. You can find the `<ip_address>` by running the command `ifconfig | grep 192.168` (on the computer that has the camera connection).
 
 ### 2. Fully virtual version
 
