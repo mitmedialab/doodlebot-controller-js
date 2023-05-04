@@ -39,7 +39,7 @@ python3 -m http.server
    /Users/prg/Downloads/cam2ip-1.6-darwin-cv2/cam2ip -bind-addr :<port>
    ```
 
-   Where `<port>` will be a diferent number in each address (I used `56000` and `56001`). Note the colon before the port number.
+   Where `<port>` will be a diferent number in each terminal (I used `56000` and `56001`). Note the colon before the port number.
    If you want to show the camera to more devices, use other terminals.
 
 2. For each computer, in the interface type the address `<ip_address>:<port>` with the available ports. You can find the `<ip_address>` by running the command `ifconfig | grep 192.168` (on the computer that has the camera connection).
