@@ -76,6 +76,11 @@ socketIO.on("connection", (socket) => {
       return;
     }
   };
+  //the call from the client to connect the socket
+  socket.on("join_room_page", (roomId) => {
+    socket.join(roomId);
+  });
+
   socket.on("finish_tutorial", () => {
     room_info[socket.activeRoom].seen_tutorial = true;
   });

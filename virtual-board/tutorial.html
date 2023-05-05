@@ -53,10 +53,14 @@
     <script src="../socket-handler.js" type="text/javascript"></script>
     <script>
         var urlParams = new URLSearchParams(window.location.search);
-        room = urlParams.get("room");
-        console.log(room);
+        roomId = urlParams.get("room");
+        console.log(roomId);
+        document.addEventListener('DOMContentLoaded', () => socket.emit("join_room_page", roomId)); 
+        
+
+        
         function finishTutorial1() {
-                socket.emit("finish_tutorial1", room);
+                socket.emit("finish_tutorial1", roomId);
             }
     </script>
 </body>
