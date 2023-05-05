@@ -577,9 +577,21 @@ const addCoinTemplate = (template_id) => {
   // waitingRoom.appendChild(imageEl);
 };
 // let videoObj = document.getElementById("videoId");
-
+/**
+ * Uses the info from MOVEMENT_VALUES to add them as options to distance type select
+ */
+const setupSelectOptions = () => {
+  Object.keys(MOVEMENT_VALUES).map((key) => {
+    let { value, text } = MOVEMENT_VALUES[key];
+    let option = document.createElement("option");
+    option.setAttribute("value", value);
+    option.innerText = text;
+    movementTypeSelect.appendChild(option);
+  });
+};
 document.addEventListener("DOMContentLoaded", () => {
   //   setupSocket();
+  setupSelectOptions();
   if (selectedMode === "virtual") {
     createDOMGrid(rows, cols, cell_size);
   } else {
@@ -1177,15 +1189,15 @@ check_gridlines.addEventListener("change", (evt) => {
 });
 
 //------------------------Bot policy checkbox handlers----------------------------------------//
-random_checkbox.addEventListener("change", (evt) => {
-  let checked = evt.target.checked;
-  let parent = evt.target.parentNode;
-  if (checked) {
-    parent.classList.remove("policy-inactive");
-  } else {
-    parent.classList.add("policy-inactive");
-  }
-});
+// random_checkbox.addEventListener("change", (evt) => {
+//   let checked = evt.target.checked;
+//   let parent = evt.target.parentNode;
+//   if (checked) {
+//     parent.classList.remove("policy-inactive");
+//   } else {
+//     parent.classList.add("policy-inactive");
+//   }
+// });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
   let bot_id = 1; //TODO: Change this to the bot_id for this user
@@ -1241,4 +1253,11 @@ run_away_from_select.addEventListener("change", (evt) => {
   let run_away_from_id = Number(evt.target.value);
   let bot_id = 1; //TODO: Change this to the bot_id for this user
   grid.update_bot_run_away_from(bot_id, run_away_from_id);
+});
+
+//------------------------------ Bot distance handlers ------------------------------------//
+movementTypeSelect.addEventListener("change", (evt) => {
+  let key = evt.target.value;
+  let bot_id = 1; //TODO Change this to the bot_id for this user
+  grid.update_bot_movement_type(bot_id, key);
 });
