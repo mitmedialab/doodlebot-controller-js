@@ -82,7 +82,7 @@ import {
 let currentVectors = {}; //id -> {rvec: , tvec: }. id is the aruco id
 window.currentVectors = currentVectors;
 let cameraController;
-// let videoObj = document.getElementById("videoId");
+let videoObj = document.getElementById("videoId");
 let cameraWidth;
 let cameraHeight;
 let context = arucoCanvasOutputGridOriginal.getContext("2d", {
@@ -332,14 +332,22 @@ remote_ip_connect.addEventListener("click", async (evt) => {
   cameraHeight = cell_size * rows;
   window.cameraWidth = cameraWidth;
   window.cameraHeight = cameraHeight;
+  let constraints = { ...cameraConstraints, width: cameraWidth };
 
   // let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
   let ip = remote_ip_input.value;
-  let url = `http://${ip}/mjpeg`;
-  console.log(url);
-  image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
-  image_from_stream.src = url; //+ "?" + new Date().getTime();
-  //TODO: If it's invalid url, say so
+  let is_remote = ip !== "0";
+
+  if (is_remote) {
+    let url = `http://${ip}/mjpeg`;
+    console.log(url);
+    image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
+    image_from_stream.src = url; //+ "?" + new Date().getTime();
+    //TODO: If it's invalid url, say so
+  } else {
+    let stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoObj.srcObject = stream;
+  }
 
   arucoCanvasOutputGridOriginal.setAttribute("height", cameraHeight + "px");
   arucoCanvasOutputGridOriginal.setAttribute("width", cameraWidth + "px");
@@ -349,9 +357,10 @@ remote_ip_connect.addEventListener("click", async (evt) => {
     distCoeffs,
     cameraHeight,
     cameraWidth,
-    { ...cameraConstraints, width: cameraWidth },
+    cameraConstraints,
     log,
-    numFrames // to detect dissapeared frames
+    numFrames, // to detect dissapeared frames
+    is_remote
   );
   cameraController.activateCamera();
   remote_ip_connect.disabled = true; //Once set don't do anything
@@ -587,10 +596,13 @@ function processVideo() {
     return;
   }
   let begin = Date.now();
-  // context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  if (cameraController.is_remote) {
+    context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
+  } else {
+    context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  }
   // context.globalAlpha = 0.5;
   // context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-  context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
   // processVideo();
   // return;
   let imageData = context.getImageData(0, 0, cameraWidth, cameraHeight);

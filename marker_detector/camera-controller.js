@@ -18,7 +18,8 @@ class CameraController {
     cameraWidth,
     cameraConstraints,
     log,
-    numFrames
+    numFrames,
+    is_remote
   ) {
     console.log("start");
     console.log(cameraMatrix);
@@ -35,6 +36,7 @@ class CameraController {
     this.cameraConstraints = cameraConstraints;
     this.stream = null;
     this.log = log;
+    this.is_remote = is_remote;
 
     this.rows = rows;
     this.cols = cols;
