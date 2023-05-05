@@ -13,18 +13,21 @@
             background-size: cover;
             font-family: "Audiowide", sans-serif;
             /* color:antiquewhite; */
-            
+
         }
+
         .center {
             /* height: 100vh; */
             margin-top: 22%;
             /* Set height of container to 100% of viewport height */
         }
+
         h1 {
-          color:antiquewhite;  
+            color: antiquewhite;
         }
+
         .btn {
-            color:whitesmoke;
+            color: whitesmoke;
         }
     </style>>
     <!--bootstrap css and scripts-->
@@ -38,13 +41,13 @@
 <body id="body">
     <div class="container-fluid d-flex align-items-center justify-content-center center">
         <div class="text-center">
-            <h1>Game 1 Page</h1>
+            <h1>Game 3 Page</h1>
             <!-- <button class="btn btn-success btn-lg" onclick="finishGame1()">Continue to tutorial 2</button> -->
 
             <!-- Button trigger modal -->
-            <button onclick="finishGame1()" type="button" class="btn btn-lg btn-success" data-bs-toggle="modal"
+            <button onclick="finishAll()" type="button" class="btn btn-lg btn-success" data-bs-toggle="modal"
                 data-bs-target="#staticBackdrop">
-                Continue to tutorial 2
+                Start Playing!
             </button>
         </div>
         <!--taz modal-->
@@ -54,10 +57,11 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 class="modal-title" id="staticBackdropLabel">Continue to Tutorial 2</h3>
+                        <h4 class="modal-title" id="staticBackdropLabel">Continue to Game!</h4>
                     </div>
                     <div class="modal-body">
-                        <h5>Please wait while other players finish watching the demo of game 1</h5>
+                        <h5>You have completed all tutorials! You can now proceed to choose a theme and start playing.<br>
+                            Please wait while other players finish watching the demo of game 3</h5>
                         <br>
                         <button class="btn btn-success">
                             <span class="spinner-grow btn-lg spinner-grow-sm"></span>
@@ -81,8 +85,8 @@
         console.log(roomId);
         document.addEventListener('DOMContentLoaded', () => socket.emit("join_room_page", roomId));
 
-        function finishGame1() {
-            socket.emit("finish_game1", roomId);
+        function finishAll() {
+            socket.emit("finish_all", roomId);
         }
     </script>
 </body>

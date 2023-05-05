@@ -18,8 +18,11 @@
             background-image: url('../assets/DoodleBot_NoTheme_Background_2.png');
             background-size: cover;
             font-family: "Audiowide", sans-serif;
-            color:antiquewhite;
             
+        }
+
+        .btn, h1 {
+            color:whitesmoke;
         }
     </style>
 
@@ -40,12 +43,44 @@
                         "https://www.youtube.com/embed/my_id_here"
                 
                 -->
-                
+                <h1>Tutorial 1 page</h1>
                 <iframe width="1100" height="500" src="https://www.youtube.com/embed/rnf0q1zOTXs"> 
                 </iframe>
                 <br>
-                <button class="btn btn-success btn-lg" onclick="finishTutorial1()">Continue</button>
+                
+                
+                <!-- Button trigger modal -->
+                <button onclick="finishTutorial1()" type="button" class="btn btn-lg btn-success" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                    Continue to Game 1
+                </button>
             </center>
+                <!--taz modal-->
+                <!-- Modal -->
+                <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                    aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title" id="staticBackdropLabel">Continue to Game 1</h4>
+                            </div>
+                            <div class="modal-body">
+                                <h5>Please wait while other players finish watching tutorial 1</h5>
+                                <br>
+                                <button class="btn btn-success">
+                                    <span class="spinner-grow btn-lg spinner-grow-sm"></span>
+                                    Waiting for players...
+                                </button>
+                            </div>
+                            <div class="modal-footer">
+                                <!--<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+                                <!-- <button type="button" class="btn btn-success btn-lg" onclick="finishTutorial1()">Continue to Game 1</button> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- taz modal -->
+                <!-- <button class="btn btn-success btn-lg" onclick="finishTutorial1()">Continue to Game 1</button> -->
+            <!-- </center> -->
             
         </div>
     </div>
@@ -56,8 +91,6 @@
         roomId = urlParams.get("room");
         console.log(roomId);
         document.addEventListener('DOMContentLoaded', () => socket.emit("join_room_page", roomId)); 
-        
-
         
         function finishTutorial1() {
                 socket.emit("finish_tutorial1", roomId);
