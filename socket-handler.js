@@ -16,21 +16,51 @@ function setupSocket() {
   socket.on("not_valid_room", ({ roomId }) => {
     alert(`The room ${roomId} is not valid`);
   });
-  socket.on("room_ready_game", () => {});
-  // help
+
+  // new tasneem - starts here
+  //done with all tutorials and game demos -- go to index.html to start playing
+  socket.on("room_ready_game", () => {
+    window.location.href = `index.html?room=${roomId}`;
+  });
+
   //done with tutorial1 go to game1
   socket.on("room_ready_game1", () => {
-    console.log("redirecting from socket-handler.js");
-    window.location.href = `game1.html?room=${room}`;
+    // console.log("redirecting from socket-handler.js");
+    window.location.href = `game1.html?room=${roomId}`;
   });
-  // help
+
+  //done with game1 go to tutorial2
+  socket.on("room_ready_tutorial2", () => {
+    // console.log("redirecting from socket-handler.js");
+    window.location.href = `tutorial2.html?room=${roomId}`;
+  });
+
+  //done with tutorial2 go to game2
+  socket.on("room_ready_game2", () => {
+    // console.log("redirecting from socket-handler.js");
+    window.location.href = `game2.html?room=${roomId}`;
+  });
+
+  //done with game2 go to tutorial3
+  socket.on("room_ready_tutorial3", () => {
+    // console.log("redirecting from socket-handler.js");
+    window.location.href = `tutorial3.html?room=${roomId}`;
+  });
+
+  //done with tutorial3 go to game3
+  socket.on("room_ready_game3", () => {
+    // console.log("redirecting from socket-handler.js");
+    window.location.href = `game3.html?room=${roomId}`;
+  });
+
+  // new tasneem - ends here
   socket.on("room_ready_tutorial", () => {
     window.location.href = `tutorial.html?room=${room}`;
   });
   socket.on("joined_room", async ({ roomId, virtualGrid }) => {
     console.log(`Detecting joining room: ${roomId}`);
     room = roomId;
-    //new: showing the room ID and a loading icon
+    //showing the room ID and a loading icon
     var alert = document.getElementById("roomCreatedAlert");
     var alertContent = document.getElementById("roomCreatedAlertContent");
     alertContent.innerHTML =
@@ -39,7 +69,6 @@ function setupSocket() {
     var buttonsSection = document.getElementById("buttonsSection");
     buttonsSection.style.marginTop = "10%";
     alert.style.display = "block";
-    //new code ends here
 
     // virtualGridContainer.classList.remove("game-hidden");
     // roomNameSpan.innerHTML = roomId;

@@ -19,6 +19,7 @@
     <body id="body" class="background1 d-flex justify-content-center align-items-center vh-100">
         <!-- <div id="transparentBackground"></div> -->
         <div class="container">
+            <div id ="displayRoomId" class="row"></div>
             <div class="row">
                 <div class="col-4">
                     <h2 id="heading2">1. Choose a Theme</h2>
@@ -55,6 +56,13 @@
             </div>
         </div>
     </div>
+        <script>
+            //get roomID from URL and display it
+            var urlParams = new URLSearchParams(window.location.search);
+            roomId = urlParams.get("room");
+            console.log(roomId);
+            document.getElementById("displayRoomId").innerHTML = "<h2>Room ID: "+ roomId +"</h2>";
+        </script>
         <script type="text/javascript" src="./preindex.js"></script>
     </body>
 </html>

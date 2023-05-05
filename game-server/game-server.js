@@ -30,10 +30,32 @@ let DEFAULT_ROOM_INFO = {
   min_users_to_move: 2,
   seen_tutorial: false,
   page0: {
+    //page0 is tutorial.html
     num_users: 0,
     min_users_to_move: 2,
   },
   page1: {
+    //page1 is game1.html
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  page2: {
+    //page2 is tutorial2.html
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  page3: {
+    //page3 is game2.html
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  page4: {
+    //page3 is tutorial3.html
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  page5: {
+    //page3 is game3.html
     num_users: 0,
     min_users_to_move: 2,
   },
@@ -81,9 +103,6 @@ socketIO.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("finish_tutorial", () => {
-    room_info[socket.activeRoom].seen_tutorial = true;
-  });
   socket.on("create_room", () => {
     let roomId = generateRandomRoom();
     console.log(`Creating room ${roomId}`);
@@ -94,7 +113,31 @@ socketIO.on("connection", (socket) => {
     joinRoom(roomId);
   });
 
-  //help
+  // new tasneem - starts here
+
+  //finish game3 and wait for others, then go to index.html
+  socket.on("finish_all", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    socket.activeRoom = roomId;
+    room_info[socket.activeRoom].seen_tutorial = true; //all tutorials done
+    room_info[roomId].page5.num_users += 1;
+    console.log(
+      `Number of users done with game1: ${room_info[roomId].page5.num_users}`
+    );
+    if (
+      room_info[roomId].page5.num_users ===
+      room_info[roomId].page5.min_users_to_move
+    ) {
+      console.log("redirecting to index.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_game", {});
+    }
+  });
+
+  // socket.on("finish_all", () => {
+  //   room_info[socket.activeRoom].seen_tutorial = true;
+  // });
+
   //finish tutorial1 and wait for others, then go to game1
   socket.on("finish_tutorial1", (roomId) => {
     console.log(roomId);
@@ -111,7 +154,80 @@ socketIO.on("connection", (socket) => {
       socketIO.in(socket.activeRoom).emit("room_ready_game1", {});
     }
   });
-  //help
+
+  //finish game1 and wait for others, then go to tutorial2
+  socket.on("finish_game1", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].page1.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with game1: ${room_info[roomId].page1.num_users}`
+    );
+    if (
+      room_info[roomId].page1.num_users ===
+      room_info[roomId].page1.min_users_to_move
+    ) {
+      console.log("redirecting to tutorial2.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_tutorial2", {});
+    }
+  });
+
+  //finish tutorial2 and wait for others, then go to game2
+  socket.on("finish_tutorial2", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].page2.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with tutorial2: ${room_info[roomId].page2.num_users}`
+    );
+    if (
+      room_info[roomId].page2.num_users ===
+      room_info[roomId].page2.min_users_to_move
+    ) {
+      console.log("redirecting to game2.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_game2", {});
+    }
+  });
+
+  //finish game2 and wait for others, then go to tutorial3
+  socket.on("finish_game2", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].page3.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with game1: ${room_info[roomId].page3.num_users}`
+    );
+    if (
+      room_info[roomId].page3.num_users ===
+      room_info[roomId].page3.min_users_to_move
+    ) {
+      console.log("redirecting to tutorial3.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_tutorial3", {});
+    }
+  });
+
+  //finish tutorial3 and wait for others, then go to game3
+  socket.on("finish_tutorial3", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].page4.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with tutorial2: ${room_info[roomId].page4.num_users}`
+    );
+    if (
+      room_info[roomId].page4.num_users ===
+      room_info[roomId].page4.min_users_to_move
+    ) {
+      console.log("redirecting to game3.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_game3", {});
+    }
+  });
+
+  // new tasneem - ends here
 
   /**
    * data has same field as a `ChatMessage`
