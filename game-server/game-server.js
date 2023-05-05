@@ -97,6 +97,7 @@ socketIO.on("connection", (socket) => {
   //help
   //finish tutorial1 and wait for others, then go to game1
   socket.on("finish_tutorial1", (roomId) => {
+    console.log(roomId);
     room_info[roomId].page0.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
