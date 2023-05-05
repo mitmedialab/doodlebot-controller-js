@@ -1189,15 +1189,15 @@ check_gridlines.addEventListener("change", (evt) => {
 });
 
 //------------------------Bot policy checkbox handlers----------------------------------------//
-random_checkbox.addEventListener("change", (evt) => {
-  let checked = evt.target.checked;
-  let parent = evt.target.parentNode;
-  if (checked) {
-    parent.classList.remove("policy-inactive");
-  } else {
-    parent.classList.add("policy-inactive");
-  }
-});
+// random_checkbox.addEventListener("change", (evt) => {
+//   let checked = evt.target.checked;
+//   let parent = evt.target.parentNode;
+//   if (checked) {
+//     parent.classList.remove("policy-inactive");
+//   } else {
+//     parent.classList.add("policy-inactive");
+//   }
+// });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
   let bot_id = 1; //TODO: Change this to the bot_id for this user

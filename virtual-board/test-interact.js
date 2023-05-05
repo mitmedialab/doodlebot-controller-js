@@ -228,14 +228,15 @@ function onDropHandler(event) {
 
     if (type === BOT_TYPE) {
       let id = grid.getNewBotId();
-
+      let policies = id === 2 ? new Set(["run_away_from"]) : new Set(); //TODO: Don't hardcode this
       grid.add_bot({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
         image_rotate_90: image_rotate_90,
-        // policies: new Set(["collect"]), //TODO: Don't hardcode this
-        policies: new Set(), //TODO: Don't hardcode this
+        policies: policies, //TODO: Don't hardcode this
+        run_away_from: [1],
+        movement_type: "Euclidean", //TODO: Don't hardcode this
         width: width,
         height: height,
         angle: 0,
