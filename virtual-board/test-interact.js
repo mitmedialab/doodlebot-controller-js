@@ -71,12 +71,25 @@ const setupDraggable = (selector, cell_size) => {
         }
       }
     });
+  // .actionChecker((event, action) => {
+  //   //If bots are moving, disable draggin
+  //   if (document.body.hasAttribute("is-moving")) {
+  //     console.log("-------------IT'S MOVING DONT DRAG-------------------");
+  //     return null;
+  //   }
+  //   console.log("it's not moving, drag :)");
+  //   return action;
+  // });
 };
 /**
  * Stores the total delta in `data-x` and `data-y` properties
  * @param {*} event
  */
 function dragMoveListener(event) {
+  if (document.body.hasAttribute("is-moving")) {
+    //Don't do anything if it's moving
+    return;
+  }
   var target = event.target;
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
@@ -281,12 +294,19 @@ function setupGridDropzone(cell_size) {
     overlap: 0.75,
     // listen for drop related events:
     ondropactivate: function (event) {
+      if (document.body.hasAttribute("is-moving")) {
+        return null;
+      }
       console.log("on drop activate");
       // add active dropzone feedback
       event.target.classList.add("drop-active");
     },
     // Entered dropzone!
     ondragenter: function (event) {
+      //Don't do anything if they are moving
+      if (document.body.hasAttribute("is-moving")) {
+        return null;
+      }
       console.log("on drop enter");
       var draggableElement = event.relatedTarget;
       var dropzoneElement = event.target;
@@ -297,6 +317,9 @@ function setupGridDropzone(cell_size) {
     },
     //Left dropzone!
     ondragleave: function (event) {
+      if (document.body.hasAttribute("is-moving")) {
+        return null;
+      }
       console.log("on drop leave");
 
       // remove the drop feedback style
@@ -306,6 +329,9 @@ function setupGridDropzone(cell_size) {
     },
     ondrop: (event) => {},
     ondropdeactivate: function (event) {
+      if (document.body.hasAttribute("is-moving")) {
+        return null;
+      }
       console.log("on drop deactivate");
       // remove active dropzone feedback
       event.target.classList.remove("drop-active");

@@ -991,17 +991,6 @@ async function changeMovingBot(bot_id, opt = {}) {
     if (!opt.noSocket) {
       // socket.emit("stop_bot", "");
     }
-    //Stop
-    console.log("stopping...");
-    document.getElementById("controls").style.visibility = "visible";
-    document.getElementById("objects").style.visibility = "visible";
-    document.getElementById("mySidebar").style.width = "500px";
-    document.getElementById("main").style.marginLeft = "500px";
-    //Changing button style
-    startBotsButton.innerHTML = "Start moving";
-    startBotsButton.classList.remove("bot-stop");
-    startBotsButton.classList.add("bot-start");
-
     if (selectedMode === "camera") {
       // await stopMovingBot_camera(currentBotId);
       // TODO: Check if need to do anything here
@@ -1014,15 +1003,6 @@ async function changeMovingBot(bot_id, opt = {}) {
     }
     //Start
     bot.isMoving = true;
-    console.log("starting...");
-    document.getElementById("mySidebar").style.width = "0";
-    document.getElementById("controls").style.visibility = "hidden";
-    document.getElementById("objects").style.visibility = "hidden";
-    document.getElementById("main").style.marginLeft = "250px";
-
-    startBotsButton.innerHTML = "Stop moving";
-    startBotsButton.classList.remove("bot-start");
-    startBotsButton.classList.add("bot-stop");
 
     if (selectedMode === "camera") {
       await startMovingBot_camera(bot_id);
@@ -1156,11 +1136,32 @@ function stopMovingBot_virtual(bot_id) {
   delete intervals[bot_id];
 }
 startBotsButton.addEventListener("click", async () => {
+  //This decides to hide the controls, and make sure the grid is not interactive
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
     body.removeAttribute("is-moving");
+    //Stop
+    console.log("stopping...");
+    document.getElementById("controls").style.visibility = "visible";
+    document.getElementById("objects").style.visibility = "visible";
+    document.getElementById("mySidebar").style.width = "500px";
+    document.getElementById("main").style.marginLeft = "500px";
+    //Changing button style
+    startBotsButton.innerHTML = "Start moving";
+    startBotsButton.classList.remove("bot-stop");
+    startBotsButton.classList.add("bot-start");
   } else {
     body.setAttribute("is-moving", "true");
+
+    console.log("starting...");
+    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("controls").style.visibility = "hidden";
+    document.getElementById("objects").style.visibility = "hidden";
+    document.getElementById("main").style.marginLeft = "250px";
+
+    startBotsButton.innerHTML = "Stop moving";
+    startBotsButton.classList.remove("bot-start");
+    startBotsButton.classList.add("bot-stop");
   }
 
   let promises = [];

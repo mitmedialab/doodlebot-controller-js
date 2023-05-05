@@ -191,20 +191,36 @@
   height: 100%; */
   /* flex: 1; */
 }
-body[current-mode="virtual"] .template:hover {
+body[current-mode="virtual"]:not([is-moving]) .template:hover {
   cursor: grab;
 }
-body[current-mode="virtual"] .grab:hover {
+body[current-mode="virtual"][is-moving] .template:hover {
+  cursor: not-allowed;
+}
+body[current-mode="virtual"]:not([is-moving]) .grab:hover {
   cursor: grab;
 }
-body[current-mode="virtual"] .grabbing:hover {
+body[current-mode="virtual"][is-moving] .grab:hover {
+  cursor: not-allowed;
+}
+body[current-mode="virtual"]:not([is-moving]) .grabbing:hover {
   cursor: grabbing;
+}
+body[current-mode="virtual"][is-moving] .grabbing:hover {
+  cursor: not-allowed;
 }
 body[current-mode="camera"] #objects-inner {
   opacity: 0.5;
 }
 body[is-moving="true"] .edit-icon {
   display: none;
+}
+
+body[is-moving] .final-grid:not(.drop-target) {
+  border: 2px solid red;
+}
+body:not([is-moving]) .final-grid:not(.drop-target) {
+  border: 2px solid rgb(1, 253, 1);
 }
 /* .template img {
   width: 100%;
