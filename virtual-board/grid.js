@@ -21,10 +21,10 @@ const DEFAULT_BOT_DIMENSIONS = {
   height: 5,
 };
 const BOT_POLICIES = {
-  RANDOM: {
-    value: "random",
-    text: "Random",
-  },
+  // RANDOM: {
+  //   value: "random",
+  //   text: "Random",
+  // },
   FOLLOW: {
     value: "follow",
     text: "Follow",
@@ -39,14 +39,22 @@ const BOT_POLICIES = {
   },
 };
 
-const DISTANCE_VALUES = {
+const MOVEMENT_VALUES = {
+  RANDOM: {
+    value: "random",
+    text: "Random",
+  },
   EUCLIDEAN: {
     value: "Euclidean",
-    text: "Euclidean",
+    text: "Get closer using Euclidean",
   },
   MANHATTAN: {
     value: "Manhattan",
-    text: "Manhattan",
+    text: "Get closer using Manhattan",
+  },
+  DIJKSTRA: {
+    value: "dijkstra",
+    text: "Get closer using Dijkstra",
   },
 };
 let defaultOptions = {
@@ -202,7 +210,8 @@ class VirtualGrid {
       newObject = {
         coins: [],
         policies: new Set(),
-        distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
+        // distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
+        movement_type: MOVEMENT_VALUES.RANDOM.value,
         only_reachable: false, //Whether to only calculate distance to reachable points
         targets: [], //coin_collect_types
         isMoving: false,
@@ -293,6 +302,12 @@ class VirtualGrid {
     this.bots[bot_id][bot_index].isMoving =
       !this.bots[bot_id][bot_index].isMoving;
   }
+  /**
+   * Decides the type of coins that this bot can pick up
+   *
+   * @param {*} bot_id
+   * @param {*} collect_type
+   */
   update_bot_collect(bot_id, collect_type) {
     let bot_index = 0;
     let targets = collect_type === "None" ? [] : [collect_type];
@@ -738,9 +753,14 @@ class VirtualGrid {
     );
     // this.bots[bot_id][bot_index] = bot;
   }
-  update_bot_distance(bot_id, distance_value, bot_index = 0) {
+  // update_bot_distance(bot_id, distance_value, bot_index = 0) {
+  //   let bot = this.bots[bot_id][bot_index];
+  //   bot.distance_type = distance_value;
+  // }
+  update_bot_movement_type(bot_id, movement_value) {
+    let bot_index = 0;
     let bot = this.bots[bot_id][bot_index];
-    bot.distance_type = distance_value;
+    bot.movement_type = movement_value;
   }
   /**
    * Either moves the bot forward, backward or turns 90 degrees
@@ -797,16 +817,16 @@ class VirtualGrid {
    * @param {*} distance_type
    * @returns
    */
-  distance_according_policy(obj1, obj2, distance_type) {
+  distance_according_policy(obj1, obj2, movement_type) {
     let dx = obj1[0] - obj2[0];
     let dy = obj1[1] - obj2[1];
     switch (distance_type) {
-      case DISTANCE_VALUES.EUCLIDEAN.value:
+      case MOVEMENT_VALUES.EUCLIDEAN.value:
         return Math.sqrt(dx * dx + dy * dy);
-      case DISTANCE_VALUES.MANHATTAN.value:
+      case MOVEMENT_VALUES.MANHATTAN.value:
         return Math.abs(dx) + Math.abs(dy);
       default:
-        console.log(`Unkown distance_type: ${distance_type}`);
+        console.log(`Unkown distance_type: ${movement_type}`);
     }
   }
   /**
@@ -826,11 +846,11 @@ class VirtualGrid {
     //     future_bot.real_bottom_left[1] + future_bot.relative_anchor[1]
     // ]
     //Not reading from future_bot because it might not get the distance information, but only parts of it
-    let { distance_type } = this.bots[future_bot.id][bot_index];
+    let { movement_type } = this.bots[future_bot.id][bot_index];
     let result = this.distance_according_policy(
       future_position,
       object_position,
-      distance_type
+      movement_type
     );
     console.log(`Calculated distance = ${result}`);
     return result;
@@ -891,61 +911,51 @@ class VirtualGrid {
    * @param {*} future_bot
    * @returns the minimum distance from the bot to all the coins
    */
-  min_distance_to_coins(future_bot) {
+  min_distance_to_coins(future_bot, coins) {
     let targets = future_bot.targets;
 
     let res = null;
-    for (let coin_id in this.coins) {
-      for (let coin_index in this.coins[coin_id]) {
-        let coin_obj = this.coins[coin_id][coin_index];
-        let is_collecting = future_bot.policies.has(BOT_POLICIES.COLLECT.value);
-        console.log(`is_collecting: ${is_collecting}`);
-
-        if (is_collecting && !targets.includes(coin_obj.coin_collect_type)) {
-          // Only consider coins of the correct type
-          console.log(
-            `[BOT ${future_bot.id}] Skipping coin with type ${coin_obj.coin_collect_type}`
-          );
-          continue;
-        }
-        // if it's reachable (or if it doesnt matter), consider this coin
-        // if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin_obj)){
-        if (!future_bot.only_reachable) {
-          if (res === null) {
-            res = this.distance_to_object(future_bot, coin_obj);
-          } else {
-            res = Math.min(res, this.distance_to_object(future_bot, coin_obj));
-            // res = Math.min(res, distance_response.distance);
-          }
-        }
-        //TODO: add when is faster
-        else {
-          let distance =
-            this.coin_graphs[coin_id].shortest_distance_from_obj(future_bot);
-          if (distance) {
-            if (res == null) {
-              res = distance;
-            } else {
-              res = Math.min(res, distance);
-            }
-          }
-          // console.log("creating grid graph")
-          // let gg = new GridGraph(this, future_bot.id);
-          // let path = gg.shortest_path(future_bot, coin_obj);
-          // console.log(path);
-          // console.log(path)
-          // if (!path.distance){
-          //     continue;
-          // }
-          // if (res == null){
-          //     res = path.distance;
-          // } else {
-          //     res = Math.min(res, path.distance);
-          // }
-          // console.log(`new distance = ${res}`);
+    // for (let coin_id in this.coins) {
+    // for (let coin_index in this.coins[coin_id]) {
+    for (let coin of coins) {
+      // if it's reachable (or if it doesnt matter), consider this coin
+      // if (!future_bot.only_reachable || this.is_reachable_from(future_bot, coin)){
+      if (!future_bot.only_reachable) {
+        if (res === null) {
+          res = this.distance_to_object(future_bot, coin_obj);
+        } else {
+          res = Math.min(res, this.distance_to_object(future_bot, coin));
+          // res = Math.min(res, distance_response.distance);
         }
       }
+      //TODO: add when is faster
+      else {
+        let distance =
+          this.coin_graphs[coin.id].shortest_distance_from_obj(future_bot);
+        if (distance) {
+          if (res == null) {
+            res = distance;
+          } else {
+            res = Math.min(res, distance);
+          }
+        }
+        // console.log("creating grid graph")
+        // let gg = new GridGraph(this, future_bot.id);
+        // let path = gg.shortest_path(future_bot, coin_obj);
+        // console.log(path);
+        // console.log(path)
+        // if (!path.distance){
+        //     continue;
+        // }
+        // if (res == null){
+        //     res = path.distance;
+        // } else {
+        //     res = Math.min(res, path.distance);
+        // }
+        // console.log(`new distance = ${res}`);
+      }
     }
+    // }
     // console.log(this.coin_graphs)
     // console.log(`Min distance to coins = ${res}`)
     return res;
@@ -1281,14 +1291,16 @@ class VirtualGrid {
     if (!this.isInsideBoard(bot.real_bottom_left, bot.width, bot.height)) {
       return this.get_next_move_to_be_inside_board(bot_id);
     }
+    // Random movement takes precedence
+    if (bot.movement_type === MOVEMENT_VALUES.RANDOM.value) {
+      return this.get_next_move_randomly(bot_id, bot_index);
+    }
     // return null; //TODO: get rid of this, testing
     if (bot.policies.has(BOT_POLICIES.COLLECT.value)) {
-      //Only do this if there are coins to move to
-      if (Object.keys(this.coins).length !== 0) {
-        return this.get_next_move_using_get_coins(bot_id, num_turns);
-      } else {
-        //If there are no coins, just do random move
-        return this.get_next_move_randomly(bot_id, bot_index);
+      let next_move = this.get_next_move_using_get_coins(bot_id, num_turns);
+
+      if (next_move) {
+        return next_move;
       }
     }
 
@@ -1381,9 +1393,33 @@ class VirtualGrid {
     chosen_turns = [chosen_turns[0]];
     return this.move_bot_multiple_turns(bot_id, bot_index, chosen_turns);
   }
+  /**
+   * Returns the list of coins that the bot is trying to get (possibly an empty list)
+   * @param {*} bot
+   */
+  get_target_coins(bot) {
+    let valid_coins = [];
+    let is_collecting = bot.policies.has(BOT_POLICIES.COLLECT.value);
+    if (is_collecting) {
+      for (let coin_id in this.coins) {
+        let coin_index = 0;
+        let coin = this.coins[coin_id][coin_index];
+        if (bot.targets.includes(coin.coin_collect_type)) {
+          valid_coins.push(coin);
+        }
+      }
+    }
+    return valid_coins;
+  }
   get_next_move_using_get_coins(bot_id, num_moves = 1) {
     let bot_index = 0;
     let bot = this.bots[bot_id][bot_index];
+
+    let valid_coins = this.get_target_coins(bot);
+    if (valid_coins.length === 0) {
+      //No valid coins to get, no valid move
+      return null;
+    }
     //Only relevant if we want to know whether coins are reachable
     let min_distance = Number.MAX_SAFE_INTEGER;
     let directions = [];
@@ -1402,7 +1438,9 @@ class VirtualGrid {
         //While moving it potentially will crash with a coin, that's good!
         distance = 0;
       } else {
-        distance = this.min_distance_to_coins(future_bot);
+        console.log(`is_collecting: ${is_collecting}`);
+
+        distance = this.min_distance_to_coins(future_bot, valid_coins);
         if (distance === null) {
           //No coin is within reach
           console.log("no coins within reach");
