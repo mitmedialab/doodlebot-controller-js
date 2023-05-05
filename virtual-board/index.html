@@ -19,7 +19,6 @@
     <body id="body" class="background1 d-flex justify-content-center align-items-center vh-100">
         <!-- <div id="transparentBackground"></div> -->
         <div class="container">
-            <div id ="displayRoomId" class="row"></div>
             <div class="row">
                 <div class="col-4">
                     <h2 id="heading2">1. Choose a Theme</h2>
@@ -42,9 +41,16 @@
                 </div>
                 <div class="col">
                 <h2 class="mb-5">2. Do you have the Doodlebot physical robot?</h2>
-                    <image class="img-fluid hoverable mx-5 rounded" id="virtualMode" src="../assets/DB_VirtualMode.png" alt="virtualModeImage"></image>
+                    <image class="img-fluid hoverable mx-5 rounded" id="virtualMode" src="../assets/DB_VirtualMode.png" alt="virtualModeImage" data-bs-toggle="modal"
+                    data-bs-target="#staticBackdrop"></image>
                     <image class="img-fluid hoverable mx-5 rounded" id="realVideoStream" src="../assets/DB_RealVideoStream.png" alt="realVideoStreamImage"></image>
                 </div>
+                <!-- Button trigger modal -->
+                <!-- <button onclick="finishTutorial3()" type="button" class="btn btn-lg btn-success" data-bs-toggle="modal"
+                    data-bs-target="#staticBackdrop">
+                    Continue to Game 3
+                </button> -->
+                <!-- modal trigger -->
             </div>
             <div class="row">
                 <div class="col-4"><p></p></div>
@@ -54,6 +60,32 @@
                     <h4 class="mx-4 my-5" style="display: inline;">Yes, let's use real video!</h4>
                 </div>
             </div>
+            <br><br>
+            <center><div id="displayRoomId" class="row"></div></center>
+            <!-- Modal -->
+            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title" id="staticBackdropLabel">Start Game</h4>
+                        </div>
+                        <div class="modal-body">
+                            <h5>Please wait while other players choose the game theme and mode.</h5>
+                            <br>
+                            <div style="padding:5px; width:250px;" class="bg-success text-white rounded-3">
+                                <span class="spinner-border spinner-border-sm" style="font-size: 14px;"></span>
+                                Waiting for players...
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <!--<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+                            <!-- <button type="button" class="btn btn-success btn-lg" onclick="finishTutorial1()">Continue to Game 1</button> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal ends -->
         </div>
     </div>
         <script>
@@ -62,6 +94,9 @@
             roomId = urlParams.get("room");
             console.log(roomId);
             document.getElementById("displayRoomId").innerHTML = "<h2>Room ID: "+ roomId +"</h2>";
+            document.addEventListener("DOMContentLoaded", () =>
+                    socket.emit("join_room_page", roomId)
+                );
         </script>
         <script type="text/javascript" src="./preindex.js"></script>
     </body>

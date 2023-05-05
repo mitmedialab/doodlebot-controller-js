@@ -61,14 +61,15 @@ function setupSocket() {
     console.log(`Detecting joining room: ${roomId}`);
     room = roomId;
     //showing the room ID and a loading icon
-    var alert = document.getElementById("roomCreatedAlert");
-    var alertContent = document.getElementById("roomCreatedAlertContent");
-    alertContent.innerHTML =
-      "<strong>Room created!</strong><br>Please wait while other players join the room using the room ID shown below.<br><strong>Your room ID is: </strong>" +
-      room;
-    var buttonsSection = document.getElementById("buttonsSection");
-    buttonsSection.style.marginTop = "10%";
-    alert.style.display = "block";
+    // var alert = document.getElementById("roomCreatedAlert");
+    // var alertContent = document.getElementById("roomCreatedAlertContent");
+    // alertContent.innerHTML =
+    //   "<strong>Room created!</strong><br>Please wait while other players join the room using the room ID shown below.<br><strong>Your room ID is: </strong>" +
+    //   room;
+    var roomIdBold = document.getElementById("roomIdBold");
+    roomIdBold.innerHTML =
+      "<strong style='color:black;'>Your room ID is: " + room + "</strong>";
+    // alert.style.display = "block";
 
     // virtualGridContainer.classList.remove("game-hidden");
     // roomNameSpan.innerHTML = roomId;
