@@ -100,6 +100,8 @@ socketIO.on("connection", (socket) => {
   };
   //the call from the client to connect the socket
   socket.on("join_room_page", (roomId) => {
+    console.log(`Joined room: ${roomId}`);
+    socket.activeRoom = roomId;
     socket.join(roomId);
   });
 
@@ -239,45 +241,80 @@ socketIO.on("connection", (socket) => {
     socket.broadcast.to(socket.activeRoom).emit("message_received", newMessage);
   });
   socket.on("add_bot", async ({ bot, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected add bot. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_bot", bot);
   });
   socket.on("add_obstacle", async ({ obstacle, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected add obstacle. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_obstacle", obstacle);
   });
   socket.on("add_coin", async ({ coin, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected add coin. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_coin", coin);
   });
-  socket.on("move_bot", ({ bot_id, move, virtualGrid }) => {
+  socket.on("remove_bot", async ({ bot, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected remove bot. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
-    socket.broadcast.to(socket.activeRoom).emit("moved_bot", { bot_id, move });
+    socket.broadcast.to(socket.activeRoom).emit("removed_bot", bot);
+  });
+  socket.on("remove_obstacle", async ({ obstacle, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected remove obstacle. Notifying.`);
+    room_info[socket.activeRoom] = virtualGrid;
+    socket.broadcast.to(socket.activeRoom).emit("removed_obstacle", obstacle);
+  });
+  socket.on("remove_coin", async ({ coin, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected remove coin. Notifying.`);
+    room_info[socket.activeRoom] = virtualGrid;
+    socket.broadcast.to(socket.activeRoom).emit("removed_coin", coin);
+  });
+  socket.on("apply_next_move_to_bot", ({ bot_id, move, virtualGrid }) => {
+    console.log(
+      `[${socket.activeRoom}] Detected apply_next_move_to_bot bot. Notifying.`
+    );
+    room_info[socket.activeRoom] = virtualGrid;
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("applied_next_move_to_bot", { bot_id, move });
   });
   socket.on("stop_bot", (data) => {
+    console.log(`[${socket.activeRoom}] Detected stop bot. Notifying.`);
     socket.broadcast.to(socket.activeRoom).emit("stopped_bot", data);
   });
   socket.on("start_bot", (data) => {
+    console.log(`[${socket.activeRoom}] Detected start bot. Notifying.`);
     socket.broadcast.to(socket.activeRoom).emit("started_bot", data);
   });
   //socket.emit("update_bot", {id, update, virtualGrid: grid.toJSON()})
   socket.on("update_bot", ({ id, update, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected update bot. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("updated_bot", { id, update });
   });
   socket.on("update_obstacle", ({ id, update, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected update obstacle. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast
       .to(socket.activeRoom)
       .emit("updated_obstacle", { id, update });
   });
   socket.on("update_coin", ({ id, update, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected update coin. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("updated_coin", { id, update });
   });
   socket.on("remove_coin", ({ coin, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected remove coin. Notifying.`);
     room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_coin", { coin });
+  });
+
+  socket.on("change_moving", () => {
+    console.log(`[${socket.activeRoom}] Detected change moving. Notifying.`);
+
+    socket.broadcast.to(socket.activeRoom).emit("changed_moving", {});
   });
 });
 
