@@ -5,7 +5,6 @@ import "https://cdn.interactjs.io/v1.9.20/modifiers/index.js";
 import "https://cdn.interactjs.io/v1.9.20/dev-tools/index.js";
 import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
 // let cell_size = 60;
-
 /**
  *
  * @param {*} id ${TYPE}-${id}n The id of the DOM element
@@ -36,6 +35,13 @@ const setupDraggable = (selector, cell_size) => {
       // and an interaction hasn't started yet
       if (interaction.pointerIsDown && !interaction.interacting()) {
         let original = event.currentTarget;
+        //If a bot has ben choosen, do  not do anything when a bot is dragged
+        if (
+          body.hasAttribute("chosen-bot") &&
+          event.target.getAttribute("type") === "bot"
+        ) {
+          return null;
+        }
 
         //It's clone if it's one of the ones that is mid-drag or one that is already part
         //of the grid
@@ -52,6 +58,7 @@ const setupDraggable = (selector, cell_size) => {
           clone.style.left = `${left}px`;
           clone.style.top = `${top}px`;
           let template_id = original.getAttribute("template_id");
+          clone.setAttribute("template_id", template_id);
           let { width, height } = ALL_ASSETS[template_id];
           clone.style.width = `${cell_size * width}px`;
           clone.style.height = `${cell_size * height}px`;
@@ -90,7 +97,18 @@ function dragMoveListener(event) {
     //Don't do anything if it's moving
     return;
   }
+
   var target = event.target;
+  if (
+    target.getAttribute("type") === "bot" &&
+    target.getAttribute("grid_object") === "true"
+  ) {
+    // When trying to move a bot already on the grid, only can drag the current bot
+    let [_, id] = target.getAttribute("id").split("-");
+    if (Number(currentBotId) !== Number(id)) {
+      return null;
+    }
+  }
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
   var y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
@@ -249,6 +267,7 @@ function onDropHandler(event) {
       return;
     }
     //If it's the original that moved then create the object on the grid
+    let template_id = element.getAttribute("template_id");
     let {
       image,
       image_rotate_90,
@@ -257,29 +276,43 @@ function onDropHandler(event) {
       type,
       relative_anchor,
       coin_collect_type,
-    } = ALL_ASSETS[element.getAttribute("template_id")];
+    } = ALL_ASSETS[template_id];
     console.log(`New ${type}, adding to grid!`);
 
     if (type === BOT_TYPE) {
       let id = grid.getNewBotId();
-      let policies = id === 2 ? new Set(["run_away_from"]) : new Set(); //TODO: Don't hardcode this
+      // let policies = id === 2 ? ["run_away_from"] : []; //TODO: Don't hardcode this
+      currentBotId = Number(id);
+      console.log(`Setting bot ${currentBotId}`);
+
       let { bot } = grid.add_bot({
         id: id,
         real_bottom_left: [gridX, gridY],
+        template_id: template_id,
         image: image,
         image_rotate_90: image_rotate_90,
-        policies: policies, //TODO: Don't hardcode this
+        // policies: policies, //TODO: Don't hardcode this
         run_away_from: [1],
-        movement_type: "Euclidean", //TODO: Don't hardcode this
+        // movement_type: "Euclidean", //TODO: Don't hardcode this
         width: width,
         height: height,
         angle: 0,
         relative_anchor: relative_anchor,
-        only_reachable: true, //TODO: Don't hardcode this
-        targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
+        // only_reachable: true, //TODO: Don't hardcode this
+        // targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
-      console.log("emiting bot...");
+      console.log("Emitting following bot:");
+      console.log(bot);
       socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
+      let bots_container = document.getElementById("bots");
+      document.body.setAttribute("chosen-bot", currentBotId);
+      selectedBotMessage.innerText = `You are bot #${currentBotId}`;
+      for (let template of bots_container.children) {
+        if (template.getAttribute("template_id") === template_id) {
+          // Mark it as selected bot
+          template.setAttribute("chosen-bot", "");
+        }
+      }
     } else if (type === OBSTACLE_TYPE) {
       let id = grid.getNewObstacleId();
 

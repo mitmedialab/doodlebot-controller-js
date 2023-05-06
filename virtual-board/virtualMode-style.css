@@ -13,7 +13,9 @@ body[current-mode="virtual"] [valid-mode="camera"] {
 body[current-mode="camera"] [valid-mode="virtual"] {
   display: none;
 }
-
+body:not([chosen-bot]) #botUpdateSelector {
+  display: none;
+}
 .card {
   margin: 20px;
   color: black;
@@ -175,4 +177,39 @@ body[current-mode="camera"] [valid-mode="virtual"] {
 
 .remote-ip-hidden {
   display: none;
+}
+
+body[chosen-bot] #bots {
+  opacity: 0.5;
+}
+body[chosen-bot] #bots:hover {
+  cursor: not-allowed;
+}
+
+#bots [chosen-bot] {
+  border: 2px solid green;
+}
+
+.current-bot:hover {
+  cursor: not-allowed;
+}
+
+[grid_object="true"][chosen-bot] {
+  background-color: green;
+}
+[grid_object="true"][chosen-bot][angle="0"] {
+  border-right: 2px solid blue;
+}
+[grid_object="true"][chosen-bot][angle="90"] {
+  border-top: 2px solid blue;
+}
+[grid_object="true"][chosen-bot][angle="180"] {
+  border-left: 2px solid blue;
+}
+[grid_object="true"][chosen-bot][angle="270"] {
+  border-bottom: 2px solid blue;
+}
+
+button[disabled] {
+  opacity: 0.5;
 }

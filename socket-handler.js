@@ -102,10 +102,10 @@ function setupSocket() {
     grid.remove_obstacle(obstacle.id);
   });
   socket.on("removed_coin", (coin) => {
-    grid.remove_coin(coin.id);
+    grid.remove_coin(coin.id, { fromSocket: true });
   });
   socket.on("applied_next_move_to_bot", ({ bot_id, move }) => {
-    grid.apply_next_move_to_bot(bot_id, move, { noSocket: true });
+    grid.apply_next_move_to_bot(bot_id, move, { fromSocket: true });
   });
   socket.on("started_bot", () => {
     startMovingButton_ClickHandler(currentBotId);
@@ -122,11 +122,11 @@ function setupSocket() {
   socket.on("updated_coin", ({ id, update }) => {
     grid.update_coin(id, update);
   });
-  socket.on("removed_coin", ({ coin }) => {
-    grid.remove_coin(coin.id);
-  });
 
   socket.on("changed_moving", async () => {
     await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button
+  });
+  socket.on("picked_coin", ({ bot, coin }) => {
+    removePickedCoin(bot, coin); //Remove
   });
 }

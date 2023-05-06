@@ -514,6 +514,7 @@ const addBotTemplate = (template_id) => {
   let imageEl = document.createElement("img");
   imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.setAttribute("type", "bot");
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
   if (!template_cell_size) {
@@ -539,6 +540,7 @@ const addObstacleTemplate = (template_id) => {
   let imageEl = document.createElement("img");
   imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.setAttribute("type", "obstacle");
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
   if (!template_cell_size) {
@@ -564,6 +566,7 @@ const addCoinTemplate = (template_id) => {
   let imageEl = document.createElement("img");
   imageEl.setAttribute("id", template_id);
   imageEl.setAttribute("template_id", template_id); //for later access
+  imageEl.setAttribute("type", "coin");
   imageEl.classList.add("template"); // For making it interactive later
   imageEl.setAttribute("src", image);
   if (!template_cell_size) {
@@ -609,17 +612,17 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddBot,
     onAddObstacle,
     onAddCoin,
-    onPickupCoin,
+    // onPickupCoin,
     onUpdateBot,
     onUpdateObstacle,
     onUpdateCoin,
     onRemoveBot,
     onRemoveObstacle,
     onRemoveCoin,
+    // onApplyMoveToBot,
   });
   window.grid = grid;
   let { bots, obstacles, coins } = TEMPLATES_PER_THEME[selectedOption];
-
   // for (let template_id of templates_to_show) {
   //   addTemplateDiv(template_id);
   // }
@@ -637,15 +640,28 @@ document.addEventListener("DOMContentLoaded", () => {
     setupGridDropzone(cell_size); // To style the grid when an object can be dropped
   }
 });
+// const removePickedCoin = (bot, coin) => {
+//   let dom_id = `${COIN_TYPE}-${coin.id}`;
+//   document.getElementById(dom_id).remove();
+// };
 /**
  * If a coin has been picked up, remove it from the screen
  * @param {*} bot
  * @param {*} coin
  */
-const onPickupCoin = (bot, coin) => {
-  let dom_id = `${COIN_TYPE}-${coin.id}`;
-  document.getElementById(dom_id).remove();
-};
+// const onPickupCoin = (bot, coin) => {
+//   removePickedCoin(bot, coin);
+//   socket.emit("pick_coin", { bot, coin, virtualGrid: grid.toJSON() });
+// };
+// const onApplyMoveToBot = (bot_id, move, options) => {
+//   if (!options.fromSocket) {
+//     socket.emit("apply_next_move_to_bot", {
+//       bot_id,
+//       move,
+//       virtualGrid: grid.toJSON(),
+//     });
+//   }
+// };
 /**
  * An object has been updated, so this deletes
  * the previous div and creates a new one with the new
@@ -726,7 +742,15 @@ const addRemoveBotIcon = (bot) => {
   removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing bot with id ${bot.id}`);
+    // If clicking the removing bot, then unset
     grid.remove_bot(bot.id);
+    let bots_container = document.getElementById("bots");
+    document.body.removeAttribute("chosen-bot");
+    selectedBotMessage.innerText = `Select a bot`;
+    for (let template of bots_container.children) {
+      template.removeAttribute("chosen-bot");
+    }
+    currentBotId = null;
     socket.emit("remove_bot", { bot, virtualGrid: grid.toJSON() });
   });
   bot_dom.appendChild(removeIcon);
@@ -772,11 +796,14 @@ const onRemoveObstacle = (obstacle) => {
   let obstacle_dom = document.getElementById(DOM_ID);
   obstacle_dom.remove();
 };
-const onRemoveCoin = (coin) => {
+const onRemoveCoin = (coin, options) => {
   // Remove the coin from the grid
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
   let coin_dom = document.getElementById(DOM_ID);
   coin_dom.remove();
+  if (!options.fromSocket) {
+    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+  }
 };
 /**
  * A bot has been created on the VirtualGrid system. This method
@@ -795,13 +822,19 @@ const drawBot = (bot) => {
   //Creating a div at the given position
   let bot_dom = document.createElement("div");
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
+  if (bot.id === currentBotId) {
+    bot_dom.classList.add("current-bot");
+    bot_dom.setAttribute("chosen-bot", "");
+  }
   bot_dom.classList.add("bot-container");
   bot_dom.classList.add("grab");
   bot_dom.setAttribute("id", DOM_ID);
   bot_dom.setAttribute("grid_object", "true");
+  bot_dom.setAttribute("type", "bot");
   bot_dom.style.left = `${cell_size * i}px`;
   bot_dom.style.bottom = `${cell_size * j}px`;
   bot_dom.style.touchAction = "none";
+  bot_dom.setAttribute("angle", bot.angle);
 
   // Creates the underlying image, with the given dimensions and orientation
   let default_angle = image_rotate_90 && angle % 180 === 90 ? 90 : 0;
@@ -846,6 +879,7 @@ const drawObstacle = (obstacle) => {
   obstacle_dom.classList.add("obstacle-container");
   obstacle_dom.classList.add("grab");
   obstacle_dom.setAttribute("id", DOM_ID);
+  obstacle_dom.setAttribute("type", "obstacle");
   obstacle_dom.setAttribute("grid_object", "true");
   obstacle_dom.style.left = `${cell_size * i}px`;
   obstacle_dom.style.bottom = `${cell_size * j}px`;
@@ -889,6 +923,7 @@ const drawCoin = (coin) => {
   coin_dom.classList.add("grab");
   coin_dom.setAttribute("id", DOM_ID);
   coin_dom.setAttribute("grid_object", "true");
+  coin_dom.setAttribute("type", "coin");
   coin_dom.style.left = `${cell_size * i}px`;
   coin_dom.style.bottom = `${cell_size * j}px`;
   coin_dom.style.touchAction = "none";
@@ -921,10 +956,16 @@ const getAssetTemplate = (aruco_id) => {
  */
 const onAddBot = (bot) => {
   let DOM_ID = drawBot(bot);
+  changeMovingBotsButton.disabled = Object.keys(grid.bots).length < 2;
+
   if (selectedMode === "virtual") {
-    //Makes the created div draggable
-    addRotateBotIcon(bot);
-    addRemoveBotIcon(bot);
+    console.log(bot.id);
+    console.log(currentBotId);
+    if (bot.id === currentBotId) {
+      //Makes the created div draggable
+      addRotateBotIcon(bot);
+      addRemoveBotIcon(bot);
+    }
     setupDraggable(`#${DOM_ID}`, cell_size);
   } else {
     addBotTemplate(getAssetTemplate(bot.id));
@@ -938,6 +979,10 @@ const addBotToFollowSelect = (bot) => {
     //Already exists, don't add it
     return;
   }
+  if (Number(currentBotId) === Number(bot.id)) {
+    //Don't add itself as a target
+    return;
+  }
   let option = document.createElement("option");
   option.setAttribute("value", bot.id);
   option.innerText = `Bot ${bot.id}`;
@@ -946,6 +991,10 @@ const addBotToFollowSelect = (bot) => {
 const addBotToRunFromSelect = (bot) => {
   if (run_away_from_select.querySelector(`[value="${bot.id}"]`)) {
     //Already exists, don't add it
+    return;
+  }
+  if (Number(currentBotId) === Number(bot.id)) {
+    //Don't add itself as a run away from
     return;
   }
   let option = document.createElement("option");
@@ -1215,18 +1264,23 @@ const changeMovingBotsHandler = async (options = {}) => {
     changeMovingBotsButton.classList.remove("bot-start");
     changeMovingBotsButton.classList.add("bot-stop");
   }
-
-  let promises = [];
-  for (let bot_id in grid.bots) {
-    let promise;
-    if (was_moving) {
-      promise = stopMovingBot(bot_id);
-    } else {
-      promise = startMovingBot(bot_id);
-    }
-    promises.push(promise);
+  //
+  if (was_moving) {
+    await stopMovingBot(currentBotId);
+  } else {
+    await startMovingBot(currentBotId);
   }
-  await Promise.all(promises);
+  // let promises = [];
+  // for (let bot_id in grid.bots) {
+  //   let promise;
+  //   if (was_moving) {
+  //     promise = stopMovingBot(bot_id);
+  //   } else {
+  //     promise = startMovingBot(bot_id);
+  //   }
+  //   promises.push(promise);
+  // }
+  // await Promise.all(promises);
 };
 changeMovingBotsButton.addEventListener("click", async () => {
   await changeMovingBotsHandler();
@@ -1265,8 +1319,7 @@ check_gridlines.addEventListener("change", (evt) => {
 // });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
-  let bot_id = 1; //TODO: Change this to the bot_id for this user
-  grid.update_bot_policy(bot_id, "FOLLOW", checked);
+  grid.update_bot_policy(currentBotId, "FOLLOW", checked);
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1276,8 +1329,7 @@ follow_checkbox.addEventListener("change", (evt) => {
 });
 run_away_from_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
-  let bot_id = 1; //TODO: Change this to the bot_id for this user
-  grid.update_bot_policy(bot_id, "RUN_AWAY_FROM", checked);
+  grid.update_bot_policy(currentBotId, "RUN_AWAY_FROM", checked);
 
   let parent = evt.target.parentNode;
   if (checked) {
@@ -1304,25 +1356,21 @@ collect_checkbox.addEventListener("change", (evt) => {
 //---------------------------Bot policy select handlers-------------------------------------//
 collect_select.addEventListener("change", (evt) => {
   let type = evt.target.value;
-  let bot_id = 1; //TODO: Change this to the bot_id for this user
-  grid.update_bot_collect(bot_id, type);
+  grid.update_bot_collect(currentBotId, type);
 });
 
 follow_select.addEventListener("change", (evt) => {
   let follow_id = Number(evt.target.value);
-  let bot_id = 1; //TODO: Change this to the bot_id for this user
-  grid.update_bot_follow(bot_id, follow_id);
+  grid.update_bot_follow(currentBotId, follow_id);
 });
 
 run_away_from_select.addEventListener("change", (evt) => {
   let run_away_from_id = Number(evt.target.value);
-  let bot_id = 1; //TODO: Change this to the bot_id for this user
-  grid.update_bot_run_away_from(bot_id, run_away_from_id);
+  grid.update_bot_run_away_from(currentBotId, run_away_from_id);
 });
 
 //------------------------------ Bot distance handlers ------------------------------------//
 movementTypeSelect.addEventListener("change", (evt) => {
   let key = evt.target.value;
-  let bot_id = 1; //TODO Change this to the bot_id for this user
-  grid.update_bot_movement_type(bot_id, key);
+  grid.update_bot_movement_type(currentBotId, key);
 });

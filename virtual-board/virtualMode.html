@@ -33,6 +33,26 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
 <body id="body">
     <div class="container">
         <div id="mySidebar" class="sidebar">
+            <div id="objects" class="card">
+                <div valid-mode="virtual" class="card-header"><center><h5>Available Objects</h5></center></div>
+                <div valid-mode="camera" class="card-header"><center><h5>Detected Objects</h5></center></div>
+
+                <div class="card-body" id="objects-inner">
+                    <center valid-mode="virtual"><small>Drag and drop into the grid</small></center>
+                    <p style="margin-bottom: 0;">Bots</p>
+                    <div id="bots" class="border border-dark p-2">
+                        
+                    </div>
+                    <p style="margin-bottom: 0; margin-top: 15px;">Obstacles</p>
+                    <div id="obstacles" class="border border-dark p-2">
+                        
+                    </div>
+                    <p style="margin-bottom: 0; margin-top: 15px;">Rewards</p>
+                    <div id="coins" class="border border-dark p-2">
+                        
+                    </div>
+                </div>
+            </div>
             <div id = "controls" class="card">
                 <div class="card-header">
                     <div style="display:flex; align-items: center;"><h5 style="margin-left: 20%;">Controls and Settings</h5>
@@ -62,7 +82,8 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 <div class="card-body">
                     <center><button valid-mode="camera" id="bluetooth_button" class="btn btn-outline-success mb-3">Connect to Bluetooth <i class="fa fa-bluetooth"></i></button></center>
                     <!-- <center><small>Select a bot with your mouse</small></center> -->
-                    <div class="row">
+                    <center><strong valid-mode="virtual" id="selectedBotMessage">Select a bot</strong></center>
+                    <div class="row" id="botUpdateSelector">
                         <div class="col p-1">
                             <p style="font-size: 14px; margin-bottom: 0;">Select policy</p>
                             <!-- <div class="form-check policy-inactive"> -->
@@ -130,26 +151,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                     </div>
                 </div>
             </div>
-            <div id="objects" class="card">
-                <div valid-mode="virtual" class="card-header"><center><h5>Available Objects</h5></center></div>
-                <div valid-mode="camera" class="card-header"><center><h5>Detected Objects</h5></center></div>
 
-                <div class="card-body" id="objects-inner">
-                    <center valid-mode="virtual"><small>Drag and drop into the grid</small></center>
-                    <p style="margin-bottom: 0;">Bots</p>
-                    <div id="bots" class="border border-dark p-2">
-                        
-                    </div>
-                    <p style="margin-bottom: 0; margin-top: 15px;">Obstacles</p>
-                    <div id="obstacles" class="border border-dark p-2">
-                        
-                    </div>
-                    <p style="margin-bottom: 0; margin-top: 15px;">Rewards</p>
-                    <div id="coins" class="border border-dark p-2">
-                        
-                    </div>
-                </div>
-            </div>
         </div>
     
         <div id="main">
@@ -162,7 +164,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <div id="waitingRoom">
             </div>
             <div style="display:flex; align-items: center;">
-                <button id="changeMovingBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;">Start Moving!</button>
+                <button id="changeMovingBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;" disabled>Start Moving!</button>
                 <div style="width:280px;"></div>
                 <div valid-mode="camera" id="activate_camera_div">
                     <label class="form-check-label mt-1" for="activate_camera" style="font-size: 14px; margin-right:5px; color:antiquewhite;">Activate Camera</label>
@@ -226,6 +228,10 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
         roomId = urlParams.get("room");
         console.log(roomId);
         document.addEventListener('DOMContentLoaded', () => socket.emit("join_room_page", roomId)); 
+
+        let currentBotId;
+        window.currentBotId = currentBotId;
+
     </script>
 </body>
 

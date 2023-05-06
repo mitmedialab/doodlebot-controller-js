@@ -242,12 +242,14 @@ socketIO.on("connection", (socket) => {
   });
   socket.on("add_bot", async ({ bot, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected add bot. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    console.log("detected following bot added:");
+    console.log(bot);
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_bot", bot);
   });
   socket.on("add_obstacle", async ({ obstacle, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected add obstacle. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_obstacle", obstacle);
   });
   socket.on("add_coin", async ({ coin, virtualGrid }) => {
@@ -257,24 +259,24 @@ socketIO.on("connection", (socket) => {
   });
   socket.on("remove_bot", async ({ bot, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected remove bot. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_bot", bot);
   });
   socket.on("remove_obstacle", async ({ obstacle, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected remove obstacle. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_obstacle", obstacle);
   });
   socket.on("remove_coin", async ({ coin, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected remove coin. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_coin", coin);
   });
   socket.on("apply_next_move_to_bot", ({ bot_id, move, virtualGrid }) => {
     console.log(
       `[${socket.activeRoom}] Detected apply_next_move_to_bot bot. Notifying.`
     );
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast
       .to(socket.activeRoom)
       .emit("applied_next_move_to_bot", { bot_id, move });
@@ -290,24 +292,24 @@ socketIO.on("connection", (socket) => {
   //socket.emit("update_bot", {id, update, virtualGrid: grid.toJSON()})
   socket.on("update_bot", ({ id, update, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected update bot. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("updated_bot", { id, update });
   });
   socket.on("update_obstacle", ({ id, update, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected update obstacle. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast
       .to(socket.activeRoom)
       .emit("updated_obstacle", { id, update });
   });
   socket.on("update_coin", ({ id, update, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected update coin. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("updated_coin", { id, update });
   });
   socket.on("remove_coin", ({ coin, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected remove coin. Notifying.`);
-    room_info[socket.activeRoom] = virtualGrid;
+    // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_coin", { coin });
   });
 
@@ -316,6 +318,11 @@ socketIO.on("connection", (socket) => {
 
     socket.broadcast.to(socket.activeRoom).emit("changed_moving", {});
   });
+  // socket.on("pick_coin", ({ bot, coin, virtualGrid }) => {
+  //   console.log(`[${socket.activeRoom}] Detected pick coin. Notifying.`);
+
+  //   socket.broadcast.to(socket.activeRoom).emit("picked_coin", { bot, coin });
+  // });
 });
 
 const port = 5001;

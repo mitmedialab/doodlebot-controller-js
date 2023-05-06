@@ -215,7 +215,7 @@ class VirtualGrid {
     if (type === BOT_TYPE) {
       newObject = {
         coins: [],
-        policies: new Set(),
+        policies: [],
         // distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
         movement_type: MOVEMENT_VALUES.RANDOM.value,
         only_reachable: false, //Whether to only calculate distance to reachable points
@@ -747,10 +747,12 @@ class VirtualGrid {
       return;
     }
     let policy_value = BOT_POLICIES[policy_key].value;
+    console.log(bot.policies.toString());
     if (needToAdd) {
-      bot.policies.add(policy_value);
+      bot.policies.push(policy_value);
     } else {
-      bot.policies.delete(policy_value);
+      let idx = bot.policies.indexOf(policy_value);
+      bot.policies.splice(idx, 1);
     }
     console.log(
       `Updated bot ${bot_id} and now new policies are ${Array.from(
@@ -1254,20 +1256,20 @@ class VirtualGrid {
     if (bot.movement_type === MOVEMENT_VALUES.RANDOM.value) {
       return this.get_next_move_randomly(bot_id, bot_index);
     }
-    if (bot.policies.has(BOT_POLICIES.COLLECT.value)) {
+    if (bot.policies.includes(BOT_POLICIES.COLLECT.value)) {
       next_move = this.get_next_move_to_collect(bot_id, num_turns);
       if (next_move) {
         return next_move;
       }
     }
-    if (bot.policies.has(BOT_POLICIES.RUN_AWAY_FROM.value)) {
+    if (bot.policies.includes(BOT_POLICIES.RUN_AWAY_FROM.value)) {
       next_move = this.get_next_move_closer_or_farther(bot_id, false);
       if (next_move) {
         return next_move;
       }
     }
 
-    if (bot.policies.has(BOT_POLICIES.FOLLOW.value)) {
+    if (bot.policies.includes(BOT_POLICIES.FOLLOW.value)) {
       next_move = this.get_next_move_closer_or_farther(bot_id, true);
       if (next_move) {
         return next_move;
@@ -1371,7 +1373,7 @@ class VirtualGrid {
    */
   get_target_coins(bot) {
     let valid_coins = [];
-    let is_collecting = bot.policies.has(BOT_POLICIES.COLLECT.value);
+    let is_collecting = bot.policies.includes(BOT_POLICIES.COLLECT.value);
     if (is_collecting) {
       for (let coin_id in this.coins) {
         let coin_index = 0;
@@ -1450,7 +1452,7 @@ class VirtualGrid {
    */
   move_bot_using_policies(bot_id, bot_index = 0, num_turns) {
     let bot = this.bots[bot_id][bot_index];
-    if (bot.policies.has(BOT_POLICIES.COLLECT.value)) {
+    if (bot.policies.includes(BOT_POLICIES.COLLECT.value)) {
       //Only do this if there are coins to move to
       if (Object.keys(this.coins).length !== 0) {
         return this.move_bot_using_get_coins(bot_id, bot_index, num_turns);
@@ -1459,10 +1461,10 @@ class VirtualGrid {
 
     if (bot.policies.has(BOT_POLICIES.RUN_AWAY_FROM.value)) {
       return this.move_bot_closer_or_farther(bot_id, bot_index, false);
-    } else if (bot.policies.has(BOT_POLICIES.FOLLOW.value)) {
+    } else if (bot.policies.includes(BOT_POLICIES.FOLLOW.value)) {
       // Default is to move rand
       return this.move_bot_closer_or_farther(bot_id, bot_index, true);
-    } else if (bot.policies.has(BOT_POLICIES.RANDOM.value)) {
+    } else if (bot.policies.includes(BOT_POLICIES.RANDOM.value)) {
       return this.move_bot_randomly(bot_id, bot_index);
     } else {
       return { bot: bot };
@@ -1907,11 +1909,12 @@ class VirtualGrid {
       return result;
     }
   }
-  remove_coin(coin_id, coin_index = 0) {
+  remove_coin(coin_id, options = {}) {
+    let coin_index = 0;
     if (!(coin_id in this.coins)) {
       return;
     }
-    this.onRemoveCoin(this.coins[coin_id][coin_index]);
+    this.onRemoveCoin(this.coins[coin_id][coin_index], options);
     delete this.coins[coin_id][coin_index];
     // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
