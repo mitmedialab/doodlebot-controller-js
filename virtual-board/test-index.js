@@ -598,8 +598,8 @@ document.addEventListener("DOMContentLoaded", () => {
     canvasContainer.style.width = `${cell_size * cols}px`;
     canvasContainer.style.height = `${cell_size * rows}px`;
 
-    // videoObj.setAttribute("width", cell_size * cols);
-    // videoObj.setAttribute("height", cell_size * rows);
+    videoObj.setAttribute("width", cell_size * cols);
+    videoObj.setAttribute("height", cell_size * rows);
 
     image_from_stream.setAttribute("width", cell_size * cols);
     image_from_stream.setAttribute("height", cell_size * rows);
@@ -610,7 +610,9 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddObstacle,
     onAddCoin,
     onPickupCoin,
-    onUpdateObject,
+    onUpdateBot,
+    onUpdateObstacle,
+    onUpdateCoin,
     onRemoveBot,
     onRemoveObstacle,
     onRemoveCoin,
@@ -655,24 +657,41 @@ const onPickupCoin = (bot, coin) => {
  *
  * @param {*} updatedObject
  */
-const onUpdateObject = (updatedObject) => {
-  let DOM_ID = `${updatedObject.type}-${updatedObject.id}`;
+const onUpdateBot = (updateBot) => {
+  let DOM_ID = `${BOT_TYPE}-${updateBot.id}`;
   let div = document.getElementById(DOM_ID);
   div.remove(); //Not needed anymore, but paint the object again
   if (selectedMode === "camera") {
     //Also remove the template as it'll get created again
-    let template = document.getElementById(getAssetTemplate(updatedObject.id));
+    let template = document.getElementById(getAssetTemplate(updateBot.id));
     template.remove();
   }
+  onAddBot(updateBot);
+};
 
-  let { type } = updatedObject;
-  if (type === BOT_TYPE) {
-    onAddBot(updatedObject);
-  } else if (type === OBSTACLE_TYPE) {
-    onAddObstacle(updatedObject);
-  } else if (type === COIN_TYPE) {
-    onAddCoin(updatedObject);
+const onUpdateObstacle = (updatedObstacle) => {
+  let DOM_ID = `${OBSTACLE_TYPE}-${updatedObstacle.id}`;
+  let div = document.getElementById(DOM_ID);
+  div.remove(); //Not needed anymore, but paint the object again
+  if (selectedMode === "camera") {
+    //Also remove the template as it'll get created again
+    let template = document.getElementById(
+      getAssetTemplate(updatedObstacle.id)
+    );
+    template.remove();
   }
+  onAddObstacle(updatedObstacle);
+};
+const onUpdateCoin = (updatedCoin) => {
+  let DOM_ID = `${COIN_TYPE}-${updatedCoin.id}`;
+  let div = document.getElementById(DOM_ID);
+  div.remove(); //Not needed anymore, but paint the object again
+  if (selectedMode === "camera") {
+    //Also remove the template as it'll get created again
+    let template = document.getElementById(getAssetTemplate(updatedCoin.id));
+    template.remove();
+  }
+  onAddCoin(updatedCoin);
 };
 /**
  * Assumes a bot with id `bot-id` exists
@@ -687,7 +706,13 @@ const addRotateBotIcon = (bot) => {
   rotateArrow.classList.add("edit-icon");
   rotateArrow.addEventListener("click", () => {
     console.log("Tyring to turn 90");
-    grid.turn_bot(bot.id, 90);
+    let move = ["turn", 90];
+    grid.apply_next_move_to_bot(bot.id, move);
+    socket.emit("apply_next_move_to_bot", {
+      bot_id: bot.id,
+      move: move,
+      virtualGrid: grid.toJSON(),
+    });
   });
   bot_dom.appendChild(rotateArrow);
 };
@@ -702,6 +727,7 @@ const addRemoveBotIcon = (bot) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing bot with id ${bot.id}`);
     grid.remove_bot(bot.id);
+    socket.emit("remove_bot", { bot, virtualGrid: grid.toJSON() });
   });
   bot_dom.appendChild(removeIcon);
 };
@@ -715,6 +741,7 @@ const addRemoveObstacleIcon = (obstacle) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${obstacle.id}`);
     grid.remove_obstacle(obstacle.id);
+    socket.emit("remove_obstacle", { obstacle, virtualGrid: grid.toJSON() });
   });
   obstacle_dom.appendChild(removeIcon);
 };
@@ -728,6 +755,7 @@ const addRemoveCoinIcon = (coin) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${coin.id}`);
     grid.remove_coin(coin.id);
+    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
   });
   coin_dom.appendChild(removeIcon);
 };
@@ -984,31 +1012,46 @@ let intervals = {}; //bot_id -> interval
  * @param {*} bot_id
  * @param {*} evt
  */
-async function changeMovingBot(bot_id, opt = {}) {
+async function stopMovingBot(bot_id, opt = {}) {
+  let bot = grid.bots[bot_id][0];
+  if (!bot.isMoving) {
+    console.log("Tried to stop bot but it's not moving!");
+    return;
+  }
+  bot.isMoving = false;
+  if (!opt.noSocket) {
+    // socket.emit("stop_bot", "");
+  }
+  if (selectedMode === "camera") {
+    // await stopMovingBot_camera(currentBotId);
+    // TODO: Check if need to do anything here
+  } else {
+    stopMovingBot_virtual(bot_id);
+  }
+}
+
+/**
+ * If the bot is moving, it will stop (and vice versa)
+ *
+ * @param {*} bot_id
+ * @param {*} evt
+ */
+async function startMovingBot(bot_id, opt = {}) {
   let bot = grid.bots[bot_id][0];
   if (bot.isMoving) {
-    bot.isMoving = false;
-    if (!opt.noSocket) {
-      // socket.emit("stop_bot", "");
-    }
-    if (selectedMode === "camera") {
-      // await stopMovingBot_camera(currentBotId);
-      // TODO: Check if need to do anything here
-    } else {
-      stopMovingBot_virtual(bot_id);
-    }
-  } else {
-    if (!opt.noSocket) {
-      // socket.emit("start_bot", "");
-    }
-    //Start
-    bot.isMoving = true;
+    console.log("Tried to start bot but already started!");
+    return;
+  }
+  if (!opt.noSocket) {
+    // socket.emit("start_bot", "");
+  }
+  //Start
+  bot.isMoving = true;
 
-    if (selectedMode === "camera") {
-      await startMovingBot_camera(bot_id);
-    } else {
-      startMovingBot_virtual(bot_id);
-    }
+  if (selectedMode === "camera") {
+    await startMovingBot_camera(bot_id);
+  } else {
+    startMovingBot_virtual(bot_id);
   }
 }
 function getRealBotFromArucoId(aruco_bot_id) {
@@ -1114,6 +1157,11 @@ function startMovingBot_virtual(bot_id) {
     }
     console.log(next_move);
     grid.apply_next_move_to_bot(bot_id, next_move);
+    socket.emit("apply_next_move_to_bot", {
+      bot_id,
+      move: next_move,
+      virtualGrid: grid.toJSON(),
+    });
     // Now updte the view of the bot
     // updateBotInVirtualGrid(bot_id, BOT_TYPE);
     // Number(
@@ -1135,8 +1183,12 @@ function stopMovingBot_virtual(bot_id) {
   clearInterval(intervals[bot_id]);
   delete intervals[bot_id];
 }
-startBotsButton.addEventListener("click", async () => {
+/**Gets called when the button gets pressed */
+const changeMovingBotsHandler = async (options = {}) => {
   //This decides to hide the controls, and make sure the grid is not interactive
+  if (!options.fromSocket) {
+    socket.emit("change_moving", {});
+  }
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
     body.removeAttribute("is-moving");
@@ -1147,9 +1199,9 @@ startBotsButton.addEventListener("click", async () => {
     document.getElementById("mySidebar").style.width = "500px";
     document.getElementById("main").style.marginLeft = "500px";
     //Changing button style
-    startBotsButton.innerHTML = "Start moving";
-    startBotsButton.classList.remove("bot-stop");
-    startBotsButton.classList.add("bot-start");
+    changeMovingBotsButton.innerHTML = "Start moving";
+    changeMovingBotsButton.classList.remove("bot-stop");
+    changeMovingBotsButton.classList.add("bot-start");
   } else {
     body.setAttribute("is-moving", "true");
 
@@ -1159,17 +1211,29 @@ startBotsButton.addEventListener("click", async () => {
     document.getElementById("objects").style.visibility = "hidden";
     document.getElementById("main").style.marginLeft = "250px";
 
-    startBotsButton.innerHTML = "Stop moving";
-    startBotsButton.classList.remove("bot-start");
-    startBotsButton.classList.add("bot-stop");
+    changeMovingBotsButton.innerHTML = "Stop moving";
+    changeMovingBotsButton.classList.remove("bot-start");
+    changeMovingBotsButton.classList.add("bot-stop");
   }
 
   let promises = [];
   for (let bot_id in grid.bots) {
-    promises.push(changeMovingBot(bot_id));
+    let promise;
+    if (was_moving) {
+      promise = stopMovingBot(bot_id);
+    } else {
+      promise = startMovingBot(bot_id);
+    }
+    promises.push(promise);
   }
   await Promise.all(promises);
+};
+changeMovingBotsButton.addEventListener("click", async () => {
+  await changeMovingBotsHandler();
 });
+
+//To use later in socket handler
+window.changeMovingBotsHandler = changeMovingBotsHandler;
 
 check_gridlines.addEventListener("change", (evt) => {
   let checked = evt.target.checked; //checked means hide it

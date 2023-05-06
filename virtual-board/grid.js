@@ -69,7 +69,9 @@ let defaultOptions = {
   onRemoveBot: (removedBot) => {},
   onRemoveObstacle: (removedObstacle) => {},
   onRemoveCoin: (removedCoin) => {},
-  onUpdateObject: (updatedObject) => {},
+  onUpdateBot: (updatedBot) => {},
+  onUpdateObstacle: (updatedObstacle) => {},
+  onUpdateCoin: (updatedCoin) => {},
   onApplyMoveToBot: (bot_id, move) => {},
 };
 let defaultBot = {};
@@ -89,7 +91,9 @@ class VirtualGrid {
       onRemoveBot,
       onRemoveObstacle,
       onRemoveCoin,
-      onUpdateObject,
+      onUpdateBot,
+      onUpdateObstacle,
+      onUpdateCoin,
       onApplyMoveToBot,
     } = options;
 
@@ -102,7 +106,9 @@ class VirtualGrid {
     this.onRemoveBot = onRemoveBot;
     this.onRemoveObstacle = onRemoveObstacle;
     this.onRemoveCoin = onRemoveCoin;
-    this.onUpdateObject = onUpdateObject;
+    this.onUpdateBot = onUpdateBot;
+    this.onUpdateObstacle = onUpdateObstacle;
+    this.onUpdateCoin = onUpdateCoin;
     this.onApplyMoveToBot = onApplyMoveToBot;
     // this.drawBoard = drawBoard;
     // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
@@ -627,7 +633,7 @@ class VirtualGrid {
       // this.add_random_coin(); //TODO: just for fun
       // this.add_or_change_obstacle(); //TODO: just for fun
     }
-    this.onUpdateObject(bot);
+    this.onUpdateBot(bot);
     return { success: true, bot: bot, message: message };
   }
   /**
@@ -721,7 +727,7 @@ class VirtualGrid {
       // this.add_or_change_obstacle(); //TODO: just for fun
     }
     let message = `Moved succesfully`;
-    this.onUpdateObject(bot);
+    this.onUpdateBot(bot);
     return { success: true, bot: bot, message: message };
   }
   /**
@@ -1522,20 +1528,20 @@ class VirtualGrid {
       obstacle.real_bottom_left = potentialObstacle.real_bottom_left;
     }
     let message = `Moved succesfully`;
-    this.onUpdateObject(obstacle);
+    this.onUpdateObstacle(obstacle);
     return { success: true, obstacle: obstacle, message: message };
   }
   replace_bot(bot_id, bot) {
     this.bots[bot_id][0] = bot;
-    this.onUpdateObject(bot);
+    this.onUpdateBot(bot);
   }
   replace_obstacle(obstacle_id, obstacle) {
     this.obstacles[obstacle_id] = obstacle;
-    this.onUpdateObject(obstacle);
+    this.onUpdateObstacle(obstacle);
   }
   replace_coin(coin_id, coin) {
     this.coins[coin_id][0] = coin;
-    this.onUpdateObject(coin);
+    this.onUpdateCoin(coin);
   }
   /**
    *
@@ -1595,7 +1601,7 @@ class VirtualGrid {
       coin.real_bottom_left = potentialCoin.real_bottom_left;
     }
     let message = `Moved succesfully`;
-    this.onUpdateObject(coin);
+    this.onUpdateCoin(coin);
     return { success: true, coin: coin, message: message };
   }
   update_only_reachable(bot_id, only_reachable, bot_index = 0) {
@@ -1813,7 +1819,7 @@ class VirtualGrid {
     // this.drawBoard(this.print_board());
     // TODO: Under assumption of square bots, turning should always be fine
     // But might be better to check for other cases.
-    this.onUpdateObject(bot);
+    this.onUpdateBot(bot);
     return {
       bot,
       success: true,

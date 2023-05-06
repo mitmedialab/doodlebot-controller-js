@@ -122,18 +122,39 @@ function updateVirtualGrid(obj_id, type, grid_position) {
 
   // Try different methods depending on the type of object
   let res = {};
+  let update;
   if (type === BOT_TYPE) {
-    res = grid.update_bot(object.id, {
-      real_bottom_left: [i, j],
-    });
+    update = { real_bottom_left: [i, j] };
+    res = grid.update_bot(object.id, update);
+    if (res.success) {
+      socket.emit("update_bot", {
+        id: object.id,
+        update,
+        virtualGrid: grid.toJSON(),
+      });
+    }
   } else if (type === OBSTACLE_TYPE) {
-    res = grid.update_obstacle(object.id, {
-      real_bottom_left: [i, j],
-    });
+    update = { real_bottom_left: [i, j] };
+
+    res = grid.update_obstacle(object.id, update);
+    if (res.success) {
+      socket.emit("update_obstacle", {
+        id: object.id,
+        update,
+        virtualGrid: grid.toJSON(),
+      });
+    }
   } else if (type === COIN_TYPE) {
-    res = grid.update_coin(object.id, {
-      real_bottom_left: [i, j],
-    });
+    update = { real_bottom_left: [i, j] };
+
+    res = grid.update_coin(object.id, update);
+    if (res.success) {
+      socket.emit("update_coin", {
+        id: object.id,
+        update,
+        virtualGrid: grid.toJSON(),
+      });
+    }
   } else {
     console.log(`Invalid type ${type} from if '${id}'`);
   }
@@ -242,7 +263,7 @@ function onDropHandler(event) {
     if (type === BOT_TYPE) {
       let id = grid.getNewBotId();
       let policies = id === 2 ? new Set(["run_away_from"]) : new Set(); //TODO: Don't hardcode this
-      grid.add_bot({
+      let { bot } = grid.add_bot({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
@@ -257,20 +278,23 @@ function onDropHandler(event) {
         only_reachable: true, //TODO: Don't hardcode this
         targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
+      console.log("emiting bot...");
+      socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
     } else if (type === OBSTACLE_TYPE) {
       let id = grid.getNewObstacleId();
 
-      grid.add_obstacle({
+      let { obstacle } = grid.add_obstacle({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
         width: width,
         height: height,
       });
+      socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
     } else if (type === COIN_TYPE) {
       let id = grid.getNewCoinId();
 
-      grid.add_coin({
+      let { coin } = grid.add_coin({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
@@ -278,6 +302,7 @@ function onDropHandler(event) {
         height: height,
         coin_collect_type: coin_collect_type,
       });
+      socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
     } else {
       console.log(`Invalid type: ${type}`);
     }

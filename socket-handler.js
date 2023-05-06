@@ -82,28 +82,50 @@ function setupSocket() {
     // drawBoard();
   });
   socket.on("added_bot", (bot) => {
-    grid.add_bot(bot);
-    drawBoard();
+    grid.add_bot(bot, { fromSocket: true });
+    // drawBoard();
     // create_bot_options(bot) //Don't show this since it won't be editable by user.
   });
   //reminder: domingo 8am -> 8pm "se te ha hecho el calendario correcto, no se "
   // si es que se va el
   socket.on("added_obstacle", (obstacle) => {
-    grid.add_obstacle(obstacle);
-    drawBoard();
+    grid.add_obstacle(obstacle, { fromSocket: true });
   });
   socket.on("added_coin", (coin) => {
-    grid.add_coin(coin);
-    drawBoard();
+    grid.add_coin(coin, { fromSocket: true });
   });
-  socket.on("moved_bot", ({ bot_id, move }) => {
+  socket.on("removed_bot", (bot) => {
+    grid.remove_bot(bot.id);
+  });
+  socket.on("removed_obstacle", (obstacle) => {
+    grid.remove_obstacle(obstacle.id);
+  });
+  socket.on("removed_coin", (coin) => {
+    grid.remove_coin(coin.id);
+  });
+  socket.on("applied_next_move_to_bot", ({ bot_id, move }) => {
     grid.apply_next_move_to_bot(bot_id, move, { noSocket: true });
-    drawBoard();
   });
   socket.on("started_bot", () => {
     startMovingButton_ClickHandler(currentBotId);
   });
   socket.on("stopped_bot", () => {
     stopMovingButton_ClickHandler(currentBotId);
+  });
+  socket.on("updated_bot", ({ id, update }) => {
+    grid.update_bot(id, update);
+  });
+  socket.on("updated_obstacle", ({ id, update }) => {
+    grid.update_obstacle(id, update);
+  });
+  socket.on("updated_coin", ({ id, update }) => {
+    grid.update_coin(id, update);
+  });
+  socket.on("removed_coin", ({ coin }) => {
+    grid.remove_coin(coin.id);
+  });
+
+  socket.on("changed_moving", async () => {
+    await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button
   });
 }
