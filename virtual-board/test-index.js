@@ -592,6 +592,9 @@ const setupSelectOptions = () => {
     movementTypeSelect.appendChild(option);
   });
 };
+const onChangeLoadStatus = () => {
+  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
+};
 document.addEventListener("DOMContentLoaded", () => {
   setupSelectOptions();
   if (selectedMode === "virtual") {
@@ -621,6 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
     onReplaceBot,
     onReplaceObstacle,
     onReplaceCoin,
+    onChangeLoadStatus,
     // onApplyMoveToBot,
   });
   window.grid = grid;
@@ -786,6 +790,8 @@ const onRemoveBot = (bot) => {
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   let bot_dom = document.getElementById(DOM_ID);
   bot_dom.remove();
+
+  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 };
 const onRemoveObstacle = (obstacle) => {
   // Remove the obstacle from the grid
@@ -953,7 +959,7 @@ const getAssetTemplate = (aruco_id) => {
  */
 const setupNewBot = (bot) => {
   let DOM_ID = drawBot(bot);
-  changeMovingBotsButton.disabled = Object.keys(grid.bots).length < 2;
+  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 
   if (selectedMode === "virtual") {
     if (bot.id === currentBotId) {
@@ -1078,6 +1084,18 @@ let intervals = {}; //bot_id -> interval
  * @param {*} evt
  */
 async function stopMovingBot(bot_id) {
+  body.removeAttribute("is-moving");
+  //Stop
+  console.log("stopping...");
+  document.getElementById("controls").style.visibility = "visible";
+  document.getElementById("objects").style.visibility = "visible";
+  document.getElementById("mySidebar").style.width = "500px";
+  document.getElementById("main").style.marginLeft = "500px";
+  //Changing button style
+  changeMovingBotsButton.innerHTML = "Start moving";
+  changeMovingBotsButton.classList.remove("bot-stop");
+  changeMovingBotsButton.classList.add("bot-start");
+
   let bot = grid.bots[bot_id][0];
   if (!bot.isMoving) {
     console.log("Tried to stop bot but it's not moving!");
@@ -1091,7 +1109,6 @@ async function stopMovingBot(bot_id) {
     stopMovingBot_virtual(bot_id);
   }
 }
-
 /**
  * If the bot is moving, it will stop (and vice versa)
  *
@@ -1099,6 +1116,17 @@ async function stopMovingBot(bot_id) {
  * @param {*} evt
  */
 async function startMovingBot(bot_id) {
+  document.getElementById("mySidebar").style.width = "0";
+  document.getElementById("controls").style.visibility = "hidden";
+  document.getElementById("objects").style.visibility = "hidden";
+  document.getElementById("main").style.marginLeft = "250px";
+  body.setAttribute("is-moving", "true");
+
+  //Setting up the graphs for the bots. This could take a while
+  changeMovingBotsButton.innerHTML = "Stop moving";
+  changeMovingBotsButton.classList.remove("bot-start");
+  changeMovingBotsButton.classList.add("bot-stop");
+
   let bot = grid.bots[bot_id][0];
   if (bot.isMoving) {
     console.log("Tried to start bot but already started!");
@@ -1233,53 +1261,24 @@ const changeMovingBotsHandler = async (options = {}) => {
   }
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
-    body.removeAttribute("is-moving");
-    //Stop
-    console.log("stopping...");
-    document.getElementById("controls").style.visibility = "visible";
-    document.getElementById("objects").style.visibility = "visible";
-    document.getElementById("mySidebar").style.width = "500px";
-    document.getElementById("main").style.marginLeft = "500px";
-    //Changing button style
-    changeMovingBotsButton.innerHTML = "Start moving";
-    changeMovingBotsButton.classList.remove("bot-stop");
-    changeMovingBotsButton.classList.add("bot-start");
-  } else {
-    body.setAttribute("is-moving", "true");
-
-    console.log("starting...");
-    document.getElementById("mySidebar").style.width = "0";
-    document.getElementById("controls").style.visibility = "hidden";
-    document.getElementById("objects").style.visibility = "hidden";
-    document.getElementById("main").style.marginLeft = "250px";
-
-    changeMovingBotsButton.innerHTML = "Stop moving";
-    changeMovingBotsButton.classList.remove("bot-start");
-    changeMovingBotsButton.classList.add("bot-stop");
-  }
-  //
-  if (was_moving) {
-    await stopMovingBot(currentBotId);
+    await stopMovingBot(currentBotId, options);
   } else {
     await startMovingBot(currentBotId);
   }
-  // let promises = [];
-  // for (let bot_id in grid.bots) {
-  //   let promise;
-  //   if (was_moving) {
-  //     promise = stopMovingBot(bot_id);
-  //   } else {
-  //     promise = startMovingBot(bot_id);
-  //   }
-  //   promises.push(promise);
-  // }
-  // await Promise.all(promises);
 };
 changeMovingBotsButton.addEventListener("click", async () => {
   await changeMovingBotsHandler();
 });
-
+loadBotButton.addEventListener("click", () => {
+  grid.update_all_coin_graphs(currentBotId);
+  grid.change_load_status(currentBotId, true);
+  socket.emit("change_load_status", { bot_id: currentBotId, loaded: true });
+  loadBotButton.innerHTML = "Loaded!";
+});
 //To use later in socket handler
+// window.startMovingBot = startMovingBot;
+// window.stopMovingBot = stopMovingBot;
+// window.setupBeforeStart = setupBeforeStart;
 window.changeMovingBotsHandler = changeMovingBotsHandler;
 
 check_gridlines.addEventListener("change", (evt) => {

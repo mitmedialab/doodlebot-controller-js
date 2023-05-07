@@ -124,12 +124,16 @@ function setupSocket() {
   socket.on("applied_next_move_to_bot", ({ bot_id, move }) => {
     grid.apply_next_move_to_bot(bot_id, move, { fromSocket: true });
   });
-  socket.on("started_bot", () => {
-    startMovingButton_ClickHandler(currentBotId);
-  });
-  socket.on("stopped_bot", () => {
-    stopMovingButton_ClickHandler(currentBotId);
-  });
+  // socket.on("loaded_before_start", () => {
+
+  // });
+  // socket.on("started_bot", () => {
+  //   // startMovingButton_ClickHandler(currentBotId);
+  //   startMovingBot({ fromSocket: true });
+  // });
+  // socket.on("stopped_bot", () => {
+  //   stopMovingBot({ fromSocket: true });
+  // });
   socket.on("updated_bot", ({ id, update }) => {
     grid.update_bot(id, update);
   });
@@ -139,7 +143,10 @@ function setupSocket() {
   socket.on("updated_coin", ({ id, update }) => {
     grid.update_coin(id, update);
   });
-
+  socket.on("changed_load_status", ({ bot_id, loaded }) => {
+    console.log("receiving change loade stuatus of bot_id: " + bot_id);
+    grid.change_load_status(bot_id, loaded);
+  });
   socket.on("changed_moving", async () => {
     await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button
   });

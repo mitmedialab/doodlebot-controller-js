@@ -76,6 +76,7 @@ let defaultOptions = {
   onReplaceBot: (bot_id, bot, options) => {},
   onReplaceObstacle: (obstacle_id, obstacle, options) => {},
   onReplaceCoin: (coin_id, coin, options) => {},
+  onChangeLoadStatus: () => {},
 };
 let defaultBot = {};
 
@@ -101,6 +102,7 @@ class VirtualGrid {
       onReplaceBot,
       onReplaceObstacle,
       onReplaceCoin,
+      onChangeLoadStatus,
     } = options;
 
     this.rows = m;
@@ -128,6 +130,7 @@ class VirtualGrid {
     this.onReplaceBot = onReplaceBot;
     this.onReplaceObstacle = onReplaceObstacle;
     this.onReplaceCoin = onReplaceCoin;
+    this.onChangeLoadStatus = onChangeLoadStatus;
     // this.drawBoard = drawBoard;
     // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
     // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
@@ -137,6 +140,8 @@ class VirtualGrid {
     this.coins = {};
     this.graphs = {}; // bot_id => Reachability graph
     this.coin_graphs = {}; //coin_id -> Minimum distance graph
+    this.bots_loaded = []; //list of bot_ids that are ready to start
+
     for (let bot_id in bots) {
       let bot = bots[bot_id][0];
       this.add_bot(bot);
@@ -162,6 +167,22 @@ class VirtualGrid {
       obstacles: this.obstacles,
       coins: this.coins,
     };
+  }
+  change_load_status(bot_id, loaded) {
+    let already_exists = this.bots_loaded.includes(bot_id);
+    if (loaded && !already_exists) {
+      this.bots_loaded.push(bot_id);
+    } else if (!loaded && already_exists) {
+      let index = this.bots_included.indexOf(bot_id);
+      this.bots_loaded.splice(index, 1);
+    }
+    this.onChangeLoadStatus();
+  }
+  is_ready_to_start() {
+    let num_bots = Object.keys(this.bots).length;
+    let all_loaded = this.bots_loaded.length === num_bots;
+    let enough_bots = num_bots >= 2;
+    return enough_bots && all_loaded;
   }
   get_bot_angle(bot_id, bot_index = 0) {
     let bot = this.bots[bot_id][bot_index];
@@ -1579,10 +1600,8 @@ class VirtualGrid {
   }
   replace_coin(coin_id, coin, options) {
     let { is_new } = options;
-    if (is_new) {
-      // For coins we need to calculate grid graph too
-      this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
-    }
+    // this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+
     if (is_new && coin_id in this.obstacles) {
       console.log(
         `[replace_coin] Careful, is_new is ${is_new} but a coin with id ${coin_id} already exists`
@@ -1649,6 +1668,7 @@ class VirtualGrid {
       coin.real_bottom_left = potentialCoin.real_bottom_left;
     }
     let message = `Moved succesfully`;
+    // this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
     this.onUpdateCoin(coin);
     return { success: true, coin: coin, message: message };
   }
@@ -1909,26 +1929,36 @@ class VirtualGrid {
       let obstacle = result.object;
       delete result.object;
       result.obstacle = obstacle;
-      this.update_all_coin_graphs();
+      // this.update_all_coin_graphs();
       this.onAddObstacle(obstacle);
       return result;
     }
   }
-  update_all_coin_graphs() {
+  update_all_coin_graphs(bot_id) {
+    console.log(
+      `-----------------------Update all coins graph-----------------------------------------`
+    );
+    console.log(`Choosing ${bot_id} as reference`);
+
     //When obstacles change
     // Just get one bot's dimensions, assumes all bots are the same size
-    //TODO: What to do if there are no bots?
-    let bot_dimensions;
-    if (Object.keys(this.bots).length !== 0) {
-      let bot_index = 0;
-      let random_bot = Object.values(this.bots)[0][bot_index];
-      bot_dimensions = {
-        width: random_bot.width,
-        height: random_bot.height,
-      };
-    } else {
-      bot_dimensions = DEFAULT_BOT_DIMENSIONS;
-    }
+    let bot = this.bots[bot_id][0];
+    let bot_dimensions = {
+      width: bot.width,
+      height: bot.height,
+    };
+    // //TODO: What to do if there are no bots?
+    // let bot_dimensions;
+    // if (Object.keys(this.bots).length !== 0) {
+    //   let bot_index = 0;
+    //   let random_bot = Object.values(this.bots)[0][bot_index];
+    //   bot_dimensions = {
+    //     width: random_bot.width,
+    //     height: random_bot.height,
+    //   };
+    // } else {
+    //   bot_dimensions = DEFAULT_BOT_DIMENSIONS;
+    // }
     for (let coin_id in this.coins) {
       let coin_index = 0;
       let coin = this.coins[coin_id][coin_index];
@@ -1939,7 +1969,7 @@ class VirtualGrid {
     this.onRemoveObstacle(this.obstacles[obstacle_id][obstacle_index]);
     delete this.obstacles[obstacle_id][obstacle_index];
     // this.obstacles[obstacle_id].splice(obstacle_index, 1);
-    this.update_all_coin_graphs();
+    // this.update_all_coin_graphs();
     if (Object.keys(this.obstacles[obstacle_id]).length === 0) {
       delete this.obstacles[obstacle_id];
     }
@@ -1952,7 +1982,8 @@ class VirtualGrid {
       let coin = result.object;
       delete result.object;
       result.coin = coin;
-      this.coin_graphs[coin.id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+      //TODO: What happens if we have bots of different dimensions???
+      // this.coin_graphs[coin.id] = new GridGraph(this, coin, BOT_DIMENSIONS);
       this.onAddCoin(coin);
       return result;
     }

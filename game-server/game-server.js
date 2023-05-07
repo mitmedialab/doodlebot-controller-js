@@ -279,14 +279,19 @@ socketIO.on("connection", (socket) => {
       .to(socket.activeRoom)
       .emit("applied_next_move_to_bot", { bot_id, move });
   });
-  socket.on("stop_bot", (data) => {
-    console.log(`[${socket.activeRoom}] Detected stop bot. Notifying.`);
-    socket.broadcast.to(socket.activeRoom).emit("stopped_bot", data);
-  });
-  socket.on("start_bot", (data) => {
-    console.log(`[${socket.activeRoom}] Detected start bot. Notifying.`);
-    socket.broadcast.to(socket.activeRoom).emit("started_bot", data);
-  });
+
+  // socket.on("load_before_start", (data) => {
+  //   console.log(`[${socket.activeRoom}] Detected load bot. Notifying.`);
+  //   socket.broadcast.to(socket.activeRoom).emit("loaded_before_start", data);
+  // });
+  // socket.on("start_bot", (data) => {
+  //   console.log(`[${socket.activeRoom}] Detected start bot. Notifying.`);
+  //   socket.broadcast.to(socket.activeRoom).emit("started_bot", data);
+  // });
+  // socket.on("stop_bot", (data) => {
+  //   console.log(`[${socket.activeRoom}] Detected stop bot. Notifying.`);
+  //   socket.broadcast.to(socket.activeRoom).emit("stopped_bot", data);
+  // });
   //socket.emit("update_bot", {id, update, virtualGrid: grid.toJSON()})
   socket.on("update_bot", ({ id, update, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected update bot. Notifying.`);
@@ -309,6 +314,15 @@ socketIO.on("connection", (socket) => {
     console.log(`[${socket.activeRoom}] Detected remove coin. Notifying.`);
     // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_coin", { coin });
+  });
+  socket.on("change_load_status", ({ bot_id, loaded, virtualGrid }) => {
+    console.log(
+      `[${socket.activeRoom}] Detected load status of bot ${bot_id} changed. Notifying.`
+    );
+
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("changed_load_status", { bot_id, loaded });
   });
 
   socket.on("change_moving", () => {
