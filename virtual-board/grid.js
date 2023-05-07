@@ -69,10 +69,13 @@ let defaultOptions = {
   onRemoveBot: (removedBot) => {},
   onRemoveObstacle: (removedObstacle) => {},
   onRemoveCoin: (removedCoin) => {},
-  onUpdateBot: (updatedBot) => {},
-  onUpdateObstacle: (updatedObstacle) => {},
-  onUpdateCoin: (updatedCoin) => {},
+  // onUpdateBot: (updatedBot) => {},
+  // onUpdateObstacle: (updatedObstacle) => {},
+  // onUpdateCoin: (updatedCoin) => {},
   onApplyMoveToBot: (bot_id, move) => {},
+  onReplaceBot: (bot_id, bot, options) => {},
+  onReplaceObstacle: (obstacle_id, obstacle, options) => {},
+  onReplaceCoin: (coin_id, coin, options) => {},
 };
 let defaultBot = {};
 
@@ -91,10 +94,13 @@ class VirtualGrid {
       onRemoveBot,
       onRemoveObstacle,
       onRemoveCoin,
-      onUpdateBot,
-      onUpdateObstacle,
-      onUpdateCoin,
+      // onUpdateBot,
+      // onUpdateObstacle,
+      // onUpdateCoin,
       onApplyMoveToBot,
+      onReplaceBot,
+      onReplaceObstacle,
+      onReplaceCoin,
     } = options;
 
     this.rows = m;
@@ -106,10 +112,22 @@ class VirtualGrid {
     this.onRemoveBot = onRemoveBot;
     this.onRemoveObstacle = onRemoveObstacle;
     this.onRemoveCoin = onRemoveCoin;
-    this.onUpdateBot = onUpdateBot;
-    this.onUpdateObstacle = onUpdateObstacle;
-    this.onUpdateCoin = onUpdateCoin;
+    // this.onUpdateBot = onUpdateBot;
+    // this.onUpdateObstacle = onUpdateObstacle;
+    // this.onUpdateCoin = onUpdateCoin;
+    this.onUpdateBot = (bot) => {
+      this.onReplaceBot(bot.id, bot);
+    };
+    this.onUpdateObstacle = (obstacle) => {
+      this.onReplaceObstacle(obstacle.id, obstacle);
+    };
+    this.onUpdateCoin = (coin) => {
+      this.onReplaceCoin(coin.id, coin);
+    };
     this.onApplyMoveToBot = onApplyMoveToBot;
+    this.onReplaceBot = onReplaceBot;
+    this.onReplaceObstacle = onReplaceObstacle;
+    this.onReplaceCoin = onReplaceCoin;
     // this.drawBoard = drawBoard;
     // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
     // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
@@ -317,20 +335,24 @@ class VirtualGrid {
   update_bot_collect(bot_id, collect_type) {
     let bot_index = 0;
     let targets = collect_type === "None" ? [] : [collect_type];
-
-    this.bots[bot_id][bot_index].targets = targets;
-
+    let bot = this.bots[bot_id][bot_index];
+    bot.targets = targets;
+    return bot;
     //TODO: See if bots can have multiple targets
   }
   update_bot_follow(bot_id, target_id) {
     let bot_index = 0;
     let follow = target_id == null ? [] : [target_id];
-    this.bots[bot_id][bot_index].follow = follow;
+    let bot = this.bots[bot_id][bot_index];
+    bot.follow = follow;
+    return bot;
   }
   update_bot_run_away_from(bot_id, run_away_from_id) {
     let bot_index = 0;
     let run_away_from = run_away_from_id == null ? [] : [run_away_from_id];
-    this.bots[bot_id][bot_index].run_away_from = run_away_from;
+    let bot = this.bots[bot_id][bot_index];
+    bot.run_away_from = run_away_from;
+    return bot;
   }
   /**
    * Moves the bots that have `isMoving` set to true. It won't do anything to the ones
@@ -760,6 +782,7 @@ class VirtualGrid {
       )}`
     );
     // this.bots[bot_id][bot_index] = bot;
+    return bot;
   }
   // update_bot_distance(bot_id, distance_value, bot_index = 0) {
   //   let bot = this.bots[bot_id][bot_index];
@@ -769,6 +792,7 @@ class VirtualGrid {
     let bot_index = 0;
     let bot = this.bots[bot_id][bot_index];
     bot.movement_type = movement_value;
+    return bot;
   }
   /**
    * Either moves the bot forward, backward or turns 90 degrees
@@ -801,22 +825,24 @@ class VirtualGrid {
   get_object_center(obj) {
     //If bot, calculate position in terms of the anchor
     // Otherwise, calculate position as the center
-    let object_position;
+    let center;
     let { real_bottom_left } = obj;
     if (obj.type === BOT_TYPE) {
       let { relative_anchor } = obj;
-      object_position = [
+      let bottom_left = [
         real_bottom_left[0] + relative_anchor[0],
         real_bottom_left[1] + relative_anchor[1],
       ];
+      //Center of the cell
+      center = [bottom_left[0] + 0.5, bottom_left[1] + 0.5];
     } else {
       let { width, height } = obj;
-      object_position = [
+      center = [
         real_bottom_left[0] + width / 2,
         real_bottom_left[1] + height / 2,
       ];
     }
-    return object_position;
+    return center;
   }
   /**
    * If bot's movement is Dijkstra, the object should be a Coin
@@ -1400,8 +1426,6 @@ class VirtualGrid {
     let directions = [];
     let list_of_turns = this.get_multiple_turns(num_moves);
     for (let turns of list_of_turns) {
-      console.log(`Attempting: `);
-      console.log(turns);
       let future_bot = this.future_position_after_turns(bot, turns);
       if (!future_bot.valid_move) {
         //didnt move at all, dont take into consideration
@@ -1533,17 +1557,39 @@ class VirtualGrid {
     this.onUpdateObstacle(obstacle);
     return { success: true, obstacle: obstacle, message: message };
   }
-  replace_bot(bot_id, bot) {
-    this.bots[bot_id][0] = bot;
-    this.onUpdateBot(bot);
+  replace_bot(bot_id, bot, options) {
+    let { is_new } = options;
+    if (is_new && bot_id in this.bots) {
+      console.log(
+        `[replace_bot] Careful, is_new is ${is_new} but a bot with id ${bot_id} already exists`
+      );
+    }
+    this.bots[bot_id] = [bot];
+    this.onReplaceBot(bot_id, bot, options);
   }
-  replace_obstacle(obstacle_id, obstacle) {
-    this.obstacles[obstacle_id] = obstacle;
-    this.onUpdateObstacle(obstacle);
+  replace_obstacle(obstacle_id, obstacle, options) {
+    let { is_new } = options;
+    if (is_new && obstacle_id in this.obstacles) {
+      console.log(
+        `[replace_obstacle] Careful, is_new is ${is_new} but an obstacle with id ${obstacle_id} already exists`
+      );
+    }
+    this.obstacles[obstacle_id] = [obstacle];
+    this.onReplaceObstacle(obstacle_id, obstacle, options);
   }
-  replace_coin(coin_id, coin) {
-    this.coins[coin_id][0] = coin;
-    this.onUpdateCoin(coin);
+  replace_coin(coin_id, coin, options) {
+    let { is_new } = options;
+    if (is_new) {
+      // For coins we need to calculate grid graph too
+      this.coin_graphs[coin_id] = new GridGraph(this, coin, BOT_DIMENSIONS);
+    }
+    if (is_new && coin_id in this.obstacles) {
+      console.log(
+        `[replace_coin] Careful, is_new is ${is_new} but a coin with id ${coin_id} already exists`
+      );
+    }
+    this.coins[coin_id] = [coin];
+    this.onReplaceCoin(coin_id, coin, options);
   }
   /**
    *
@@ -1759,7 +1805,9 @@ class VirtualGrid {
       if (!temp_valid) {
         valid_position = false;
       } else {
-        future_crashes = [...future_crashes, prev_bot.future_crashes];
+        for (let crashes of Object.values(prev_bot.future_crashes)) {
+          future_crashes = [...future_crashes, ...crashes];
+        }
       }
     }
     return {
