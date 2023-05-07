@@ -52,7 +52,7 @@ const findShortestPathDistances = (
     : (x) => {};
 
   // establish object for recording distances from the start node
-  let distances = {};
+  let distances = { [startNode]: 0 };
   // distances[endNode] = INFINITY; //so far only counting from start
   for (let child in graph[startNode]) {
     distances[child] = graph[startNode][child].weight;

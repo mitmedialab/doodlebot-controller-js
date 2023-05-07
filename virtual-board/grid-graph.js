@@ -193,9 +193,9 @@ class GridGraph {
     //Update distances as the minimum of all possibilities
     let newDistances = {};
     for (let key in this.distances) {
-      newDistances[key] = Math.min(newDistances[key], distances[key]);
+      newDistances[key] = Math.min(this.distances[key], distances[key]);
     }
-    this.newDistances = newDistances;
+    this.distances = newDistances;
   }
   /**
    * Store minimum distances from each cell so that the bot crashes with coin, by finding the minimum
