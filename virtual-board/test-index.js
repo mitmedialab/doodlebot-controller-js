@@ -593,7 +593,6 @@ const setupSelectOptions = () => {
   });
 };
 document.addEventListener("DOMContentLoaded", () => {
-  //   setupSocket();
   setupSelectOptions();
   if (selectedMode === "virtual") {
     createDOMGrid(rows, cols, cell_size);
@@ -613,12 +612,15 @@ document.addEventListener("DOMContentLoaded", () => {
     onAddObstacle,
     onAddCoin,
     // onPickupCoin,
-    onUpdateBot,
-    onUpdateObstacle,
-    onUpdateCoin,
+    // onUpdateBot,
+    // onUpdateObstacle,
+    // onUpdateCoin,
     onRemoveBot,
     onRemoveObstacle,
     onRemoveCoin,
+    onReplaceBot,
+    onReplaceObstacle,
+    onReplaceCoin,
     // onApplyMoveToBot,
   });
   window.grid = grid;
@@ -640,28 +642,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setupGridDropzone(cell_size); // To style the grid when an object can be dropped
   }
 });
-// const removePickedCoin = (bot, coin) => {
-//   let dom_id = `${COIN_TYPE}-${coin.id}`;
-//   document.getElementById(dom_id).remove();
-// };
-/**
- * If a coin has been picked up, remove it from the screen
- * @param {*} bot
- * @param {*} coin
- */
-// const onPickupCoin = (bot, coin) => {
-//   removePickedCoin(bot, coin);
-//   socket.emit("pick_coin", { bot, coin, virtualGrid: grid.toJSON() });
-// };
-// const onApplyMoveToBot = (bot_id, move, options) => {
-//   if (!options.fromSocket) {
-//     socket.emit("apply_next_move_to_bot", {
-//       bot_id,
-//       move,
-//       virtualGrid: grid.toJSON(),
-//     });
-//   }
-// };
 /**
  * An object has been updated, so this deletes
  * the previous div and creates a new one with the new
@@ -673,41 +653,60 @@ document.addEventListener("DOMContentLoaded", () => {
  *
  * @param {*} updatedObject
  */
-const onUpdateBot = (updateBot) => {
-  let DOM_ID = `${BOT_TYPE}-${updateBot.id}`;
-  let div = document.getElementById(DOM_ID);
-  div.remove(); //Not needed anymore, but paint the object again
-  if (selectedMode === "camera") {
-    //Also remove the template as it'll get created again
-    let template = document.getElementById(getAssetTemplate(updateBot.id));
-    template.remove();
+const onReplaceBot = (bot_id, bot, options = {}) => {
+  let { is_new } = options;
+  if (!options.fromSocket) {
+    emitReplaceBot(bot);
   }
-  onAddBot(updateBot);
+  //If it's not new, then delete traces of the previous image
+  if (!is_new) {
+    let DOM_ID = `${BOT_TYPE}-${bot_id}`;
+    let div = document.getElementById(DOM_ID);
+    div.remove(); //Not needed anymore, but paint the object again
+    if (selectedMode === "camera") {
+      //Also remove the template as it'll get created again
+      let template = document.getElementById(getAssetTemplate(bot_id));
+      template.remove();
+    }
+  }
+  setupNewBot(bot);
 };
 
-const onUpdateObstacle = (updatedObstacle) => {
-  let DOM_ID = `${OBSTACLE_TYPE}-${updatedObstacle.id}`;
-  let div = document.getElementById(DOM_ID);
-  div.remove(); //Not needed anymore, but paint the object again
-  if (selectedMode === "camera") {
-    //Also remove the template as it'll get created again
-    let template = document.getElementById(
-      getAssetTemplate(updatedObstacle.id)
-    );
-    template.remove();
+const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
+  let { is_new } = options;
+  if (!options.fromSocket) {
+    emitReplaceObstacle(obstacle);
   }
-  onAddObstacle(updatedObstacle);
+  //If it's not new, then delete traces of the previous image
+  if (!is_new) {
+    let DOM_ID = `${OBSTACLE_TYPE}-${obstacle_id}`;
+    let div = document.getElementById(DOM_ID);
+    div.remove(); //Not needed anymore, but paint the object again
+    if (selectedMode === "camera") {
+      //Also remove the template as it'll get created again
+      let template = document.getElementById(getAssetTemplate(obstacle_id));
+      template.remove();
+    }
+  }
+  setupNewObstacle(obstacle);
 };
-const onUpdateCoin = (updatedCoin) => {
-  let DOM_ID = `${COIN_TYPE}-${updatedCoin.id}`;
-  let div = document.getElementById(DOM_ID);
-  div.remove(); //Not needed anymore, but paint the object again
-  if (selectedMode === "camera") {
-    //Also remove the template as it'll get created again
-    let template = document.getElementById(getAssetTemplate(updatedCoin.id));
-    template.remove();
+const onReplaceCoin = (coin_id, coin, options = {}) => {
+  let { is_new } = options;
+  if (!options.fromSocket) {
+    emitReplaceCoin(coin);
   }
-  onAddCoin(updatedCoin);
+  //If it's not new, then delete traces of the previous image
+  if (!is_new) {
+    let DOM_ID = `${COIN_TYPE}-${coin_id}`;
+    let div = document.getElementById(DOM_ID);
+    div.remove(); //Not needed anymore, but paint the object again
+    if (selectedMode === "camera") {
+      //Also remove the template as it'll get created again
+      let template = document.getElementById(getAssetTemplate(coin_id));
+      template.remove();
+    }
+  }
+  setupNewCoin(coin);
 };
 /**
  * Assumes a bot with id `bot-id` exists
@@ -723,12 +722,10 @@ const addRotateBotIcon = (bot) => {
   rotateArrow.addEventListener("click", () => {
     console.log("Tyring to turn 90");
     let move = ["turn", 90];
-    grid.apply_next_move_to_bot(bot.id, move);
-    socket.emit("apply_next_move_to_bot", {
-      bot_id: bot.id,
-      move: move,
-      virtualGrid: grid.toJSON(),
-    });
+    let res = grid.apply_next_move_to_bot(bot.id, move);
+    if (res.success) {
+      emitReplaceBot(res.bot);
+    }
   });
   bot_dom.appendChild(rotateArrow);
 };
@@ -954,13 +951,11 @@ const getAssetTemplate = (aruco_id) => {
  * 1. Creates the image in the grid at the necessary position
  * 2. Makes the created image draggable
  */
-const onAddBot = (bot) => {
+const setupNewBot = (bot) => {
   let DOM_ID = drawBot(bot);
   changeMovingBotsButton.disabled = Object.keys(grid.bots).length < 2;
 
   if (selectedMode === "virtual") {
-    console.log(bot.id);
-    console.log(currentBotId);
     if (bot.id === currentBotId) {
       //Makes the created div draggable
       addRotateBotIcon(bot);
@@ -973,6 +968,20 @@ const onAddBot = (bot) => {
 
   addBotToFollowSelect(bot);
   addBotToRunFromSelect(bot);
+};
+const onAddBot = (bot) => {
+  let bots_container = document.getElementById("bots");
+  document.body.setAttribute("chosen-bot", currentBotId);
+  selectedBotMessage.innerText = `You are bot #${currentBotId}`;
+  for (let template of bots_container.children) {
+    if (template.getAttribute("template_id") === bot.template_id) {
+      // Mark it as selected bot
+      template.setAttribute("chosen-bot", "");
+    }
+  }
+  socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
+
+  setupNewBot(bot);
 };
 const addBotToFollowSelect = (bot) => {
   if (follow_select.querySelector(`[value="${bot.id}"]`)) {
@@ -1007,7 +1016,7 @@ const addBotToRunFromSelect = (bot) => {
  *
  * @param {*} obstacle
  */
-const onAddObstacle = (obstacle) => {
+const setupNewObstacle = (obstacle) => {
   let DOM_ID = drawObstacle(obstacle);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
@@ -1017,12 +1026,16 @@ const onAddObstacle = (obstacle) => {
     addObstacleTemplate(getAssetTemplate(obstacle.id));
   }
 };
+const onAddObstacle = (obstacle) => {
+  socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
+  setupNewObstacle(obstacle);
+};
 /**
  * Pretty much the same as `onAddBot`, just that here we don't need a 'turn' icon
  *
  * @param {*} obstacle
  */
-const onAddCoin = (coin) => {
+const setupNewCoin = (coin) => {
   let DOM_ID = drawCoin(coin);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
@@ -1034,7 +1047,10 @@ const onAddCoin = (coin) => {
 
   addCoinTypeToSelect(coin);
 };
-
+const onAddCoin = (coin) => {
+  socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
+  setupNewCoin(coin);
+};
 const addCoinTypeToSelect = (coin) => {
   let { coin_collect_type } = coin;
   if (!coin_collect_type) {
@@ -1061,16 +1077,13 @@ let intervals = {}; //bot_id -> interval
  * @param {*} bot_id
  * @param {*} evt
  */
-async function stopMovingBot(bot_id, opt = {}) {
+async function stopMovingBot(bot_id) {
   let bot = grid.bots[bot_id][0];
   if (!bot.isMoving) {
     console.log("Tried to stop bot but it's not moving!");
     return;
   }
   bot.isMoving = false;
-  if (!opt.noSocket) {
-    // socket.emit("stop_bot", "");
-  }
   if (selectedMode === "camera") {
     // await stopMovingBot_camera(currentBotId);
     // TODO: Check if need to do anything here
@@ -1085,14 +1098,11 @@ async function stopMovingBot(bot_id, opt = {}) {
  * @param {*} bot_id
  * @param {*} evt
  */
-async function startMovingBot(bot_id, opt = {}) {
+async function startMovingBot(bot_id) {
   let bot = grid.bots[bot_id][0];
   if (bot.isMoving) {
     console.log("Tried to start bot but already started!");
     return;
-  }
-  if (!opt.noSocket) {
-    // socket.emit("start_bot", "");
   }
   //Start
   bot.isMoving = true;
@@ -1205,25 +1215,8 @@ function startMovingBot_virtual(bot_id) {
       return;
     }
     console.log(next_move);
-    grid.apply_next_move_to_bot(bot_id, next_move);
-    socket.emit("apply_next_move_to_bot", {
-      bot_id,
-      move: next_move,
-      virtualGrid: grid.toJSON(),
-    });
-    // Now updte the view of the bot
-    // updateBotInVirtualGrid(bot_id, BOT_TYPE);
-    // Number(
-    //   document.getElementById(`coins-policy-turns-${bot_id}`).value
-    // );
-    // let history = grid.move_bot_using_policies(
-    //   bot_id,
-    //   0,
-    //   num_turns
-    //   //   (bot_index = 0),
-    //   //   (num_turns = num_turns)
-    // );
-    // drawBoard();
+    let { bot } = grid.apply_next_move_to_bot(bot_id, next_move);
+    emitReplaceBot(bot);
   }
   intervals[bot_id] = setInterval(move, 500);
 }
@@ -1306,6 +1299,30 @@ check_gridlines.addEventListener("change", (evt) => {
     arucoCanvasOutputGrid.removeAttribute("hide-grid");
   }
 });
+const emitReplaceBot = (bot) => {
+  socket.emit("replace_bot", {
+    bot_id: bot.id,
+    bot: bot,
+    virtualGrid: grid.toJSON(),
+  });
+};
+const emitReplaceObstacle = (obstacle) => {
+  socket.emit("replace_obstacle", {
+    obstacle_id: obstacle.id,
+    obstacle: obstacle,
+    virtualGrid: grid.toJSON(),
+  });
+};
+const emitReplaceCoin = (coin) => {
+  socket.emit("replace_coin", {
+    coin_id: coin.id,
+    coin: coin,
+    virtualGrid: grid.toJSON(),
+  });
+};
+window.emitReplaceBot = emitReplaceBot;
+window.emitReplaceObstacle = emitReplaceObstacle;
+window.emitReplaceCoin = emitReplaceCoin;
 
 //------------------------Bot policy checkbox handlers----------------------------------------//
 // random_checkbox.addEventListener("change", (evt) => {
@@ -1319,7 +1336,8 @@ check_gridlines.addEventListener("change", (evt) => {
 // });
 follow_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
-  grid.update_bot_policy(currentBotId, "FOLLOW", checked);
+  let bot = grid.update_bot_policy(currentBotId, "FOLLOW", checked);
+  emitReplaceBot(bot);
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1329,8 +1347,8 @@ follow_checkbox.addEventListener("change", (evt) => {
 });
 run_away_from_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
-  grid.update_bot_policy(currentBotId, "RUN_AWAY_FROM", checked);
-
+  let bot = grid.update_bot_policy(currentBotId, "RUN_AWAY_FROM", checked);
+  emitReplaceBot(bot);
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1340,11 +1358,9 @@ run_away_from_checkbox.addEventListener("change", (evt) => {
 });
 collect_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
-  // TODO: Only do this for the current user's bot_id
-  for (let bot_id in grid.bots) {
-    console.log("Updating policy");
-    grid.update_bot_policy(bot_id, "COLLECT", checked);
-  }
+  let bot = grid.update_bot_policy(currentBotId, "COLLECT", checked);
+  emitReplaceBot(bot);
+
   let parent = evt.target.parentNode;
   if (checked) {
     parent.classList.remove("policy-inactive");
@@ -1356,21 +1372,25 @@ collect_checkbox.addEventListener("change", (evt) => {
 //---------------------------Bot policy select handlers-------------------------------------//
 collect_select.addEventListener("change", (evt) => {
   let type = evt.target.value;
-  grid.update_bot_collect(currentBotId, type);
+  let bot = grid.update_bot_collect(currentBotId, type);
+  emitReplaceBot(bot);
 });
 
 follow_select.addEventListener("change", (evt) => {
   let follow_id = Number(evt.target.value);
-  grid.update_bot_follow(currentBotId, follow_id);
+  let bot = grid.update_bot_follow(currentBotId, follow_id);
+  emitReplaceBot(bot);
 });
 
 run_away_from_select.addEventListener("change", (evt) => {
   let run_away_from_id = Number(evt.target.value);
-  grid.update_bot_run_away_from(currentBotId, run_away_from_id);
+  let bot = grid.update_bot_run_away_from(currentBotId, run_away_from_id);
+  emitReplaceBot(bot);
 });
 
 //------------------------------ Bot distance handlers ------------------------------------//
 movementTypeSelect.addEventListener("change", (evt) => {
   let key = evt.target.value;
-  grid.update_bot_movement_type(currentBotId, key);
+  let bot = grid.update_bot_movement_type(currentBotId, key);
+  emitReplaceBot(bot);
 });

@@ -23,7 +23,6 @@ const setupDraggable = (selector, cell_size) => {
         }),
       ],
       //   autoScroll: true,
-      // dragMoveListener from the dragging demo above
       listeners: {
         move: dragMoveListener,
         end: onDropHandler,
@@ -144,63 +143,39 @@ function updateVirtualGrid(obj_id, type, grid_position) {
   if (type === BOT_TYPE) {
     update = { real_bottom_left: [i, j] };
     res = grid.update_bot(object.id, update);
-    if (res.success) {
-      socket.emit("update_bot", {
-        id: object.id,
-        update,
-        virtualGrid: grid.toJSON(),
-      });
-    }
   } else if (type === OBSTACLE_TYPE) {
     update = { real_bottom_left: [i, j] };
-
     res = grid.update_obstacle(object.id, update);
-    if (res.success) {
-      socket.emit("update_obstacle", {
-        id: object.id,
-        update,
-        virtualGrid: grid.toJSON(),
-      });
-    }
   } else if (type === COIN_TYPE) {
     update = { real_bottom_left: [i, j] };
 
     res = grid.update_coin(object.id, update);
-    if (res.success) {
-      socket.emit("update_coin", {
-        id: object.id,
-        update,
-        virtualGrid: grid.toJSON(),
-      });
-    }
   } else {
     console.log(`Invalid type ${type} from if '${id}'`);
   }
-  console.log("Resultados: ");
-  console.log(res);
-  let { success } = res;
+  //TODO: See if this needs to be put back in
 
-  if (!success) {
-    console.log(res);
-    i = object.real_bottom_left[0]; //Storing the original
-    j = object.real_bottom_left[1];
-  }
+  // console.log("Resultados: ");
+  // console.log(res);
+  // let { success } = res;
 
-  let div = document.getElementById(`${type}-${obj_id}`);
-  console.log(`New bottom left: ${[i, j]} `);
-  console.log(div);
-  div.style.left = `${cell_size * i}px`;
-  div.style.bottom = `${cell_size * j}px`;
-  console.log("Removing attributes...");
-  //To put it back as new
-  div.style.transform = null;
-  div.removeAttribute("data-x");
-  div.removeAttribute("data-y");
-  console.log("Done!");
+  // if (!success) {
+  //   console.log(res);
+  //   i = object.real_bottom_left[0]; //Storing the original
+  //   j = object.real_bottom_left[1];
+  // }
+  // let div = document.getElementById(`${type}-${obj_id}`);
+  // console.log(`New bottom left: ${[i, j]} `);
+  // console.log(div);
+  // div.style.left = `${cell_size * i}px`;
+  // div.style.bottom = `${cell_size * j}px`;
+  // console.log("Removing attributes...");
+  // //To put it back as new
+  // div.style.transform = null;
+  // div.removeAttribute("data-x");
+  // div.removeAttribute("data-y");
+  // console.log("Done!");
 }
-// this is used later in the resizing
-window.dragMoveListener = dragMoveListener;
-
 /**
  * Get the position of the `element` with respect to `grid`.
  * Uses `getBoundingClientRect` to determine relative position
@@ -285,7 +260,7 @@ function onDropHandler(event) {
       currentBotId = Number(id);
       console.log(`Setting bot ${currentBotId}`);
 
-      let { bot } = grid.add_bot({
+      grid.add_bot({
         id: id,
         real_bottom_left: [gridX, gridY],
         template_id: template_id,
@@ -301,33 +276,20 @@ function onDropHandler(event) {
         // only_reachable: true, //TODO: Don't hardcode this
         // targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
-      console.log("Emitting following bot:");
-      console.log(bot);
-      socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
-      let bots_container = document.getElementById("bots");
-      document.body.setAttribute("chosen-bot", currentBotId);
-      selectedBotMessage.innerText = `You are bot #${currentBotId}`;
-      for (let template of bots_container.children) {
-        if (template.getAttribute("template_id") === template_id) {
-          // Mark it as selected bot
-          template.setAttribute("chosen-bot", "");
-        }
-      }
     } else if (type === OBSTACLE_TYPE) {
       let id = grid.getNewObstacleId();
 
-      let { obstacle } = grid.add_obstacle({
+      grid.add_obstacle({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
         width: width,
         height: height,
       });
-      socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
     } else if (type === COIN_TYPE) {
       let id = grid.getNewCoinId();
 
-      let { coin } = grid.add_coin({
+      grid.add_coin({
         id: id,
         real_bottom_left: [gridX, gridY],
         image: image,
@@ -335,7 +297,6 @@ function onDropHandler(event) {
         height: height,
         coin_collect_type: coin_collect_type,
       });
-      socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
     } else {
       console.log(`Invalid type: ${type}`);
     }

@@ -242,8 +242,6 @@ socketIO.on("connection", (socket) => {
   });
   socket.on("add_bot", async ({ bot, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected add bot. Notifying.`);
-    console.log("detected following bot added:");
-    console.log(bot);
     // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_bot", bot);
   });
@@ -317,6 +315,24 @@ socketIO.on("connection", (socket) => {
     console.log(`[${socket.activeRoom}] Detected change moving. Notifying.`);
 
     socket.broadcast.to(socket.activeRoom).emit("changed_moving", {});
+  });
+  socket.on("replace_bot", ({ bot_id, bot, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected replace bot. Notifying.`);
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("replaced_bot", { bot_id, bot });
+  });
+  socket.on("replace_obstacle", ({ obstacle_id, obstacle, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected replace obstacle. Notifying.`);
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("replaced_obstacle", { obstacle_id, obstacle });
+  });
+  socket.on("replace_coin", ({ coin_id, coin, virtualGrid }) => {
+    console.log(`[${socket.activeRoom}] Detected replace coin. Notifying.`);
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("replaced_coin", { coin_id, coin });
   });
   // socket.on("pick_coin", ({ bot, coin, virtualGrid }) => {
   //   console.log(`[${socket.activeRoom}] Detected pick coin. Notifying.`);

@@ -83,17 +83,34 @@ function setupSocket() {
     // drawBoard();
   });
   socket.on("added_bot", (bot) => {
-    grid.add_bot(bot, { fromSocket: true });
+    grid.replace_bot(bot.id, bot, { is_new: true });
+    // grid.add_bot(bot, { fromSocket: true });
     // drawBoard();
     // create_bot_options(bot) //Don't show this since it won't be editable by user.
   });
   //reminder: domingo 8am -> 8pm "se te ha hecho el calendario correcto, no se "
   // si es que se va el
   socket.on("added_obstacle", (obstacle) => {
-    grid.add_obstacle(obstacle, { fromSocket: true });
+    grid.replace_obstacle(obstacle.id, obstacle, { is_new: true });
+
+    // grid.add_obstacle(obstacle, { fromSocket: true });
   });
   socket.on("added_coin", (coin) => {
-    grid.add_coin(coin, { fromSocket: true });
+    grid.replace_coin(coin.id, coin, { is_new: true });
+
+    // grid.add_coin(coin, { fromSocket: true });
+  });
+  socket.on("replaced_bot", ({ bot_id, bot }) => {
+    grid.replace_bot(bot_id, bot, { is_new: false, fromSocket: true });
+  });
+  socket.on("replaced_obstacle", ({ obstacle_id, obstacle }) => {
+    grid.replace_obstacle(obstacle_id, obstacle, {
+      is_new: false,
+      fromSocket: true,
+    });
+  });
+  socket.on("replaced_coin", ({ coin_id, coin }) => {
+    grid.replace_coin(coin_id, coin, { is_new: false, fromSocket: true });
   });
   socket.on("removed_bot", (bot) => {
     grid.remove_bot(bot.id);
