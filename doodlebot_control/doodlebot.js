@@ -34,7 +34,7 @@ function exponentialBackoff(max, delay, toTry, success, fail) {
       if (max === 0) {
         return fail();
       }
-      time("Retrying in " + delay + "s... (" + max + " tries left)");
+      console.log("Retrying in " + delay + "s... (" + max + " tries left)");
       setTimeout(function () {
         exponentialBackoff(--max, delay * 2, toTry, success, fail);
       }, delay * 1000);
