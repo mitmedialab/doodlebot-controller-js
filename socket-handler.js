@@ -1,4 +1,5 @@
-const SERVER_LINK = "http://localhost:5001";
+let laptop_ip = "192.168.41.240";
+const SERVER_LINK = `http://${laptop_ip}:5001`;
 let socket;
 let room;
 
