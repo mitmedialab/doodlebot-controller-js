@@ -370,6 +370,7 @@ remote_ip_connect.addEventListener("click", async (evt) => {
     is_own_camera
   );
   cameraController.activateCamera();
+  window.cameraController = cameraController;
   remote_ip_connect.disabled = true; //Once set don't do anything
   remote_ip_input.disabled = true; //Once set don't do anything
   //create grid

@@ -30,7 +30,7 @@ function exponentialBackoff(max, delay, toTry, success, fail) {
   toTry()
     .then((result) => success(result))
     .catch((_) => {
-      log(_);
+      console.log(_);
       if (max === 0) {
         return fail();
       }

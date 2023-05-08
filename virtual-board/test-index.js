@@ -1178,7 +1178,9 @@ async function startMovingBot(bot_id) {
   bot.isMoving = true;
 
   if (selectedMode === "camera") {
-    await startMovingBot_camera(bot_id);
+    if (!cameraController.is_own_camera) {
+      await startMovingBot_camera(bot_id);
+    }
   } else {
     startMovingBot_virtual(bot_id);
   }
