@@ -830,9 +830,9 @@ const onRemoveCoin = (coin, options) => {
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
   let coin_dom = document.getElementById(DOM_ID);
   coin_dom.remove();
-  // if (!options.fromSocket) {
-  //   socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
-  // }
+  if (!options.fromSocket) {
+    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+  }
   grid.reset_default_require_graph();
 };
 /**
