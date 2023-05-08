@@ -315,15 +315,18 @@ socketIO.on("connection", (socket) => {
     // room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("removed_coin", { coin });
   });
-  socket.on("change_load_status", ({ bot_id, loaded, virtualGrid }) => {
-    console.log(
-      `[${socket.activeRoom}] Detected load status of bot ${bot_id} changed. Notifying.`
-    );
+  socket.on(
+    "change_require_graph",
+    ({ bot_id, require_graph, virtualGrid }) => {
+      console.log(
+        `[${socket.activeRoom}] Detected load status of bot ${bot_id} changed. Notifying.`
+      );
 
-    socket.broadcast
-      .to(socket.activeRoom)
-      .emit("changed_load_status", { bot_id, loaded });
-  });
+      socket.broadcast
+        .to(socket.activeRoom)
+        .emit("changed_require_graph", { bot_id, require_graph });
+    }
+  );
 
   socket.on("change_moving", () => {
     console.log(`[${socket.activeRoom}] Detected change moving. Notifying.`);

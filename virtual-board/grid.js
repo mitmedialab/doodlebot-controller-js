@@ -76,7 +76,7 @@ let defaultOptions = {
   onReplaceBot: (bot_id, bot, options) => {},
   onReplaceObstacle: (obstacle_id, obstacle, options) => {},
   onReplaceCoin: (coin_id, coin, options) => {},
-  onChangeLoadStatus: () => {},
+  onChangeRequireGraph: () => {},
 };
 let defaultBot = {};
 
@@ -102,7 +102,7 @@ class VirtualGrid {
       onReplaceBot,
       onReplaceObstacle,
       onReplaceCoin,
-      onChangeLoadStatus,
+      onChangeRequireGraph,
     } = options;
 
     this.rows = m;
@@ -130,7 +130,7 @@ class VirtualGrid {
     this.onReplaceBot = onReplaceBot;
     this.onReplaceObstacle = onReplaceObstacle;
     this.onReplaceCoin = onReplaceCoin;
-    this.onChangeLoadStatus = onChangeLoadStatus;
+    this.onChangeRequireGraph = onChangeRequireGraph;
     // this.drawBoard = drawBoard;
     // 0 <= i < this.cols && 0 <= j < this.rows where (0, 0) is the bottom-left of the grid
     // id -> {id_index: {id, id_index, real_bottom_left: (i, j), relative_anchor: (di, dj), width: w, height: h, type}}
@@ -140,7 +140,7 @@ class VirtualGrid {
     this.coins = {};
     this.graphs = {}; // bot_id => Reachability graph
     this.coin_graphs = {}; //coin_id -> Minimum distance graph
-    this.bots_loaded = []; //list of bot_ids that are ready to start
+    this.requires_graph_load = []; //list of bot_ids that are ready to start
 
     for (let bot_id in bots) {
       let bot = bots[bot_id][0];
@@ -168,19 +168,42 @@ class VirtualGrid {
       coins: this.coins,
     };
   }
-  change_load_status(bot_id, loaded) {
-    let already_exists = this.bots_loaded.includes(bot_id);
-    if (loaded && !already_exists) {
-      this.bots_loaded.push(bot_id);
-    } else if (!loaded && already_exists) {
-      let index = this.bots_included.indexOf(bot_id);
-      this.bots_loaded.splice(index, 1);
+  reset_default_require_graph() {
+    console.log("----------Resetting default require graph-----");
+    this.requires_graph_load = [];
+    for (let bot_id in this.bots) {
+      bot_id = Number(bot_id);
+      let require_graph =
+        this.bots[bot_id][0].movement_type === MOVEMENT_VALUES.DIJKSTRA.value;
+      if (require_graph) {
+        this.requires_graph_load.push(bot_id);
+      }
     }
-    this.onChangeLoadStatus();
+    console.log(this.requires_graph_load);
+    this.onChangeRequireGraph();
+  }
+  /**
+   * Changes the status of whether a bot requires a graph update
+   * @param {*} bot_id
+   * @param {*} requires_graph
+   */
+  change_require_graph(bot_id, requires_graph) {
+    console.log(
+      `Trying to required_graph of bot ${bot_id} to ${requires_graph}`
+    );
+    let already_exists = this.requires_graph_load.includes(bot_id);
+    console.log(`Already exists ? ${already_exists}`);
+    if (requires_graph && !already_exists) {
+      this.requires_graph_load.push(bot_id);
+    } else if (!requires_graph && already_exists) {
+      let index = this.requires_graph_load.indexOf(bot_id);
+      this.requires_graph_load.splice(index, 1);
+    }
+    this.onChangeRequireGraph();
   }
   is_ready_to_start() {
     let num_bots = Object.keys(this.bots).length;
-    let all_loaded = this.bots_loaded.length === num_bots;
+    let all_loaded = this.requires_graph_load.length === 0;
     let enough_bots = num_bots >= 2;
     return enough_bots && all_loaded;
   }

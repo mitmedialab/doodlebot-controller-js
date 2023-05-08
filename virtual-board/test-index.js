@@ -592,8 +592,17 @@ const setupSelectOptions = () => {
     movementTypeSelect.appendChild(option);
   });
 };
-const onChangeLoadStatus = () => {
+const onChangeRequireGraph = () => {
   changeMovingBotsButton.disabled = !grid.is_ready_to_start();
+
+  let current_needs = grid.requires_graph_load.includes(currentBotId);
+  if (current_needs) {
+    loadBotButton.innerHTML = "Load bot info!";
+    loadBotButton.disabled = false;
+  } else {
+    loadBotButton.innerHTML = "Loaded!";
+    loadBotButton.disabled = true;
+  }
 };
 document.addEventListener("DOMContentLoaded", () => {
   setupSelectOptions();
@@ -624,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
     onReplaceBot,
     onReplaceObstacle,
     onReplaceCoin,
-    onChangeLoadStatus,
+    onChangeRequireGraph,
     // onApplyMoveToBot,
   });
   window.grid = grid;
@@ -658,10 +667,12 @@ document.addEventListener("DOMContentLoaded", () => {
  * @param {*} updatedObject
  */
 const onReplaceBot = (bot_id, bot, options = {}) => {
+  console.log("onReplaceBot");
   let { is_new } = options;
   if (!options.fromSocket) {
     emitReplaceBot(bot);
   }
+
   //If it's not new, then delete traces of the previous image
   if (!is_new) {
     let DOM_ID = `${BOT_TYPE}-${bot_id}`;
@@ -674,6 +685,8 @@ const onReplaceBot = (bot_id, bot, options = {}) => {
     }
   }
   setupNewBot(bot);
+  // Came from creating an object
+  grid.reset_default_require_graph();
 };
 
 const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
@@ -693,6 +706,7 @@ const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
     }
   }
   setupNewObstacle(obstacle);
+  grid.reset_default_require_graph();
 };
 const onReplaceCoin = (coin_id, coin, options = {}) => {
   let { is_new } = options;
@@ -711,6 +725,7 @@ const onReplaceCoin = (coin_id, coin, options = {}) => {
     }
   }
   setupNewCoin(coin);
+  grid.reset_default_require_graph();
 };
 /**
  * Assumes a bot with id `bot-id` exists
@@ -790,7 +805,7 @@ const onRemoveBot = (bot) => {
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   let bot_dom = document.getElementById(DOM_ID);
   bot_dom.remove();
-
+  grid.reset_default_require_graph();
   changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 };
 const onRemoveObstacle = (obstacle) => {
@@ -798,15 +813,17 @@ const onRemoveObstacle = (obstacle) => {
   let DOM_ID = `${OBSTACLE_TYPE}-${obstacle.id}`;
   let obstacle_dom = document.getElementById(DOM_ID);
   obstacle_dom.remove();
+  grid.reset_default_require_graph();
 };
 const onRemoveCoin = (coin, options) => {
   // Remove the coin from the grid
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
   let coin_dom = document.getElementById(DOM_ID);
   coin_dom.remove();
-  if (!options.fromSocket) {
-    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
-  }
+  // if (!options.fromSocket) {
+  //   socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+  // }
+  grid.reset_default_require_graph();
 };
 /**
  * A bot has been created on the VirtualGrid system. This method
@@ -975,6 +992,10 @@ const setupNewBot = (bot) => {
   addBotToFollowSelect(bot);
   addBotToRunFromSelect(bot);
 };
+/**
+ * Assumes that this will only be called for currentBotId
+ * @param {*} bot
+ */
 const onAddBot = (bot) => {
   let bots_container = document.getElementById("bots");
   document.body.setAttribute("chosen-bot", currentBotId);
@@ -986,7 +1007,7 @@ const onAddBot = (bot) => {
     }
   }
   socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
-
+  grid.reset_default_require_graph();
   setupNewBot(bot);
 };
 const addBotToFollowSelect = (bot) => {
@@ -1034,6 +1055,7 @@ const setupNewObstacle = (obstacle) => {
 };
 const onAddObstacle = (obstacle) => {
   socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
+  grid.reset_default_require_graph();
   setupNewObstacle(obstacle);
 };
 /**
@@ -1055,6 +1077,7 @@ const setupNewCoin = (coin) => {
 };
 const onAddCoin = (coin) => {
   socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
+  grid.reset_default_require_graph();
   setupNewCoin(coin);
 };
 const addCoinTypeToSelect = (coin) => {
@@ -1271,9 +1294,13 @@ changeMovingBotsButton.addEventListener("click", async () => {
 });
 loadBotButton.addEventListener("click", () => {
   grid.update_all_coin_graphs(currentBotId);
-  grid.change_load_status(currentBotId, true);
-  socket.emit("change_load_status", { bot_id: currentBotId, loaded: true });
+  grid.change_require_graph(currentBotId, false);
+  socket.emit("change_require_graph", {
+    bot_id: currentBotId,
+    require_graph: false,
+  });
   loadBotButton.innerHTML = "Loaded!";
+  loadBotButton.disabled = true;
 });
 //To use later in socket handler
 // window.startMovingBot = startMovingBot;
@@ -1343,6 +1370,7 @@ follow_checkbox.addEventListener("change", (evt) => {
   } else {
     parent.classList.add("policy-inactive");
   }
+  grid.reset_default_require_graph();
 });
 run_away_from_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
@@ -1354,6 +1382,7 @@ run_away_from_checkbox.addEventListener("change", (evt) => {
   } else {
     parent.classList.add("policy-inactive");
   }
+  grid.reset_default_require_graph();
 });
 collect_checkbox.addEventListener("change", (evt) => {
   let checked = evt.target.checked;
@@ -1366,6 +1395,7 @@ collect_checkbox.addEventListener("change", (evt) => {
   } else {
     parent.classList.add("policy-inactive");
   }
+  grid.reset_default_require_graph();
 });
 
 //---------------------------Bot policy select handlers-------------------------------------//
@@ -1373,23 +1403,34 @@ collect_select.addEventListener("change", (evt) => {
   let type = evt.target.value;
   let bot = grid.update_bot_collect(currentBotId, type);
   emitReplaceBot(bot);
+  grid.reset_default_require_graph();
 });
 
 follow_select.addEventListener("change", (evt) => {
   let follow_id = Number(evt.target.value);
   let bot = grid.update_bot_follow(currentBotId, follow_id);
   emitReplaceBot(bot);
+  grid.reset_default_require_graph();
 });
 
 run_away_from_select.addEventListener("change", (evt) => {
   let run_away_from_id = Number(evt.target.value);
   let bot = grid.update_bot_run_away_from(currentBotId, run_away_from_id);
   emitReplaceBot(bot);
+  grid.reset_default_require_graph();
 });
 
 //------------------------------ Bot distance handlers ------------------------------------//
 movementTypeSelect.addEventListener("change", (evt) => {
   let key = evt.target.value;
   let bot = grid.update_bot_movement_type(currentBotId, key);
+  if (key === MOVEMENT_VALUES.DIJKSTRA.value) {
+    body.setAttribute("needs-loading", "");
+    // handleRequireGraph(true);
+  } else {
+    body.removeAttribute("needs-loading");
+    // handleRequireGraph(false);
+  }
   emitReplaceBot(bot);
+  grid.reset_default_require_graph();
 });

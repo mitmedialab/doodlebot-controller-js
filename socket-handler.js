@@ -83,7 +83,7 @@ function setupSocket() {
     // drawBoard();
   });
   socket.on("added_bot", (bot) => {
-    grid.replace_bot(bot.id, bot, { is_new: true });
+    grid.replace_bot(bot.id, bot, { is_new: true, fromSocket: true });
     // grid.add_bot(bot, { fromSocket: true });
     // drawBoard();
     // create_bot_options(bot) //Don't show this since it won't be editable by user.
@@ -91,12 +91,15 @@ function setupSocket() {
   //reminder: domingo 8am -> 8pm "se te ha hecho el calendario correcto, no se "
   // si es que se va el
   socket.on("added_obstacle", (obstacle) => {
-    grid.replace_obstacle(obstacle.id, obstacle, { is_new: true });
+    grid.replace_obstacle(obstacle.id, obstacle, {
+      is_new: true,
+      fromSocket: true,
+    });
 
     // grid.add_obstacle(obstacle, { fromSocket: true });
   });
   socket.on("added_coin", (coin) => {
-    grid.replace_coin(coin.id, coin, { is_new: true });
+    grid.replace_coin(coin.id, coin, { is_new: true, fromSocket: true });
 
     // grid.add_coin(coin, { fromSocket: true });
   });
@@ -143,9 +146,9 @@ function setupSocket() {
   socket.on("updated_coin", ({ id, update }) => {
     grid.update_coin(id, update);
   });
-  socket.on("changed_load_status", ({ bot_id, loaded }) => {
-    console.log("receiving change loade stuatus of bot_id: " + bot_id);
-    grid.change_load_status(bot_id, loaded);
+  socket.on("changed_require_graph", ({ bot_id, require_graph }) => {
+    console.log("receiving change require graph of bot_id: " + bot_id);
+    grid.change_require_graph(bot_id, require_graph);
   });
   socket.on("changed_moving", async () => {
     await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button

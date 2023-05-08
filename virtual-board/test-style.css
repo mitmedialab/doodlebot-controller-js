@@ -183,6 +183,13 @@
   margin-left: 10px;
   background-color: purple;
 }
+#loadBotButton[disabled] {
+  opacity: 0.5;
+}
+
+body:not([needs-loading]) #loadBotButton {
+  display: none;
+}
 .bot-start {
   background-color: green;
 }
