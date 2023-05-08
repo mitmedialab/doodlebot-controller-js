@@ -593,6 +593,11 @@ const setupSelectOptions = () => {
   });
 };
 const onChangeRequireGraph = () => {
+  let is_moving = body.getAttribute("is-moving") === "true";
+  if (is_moving) {
+    //While is moving don't change anything
+    return;
+  }
   changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 
   let current_needs = grid.requires_graph_load.includes(currentBotId);
@@ -806,7 +811,6 @@ const onRemoveBot = (bot) => {
   let bot_dom = document.getElementById(DOM_ID);
   bot_dom.remove();
   grid.reset_default_require_graph();
-  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 };
 const onRemoveObstacle = (obstacle) => {
   // Remove the obstacle from the grid
@@ -976,7 +980,6 @@ const getAssetTemplate = (aruco_id) => {
  */
 const setupNewBot = (bot) => {
   let DOM_ID = drawBot(bot);
-  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 
   if (selectedMode === "virtual") {
     if (bot.id === currentBotId) {
@@ -1285,6 +1288,7 @@ const changeMovingBotsHandler = async (options = {}) => {
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
     await stopMovingBot(currentBotId, options);
+    grid.reset_default_require_graph();
   } else {
     await startMovingBot(currentBotId);
   }
