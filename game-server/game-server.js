@@ -351,6 +351,10 @@ socketIO.on("connection", (socket) => {
       .to(socket.activeRoom)
       .emit("replaced_coin", { coin_id, coin });
   });
+  socket.on("activate_camera", (data) => {
+    console.log(`[${socket.activeRoom}] Detected activate camera. Notifying.`);
+    socket.broadcast.to(socket.activeRoom).emit("activated_camera", data);
+  });
   // socket.on("pick_coin", ({ bot, coin, virtualGrid }) => {
   //   console.log(`[${socket.activeRoom}] Detected pick coin. Notifying.`);
 

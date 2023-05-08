@@ -335,11 +335,12 @@ activate_camera.addEventListener("change", async (evt) => {
     }
   }
 });
-remote_ip_connect.addEventListener("click", async (evt) => {
+const setupCameraStream = async () => {
   cameraWidth = cell_size * cols;
   cameraHeight = cell_size * rows;
   window.cameraWidth = cameraWidth;
   window.cameraHeight = cameraHeight;
+
   let constraints = { ...cameraConstraints, width: cameraWidth };
 
   let ip = remote_ip_input.value;
@@ -348,8 +349,11 @@ remote_ip_connect.addEventListener("click", async (evt) => {
   if (is_own_camera) {
     let stream = await navigator.mediaDevices.getUserMedia(constraints);
     videoObj.srcObject = stream;
+    socket.emit("activate_camera", {});
   } else {
-    let url = `http://${ip}/mjpeg`;
+    // let url = `http://${ip}/mjpeg`;
+    let port = 56000 + curreBotId;
+    let url = `http://${laptop_ip}:${port}/mjpeg`;
     console.log(url);
     image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
     image_from_stream.src = url; //+ "?" + new Date().getTime();
@@ -376,6 +380,10 @@ remote_ip_connect.addEventListener("click", async (evt) => {
   //create grid
   // currentBotId = 1; //TODO: For now hardcode, later change
   processVideo();
+};
+window.setupCameraStream = setupCameraStream;
+remote_ip_connect.addEventListener("click", async (evt) => {
+  await setupCameraStream();
 });
 /**
  *

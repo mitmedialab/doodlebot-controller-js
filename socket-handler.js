@@ -1,4 +1,5 @@
 let laptop_ip = "192.168.41.240";
+window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;
 let socket;
 let room;
@@ -156,5 +157,8 @@ function setupSocket() {
   });
   socket.on("picked_coin", ({ bot, coin }) => {
     removePickedCoin(bot, coin); //Remove
+  });
+  socket.on("activated_camera", () => {
+    setupCameraStream();
   });
 }
