@@ -335,7 +335,7 @@ activate_camera.addEventListener("change", async (evt) => {
     }
   }
 });
-const setupCameraStream = async () => {
+const setupCameraStream = async (options = {}) => {
   cameraWidth = cell_size * cols;
   cameraHeight = cell_size * rows;
   window.cameraWidth = cameraWidth;
@@ -344,7 +344,7 @@ const setupCameraStream = async () => {
   let constraints = { ...cameraConstraints, width: cameraWidth };
 
   let ip = remote_ip_input.value;
-  is_own_camera = ip === "0";
+  is_own_camera = ip === "0" && !options.is_remote;
 
   if (is_own_camera) {
     let stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -352,7 +352,7 @@ const setupCameraStream = async () => {
     socket.emit("activate_camera", {});
   } else {
     // let url = `http://${ip}/mjpeg`;
-    let port = 56000 + curreBotId;
+    let port = 56000 + currentBotId;
     let url = `http://${laptop_ip}:${port}/mjpeg`;
     console.log(url);
     image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas

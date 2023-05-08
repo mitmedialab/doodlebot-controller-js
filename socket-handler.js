@@ -158,7 +158,8 @@ function setupSocket() {
   socket.on("picked_coin", ({ bot, coin }) => {
     removePickedCoin(bot, coin); //Remove
   });
-  socket.on("activated_camera", () => {
-    setupCameraStream();
+  socket.on("activated_camera", async () => {
+    console.log("received activate camera, setting up!");
+    await setupCameraStream({ is_remote: true });
   });
 }
