@@ -107,15 +107,16 @@ class Doodlebot {
     return this.server;
   }
   connect() {
+    let that = this;
     exponentialBackoff(
       3 /* max retries */,
       2 /* seconds delay */,
       this.setup_services.bind(this),
       function success() {
-        log("> Bluetooth Device connected. Try disconnect it now.");
+        that.log("> Bluetooth Device connected. Try disconnect it now.");
       },
       function fail() {
-        time("Failed to reconnect.");
+        that.log("Failed to reconnect.");
       }
     );
   }
