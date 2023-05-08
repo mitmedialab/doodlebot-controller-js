@@ -690,6 +690,12 @@ const onReplaceBot = (bot_id, bot, options = {}) => {
     }
   }
   setupNewBot(bot);
+  // When camera mode, the currentBotId will be decided first
+  // If it's the same, create the select
+  if (is_new && selectedMode === "camera" && bot_id === currentBotId) {
+    setupSelectedBot(bot);
+  }
+
   // Came from creating an object
   grid.reset_default_require_graph();
 };
@@ -995,11 +1001,12 @@ const setupNewBot = (bot) => {
   addBotToFollowSelect(bot);
   addBotToRunFromSelect(bot);
 };
-/**
- * Assumes that this will only be called for currentBotId
- * @param {*} bot
- */
-const onAddBot = (bot) => {
+const setupSelectedBot = (bot) => {
+  if (bot.id !== currentBotId) {
+    console.warn(
+      `[setupSelectedBot] the id of the selected bot (${bot.id}) should be the same as the currentBotId (${currentBotId})`
+    );
+  }
   let bots_container = document.getElementById("bots");
   document.body.setAttribute("chosen-bot", currentBotId);
   selectedBotMessage.innerText = `You are bot #${currentBotId}`;
@@ -1008,6 +1015,15 @@ const onAddBot = (bot) => {
       // Mark it as selected bot
       template.setAttribute("chosen-bot", "");
     }
+  }
+};
+/**
+ * Assumes that this will only be called for currentBotId
+ * @param {*} bot
+ */
+const onAddBot = (bot) => {
+  if (selectedMode === "virtual") {
+    setupSelectedBot(bot);
   }
   socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
   grid.reset_default_require_graph();

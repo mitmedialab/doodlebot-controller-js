@@ -21,22 +21,23 @@ let is_own_camera = false;
 window.allDoodlebots = allDoodlebots;
 
 let DOODLEBOT_ID_TO_ARUCO_ID = {
-  //   "Doodlebot Samba\r\n": 1,
-  //   "Doodlebot Banksy": 2,
+  "Doodlebot Samba\r\n": 1,
+  "Doodlebot Banksy": 2,
   "Doodlebot Bluefruit52": 1,
 };
 /*
   Mapping between doodlebot BLE ids to aruco ids
   This allows the connection between physical bots and virtual bots
 */
-let ARUCO_ID_TO_DOODLEBOT_ID = {
-  // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
-  // 1: "90pOM2ntPK3x6YVsJD0UBA==",
-  // 2: "rNmwnlbopAuiAnTpSxnPRw=="
-  //   1: "Doodlebot Samba\r\n",
-  //   2: "Doodlebot Banksy",
-  1: "Doodlebot Bluefruit52",
-};
+// let ARUCO_ID_TO_DOODLEBOT_ID = {
+//   // 1: "Xcuis/UrHNMN+oXjCB5Ldg==",
+//   // 1: "90pOM2ntPK3x6YVsJD0UBA==",
+//   // 2: "rNmwnlbopAuiAnTpSxnPRw=="
+//   //   1: "Doodlebot Samba\r\n",
+//   //   2: "Doodlebot Banksy",
+//   1: "Doodlebot Bluefruit52",
+// };
+let ARUCO_ID_TO_DOODLEBOT_ID = {};
 
 window.DOODLEBOT_ID_TO_ARUCO_ID = DOODLEBOT_ID_TO_ARUCO_ID;
 window.ARUCO_ID_TO_DOODLEBOT_ID = ARUCO_ID_TO_DOODLEBOT_ID;
@@ -53,6 +54,12 @@ async function onRequestBluetoothDeviceButtonClick() {
     console.log(`Added id with ${id} and name ${name}`);
     log(`Added id with ${id} and name ${name}`);
     bluetooth_button.innerText = `Connected to ${name}!`;
+
+    if (!(name in DOODLEBOT_ID_TO_ARUCO_ID)) {
+      console.log(`Name ${name} does not appear in DOODLEBOT_ID_TO_ARUCO_ID`);
+    }
+    currentBotId = DOODLEBOT_ID_TO_ARUCO_ID[name];
+    ARUCO_ID_TO_DOODLEBOT_ID[currentBotId] = name;
 
     // allDoodlebots[newDoodlebot.bot.id] = newDoodlebot; // Saving object
     allDoodlebots[name] = newDoodlebot; // This might not be necessary as it'll be 1 per laptop
