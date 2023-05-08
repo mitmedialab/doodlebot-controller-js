@@ -194,8 +194,17 @@ body[chosen-bot] #bots:hover {
   cursor: not-allowed;
 }
 
-[grid_object="true"][chosen-bot] {
+/* body:not([current-option="School"]) [grid_object="true"][chosen-bot] {
   background-color: green;
+}
+body[current-option="School"] [grid_object="true"][chosen-bot] {
+  background-color: rebeccapurple;
+} */
+body[current-option="School"] label[for="check_gridlines"] {
+  color: black !important;
+}
+/* [grid_object="true"] {
+  border: 2px solid yellow;
 }
 [grid_object="true"][chosen-bot][angle="0"] {
   border-right: 2px solid blue;
@@ -208,7 +217,7 @@ body[chosen-bot] #bots:hover {
 }
 [grid_object="true"][chosen-bot][angle="270"] {
   border-bottom: 2px solid blue;
-}
+} */
 
 button[disabled] {
   opacity: 0.5;

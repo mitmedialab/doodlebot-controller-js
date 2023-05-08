@@ -7,6 +7,7 @@ var selectedOption = urlParams.get("option");
 window.selectedOption = selectedOption;
 var selectedMode = urlParams.get("mode");
 body.setAttribute("current-mode", selectedMode);
+body.setAttribute("current-option", selectedOption);
 window.selectedMode = selectedMode; //make it global
 
 console.log(selectedOption);
@@ -145,10 +146,10 @@ const ALL_ASSETS = {
   building: {
     image: ASSETS_FOLDER + "None_Building.png",
     width: 1, //1.1,
-    height: 2,
+    height: 3,
     type: OBSTACLE_TYPE,
     theme: "None",
-    template_cell_size: 40,
+    template_cell_size: 30,
   },
   coin: {
     image: ASSETS_FOLDER + "None_Coin.png",
@@ -223,6 +224,14 @@ const ALL_ASSETS = {
     theme: "City",
     template_cell_size: 40,
   },
+  river_rotate_90: {
+    image: ASSETS_FOLDER + "DB_River_1_rotate_90.png",
+    width: 2,
+    height: 1,
+    type: OBSTACLE_TYPE,
+    theme: "City",
+    template_cell_size: 40,
+  },
   coffee: {
     image: ASSETS_FOLDER + "DB_Coffee_1.png",
     width: 1, //1.2,
@@ -281,9 +290,16 @@ const ALL_ASSETS = {
     theme: "Pacman",
   },
   pacman_wall: {
-    image: ASSETS_FOLDER + "DB_PacmanWall_1.png",
+    image: ASSETS_FOLDER + "DB_PacmanWall_1_filled.png",
     width: 1, //0.7,
-    height: 2,
+    height: 3,
+    type: OBSTACLE_TYPE,
+    theme: "Pacman",
+  },
+  pacman_wall_rotate_90: {
+    image: ASSETS_FOLDER + "DB_PacmanWall_1_filled_rotate_90.png",
+    width: 3, //0.7,
+    height: 1,
     type: OBSTACLE_TYPE,
     theme: "Pacman",
   },
@@ -318,11 +334,11 @@ const ALL_ASSETS = {
     image: ASSETS_FOLDER + "DB_SchoolBus_1.png",
     image_rotate_90: ASSETS_FOLDER + "DB_SchoolBus_1_rotate_90.png",
     width: 1, //1.5,
-    height: 2, //1.7,
+    height: 3, //1.7,
     type: BOT_TYPE,
     relative_anchor: [0, 0],
     theme: "School",
-    template_cell_size: 40,
+    template_cell_size: 30,
   },
   brickwall: {
     image: ASSETS_FOLDER + "DB_Brickwall_1.png",
@@ -330,31 +346,47 @@ const ALL_ASSETS = {
     height: 2, //1.7,
     type: OBSTACLE_TYPE,
     theme: "School",
-    template_cell_size: 40,
+    template_cell_size: 30,
   },
-  building_roof_1: {
-    image: ASSETS_FOLDER + "DB_BuildingRoof_1.png",
-    width: 1, //1.5,
+  brickwall_rotate_90: {
+    image: ASSETS_FOLDER + "DB_Brickwall_1_rotate_90.png",
+    width: 2, //1.5,
     height: 1, //1.7,
     type: OBSTACLE_TYPE,
     theme: "School",
-    template_cell_size: 40,
+    template_cell_size: 30,
+  },
+  building_roof_1: {
+    image: ASSETS_FOLDER + "DB_BuildingRoof_1.png",
+    width: 4, //1.5,
+    height: 4, //1.7,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 20,
   },
   building_roof_2: {
     image: ASSETS_FOLDER + "DB_BuildingRoof_2.png",
-    width: 1, //1.5,
-    height: 2, //1.7,
+    width: 2, //1.5,
+    height: 4, //1.7,
     type: OBSTACLE_TYPE,
     theme: "School",
-    template_cell_size: 40,
+    template_cell_size: 20,
   },
   hedge: {
     image: ASSETS_FOLDER + "DB_Hedge_1.png",
     width: 1, //0.7,
-    height: 2,
+    height: 3,
     type: OBSTACLE_TYPE,
     theme: "School",
-    template_cell_size: 40,
+    template_cell_size: 30,
+  },
+  hedge_rotate_90: {
+    image: ASSETS_FOLDER + "DB_Hedge_1_rotate_90.png",
+    width: 3, //0.7,
+    height: 1,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 30,
   },
   coffee_school: {
     image: ASSETS_FOLDER + "DB_Coffee_1.png",
@@ -397,17 +429,24 @@ const TEMPLATES_PER_THEME = {
   },
   City: {
     bots: ["car_1", "car_2", "car_3", "truck_1"],
-    obstacles: ["building", "river", "bush"],
+    obstacles: ["building", "river", "river_rotate_90", "bush"],
     coins: ["pizza", "coffee"],
   },
   Pacman: {
     bots: ["pacman", "ghost_pink", "ghost_blue", "ghost_orange", "ghost_red"],
-    obstacles: ["pacman_wall"],
+    obstacles: ["pacman_wall", "pacman_wall_rotate_90"],
     coins: ["pacman_cherry", "pacman_food"],
   },
   School: {
     bots: ["bicycle", "school_bus"],
-    obstacles: ["building_roof_1", "building_roof_2", "hedge", "brickwall"],
+    obstacles: [
+      "building_roof_1",
+      "building_roof_2",
+      "hedge",
+      "hedge_rotate_90",
+      "brickwall",
+      "brickwall_rotate_90",
+    ],
     coins: ["coffee_school", "pizza_school", "coin_school"],
   },
   // Just in case
@@ -436,6 +475,7 @@ const createDOMGrid = (rows, cols, cell_size) => {
   console.log(selectedOption);
   gridContainer.style.height = `${rows * cell_size}px`;
   gridContainer.style.width = `${cols * cell_size}px`;
+  gridContainer.style.resize = "contain";
 
   if (selectedOption == "None") {
     gridContainer.style.backgroundImage =
@@ -453,7 +493,7 @@ const createDOMGrid = (rows, cols, cell_size) => {
     // gridContainer.style.width = "580px";
   } else if (selectedOption == "School") {
     gridContainer.style.backgroundImage =
-      "url(../assets/DB_SchoolGridBG_1.png)";
+      "url(../assets/DB_SchoolGridBG_2_640x640.png)";
     // gridContainer.style.height = "400px";
     // gridContainer.style.width = "580px";
   } else {
@@ -588,6 +628,9 @@ const setupSelectOptions = () => {
     let { value, text } = MOVEMENT_VALUES[key];
     let option = document.createElement("option");
     option.setAttribute("value", value);
+    if (value === MOVEMENT_VALUES.DIJKSTRA.value) {
+      option.setAttribute("hidden", ""); //Don't allow by default
+    }
     option.innerText = text;
     movementTypeSelect.appendChild(option);
   });
@@ -1410,9 +1453,15 @@ collect_checkbox.addEventListener("change", (evt) => {
   emitReplaceBot(bot);
 
   let parent = evt.target.parentNode;
+  let dijkstraOption = movementTypeSelect.querySelector(
+    `[value=${MOVEMENT_VALUES.DIJKSTRA.value}]`
+  );
+  console.log(dijkstraOption);
   if (checked) {
+    dijkstraOption.removeAttribute("hidden");
     parent.classList.remove("policy-inactive");
   } else {
+    dijkstraOption.setAttribute("hidden", "");
     parent.classList.add("policy-inactive");
   }
   grid.reset_default_require_graph();
