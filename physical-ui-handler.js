@@ -457,10 +457,10 @@ function updateVirtualBot(id) {
         real_anchor: [gridX, gridY],
       };
       let { success, message } = grid.update_bot(id, update);
-    }
-    if (!success) {
-      console.log(`Couldn't update bot ${id}: ${message}`);
-    } else {
+      if (!success) {
+        console.log(`Couldn't update bot ${id}: ${message}`);
+      } else {
+      }
     }
   }
 }
