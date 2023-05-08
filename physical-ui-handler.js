@@ -443,13 +443,21 @@ function updateVirtualBot(id) {
     } else {
     }
   } else {
-    //If it already exists, just update accordingly
-    let update = {
-      angle: angle,
-      realAngle: realAngle,
-      real_anchor: [gridX, gridY],
-    };
-    let { success, message } = grid.update_bot(id, update);
+    let bot = grid.bots[id][0];
+    let prev_grid_x = bot.real_bottom_left[0] + bot.relative_anchor[0];
+    let prev_grid_y = bot.real_bottom_left[1] + bot.relative_anchor[1];
+
+    let is_same =
+      bot.angle === angle && gridX === prev_grid_x && gridY === prev_grid_y;
+    //Only update if something changes
+    if (!is_same) {
+      let update = {
+        angle: angle,
+        realAngle: realAngle,
+        real_anchor: [gridX, gridY],
+      };
+      let { success, message } = grid.update_bot(id, update);
+    }
     if (!success) {
       console.log(`Couldn't update bot ${id}: ${message}`);
     } else {
@@ -482,8 +490,16 @@ function updateVirtualObstacle(id) {
       image_rotate_90,
     });
   } else {
-    let update = { width, height, real_bottom_left };
-    let { success } = grid.update_obstacle(id, update);
+    let obstacle = grid.obstacles[id][0];
+    let is_same =
+      obstacle.width === width &&
+      obstacle.height === height &&
+      obstacle.real_bottom_left[0] === real_bottom_left[0] &&
+      obstacle.real_bottom_left[1] == real_bottom_left[1];
+    if (!is_same) {
+      let update = { width, height, real_bottom_left };
+      let { success } = grid.update_obstacle(id, update);
+    }
   }
 }
 /**
@@ -533,12 +549,21 @@ function updateVirtualCoin(id_or_color, is_color = false) {
       console.log(res);
     }
   } else {
-    let update = { width, height, real_bottom_left };
-    let res = grid.update_coin(id, update);
-    let { coin, success } = res;
-    if (!success) {
-      console.log(`Couldn't update object with id ${id}. Response:`);
-      console.log(res);
+    let coin = grid.coins[id][0];
+    let is_same =
+      coin.width === width &&
+      coin.height === height &&
+      coin.real_bottom_left[0] === real_bottom_left[0] &&
+      coin.real_bottom_left[1] == real_bottom_left[1];
+
+    if (!is_same) {
+      let update = { width, height, real_bottom_left };
+      let res = grid.update_coin(id, update);
+      let { coin, success } = res;
+      if (!success) {
+        console.log(`Couldn't update object with id ${id}. Response:`);
+        console.log(res);
+      }
     }
   }
 }
