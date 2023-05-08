@@ -1117,7 +1117,7 @@ const addCoinTypeToSelect = (coin) => {
   collect_select.appendChild(option);
 };
 //--------------------------- Below code controls moving -------------------------------------///
-
+let is_bot_moving = false;
 let intervals = {}; //bot_id -> interval
 /**
  * If the bot is moving, it will stop (and vice versa)
@@ -1139,11 +1139,11 @@ async function stopMovingBot(bot_id) {
   changeMovingBotsButton.classList.add("bot-start");
 
   let bot = grid.bots[bot_id][0];
-  if (!bot.isMoving) {
-    console.log("Tried to stop bot but it's not moving!");
+  if (!is_bot_moving) {
+    console.log("Tried to stop bot but it's already not moving!");
     return;
   }
-  bot.isMoving = false;
+  is_bot_moving = false;
   if (selectedMode === "camera") {
     // await stopMovingBot_camera(currentBotId);
     // TODO: Check if need to do anything here
@@ -1169,13 +1169,12 @@ async function startMovingBot(bot_id) {
   changeMovingBotsButton.classList.remove("bot-start");
   changeMovingBotsButton.classList.add("bot-stop");
 
-  let bot = grid.bots[bot_id][0];
-  if (bot.isMoving) {
+  if (is_bot_moving) {
     console.log("Tried to start bot but already started!");
     return;
   }
   //Start
-  bot.isMoving = true;
+  is_bot_moving = true;
 
   if (selectedMode === "camera") {
     if (!cameraController.is_own_camera) {
@@ -1238,32 +1237,31 @@ async function startMovingBot_camera(bot_id) {
     console.log(`Bot ${bot_id} already moving (real life), so dont move`);
     return;
   }
-  let bot = grid.bots[bot_id][0];
-  // if (bot.isMoving) {
-  //TODO: This info should be stored in the grid object
-  // let num_turns = Number(
-  //   document.getElementById(`coins-policy-turns-${bot_id}`).value
-  // );
-  let num_turns = 1; //TODO: Add this as an option?
-  let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
+  if (is_bot_moving) {
+    //TODO: This info should be stored in the grid object
+    // let num_turns = Number(
+    //   document.getElementById(`coins-policy-turns-${bot_id}`).value
+    // );
+    let num_turns = 1; //TODO: Add this as an option?
+    let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
 
-  if (next_move) {
-    await adjustAngleRealBot(bot_id);
-    await realBot.apply_next_move_to_bot(next_move);
-    // The video stream will update the virtual grid
-    console.log("---------------------------------------");
-    console.log("Making next move!");
-    did_bot_move = true;
-  } else {
-    //If not then stop moving
-    // Don't stop, just do random moves
-    // bot.isMoving = false;
-    // let realBot = getRealBotFromArucoId(bot_id);
-    // if (realBot){
-    //   realBot.isMoving = false;
-    // }
+    if (next_move) {
+      await adjustAngleRealBot(bot_id);
+      await realBot.apply_next_move_to_bot(next_move);
+      // The video stream will update the virtual grid
+      console.log("---------------------------------------");
+      console.log("Making next move!");
+      did_bot_move = true;
+    } else {
+      //If not then stop moving
+      // Don't stop, just do random moves
+      // bot.isMoving = false;
+      // let realBot = getRealBotFromArucoId(bot_id);
+      // if (realBot){
+      //   realBot.isMoving = false;
+      // }
+    }
   }
-  // }
   if (did_bot_move) {
     //Keep moving
     // await apply_next_move_to_bot(bot_id);
