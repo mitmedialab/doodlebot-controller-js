@@ -1183,6 +1183,8 @@ class VirtualGrid {
    *
    */
   future_position_after_turns(initial_bot, directions) {
+    // console.log(`[future_position_after_turns]`);
+    // console.log(directions);
     let future_bot = { ...initial_bot };
     let valid_move = false;
     for (let direction of directions) {
@@ -1192,12 +1194,17 @@ class VirtualGrid {
         turn_angle
       );
       if (!potential_bot.valid_position) {
+        // console.log(`future position after turn`);
+        // console.log(potential_bot);
         continue;
       }
       potential_bot = this.future_position_after_move(potential_bot, 1);
       if (!potential_bot.valid_position) {
+        // console.log(`future position after move`);
+        // console.log(potential_bot);
         continue;
       }
+      // console.log(`valid_move = true`);
       valid_move = true;
       delete potential_bot.valid_position;
       //Succesful move, update bot
@@ -1470,10 +1477,13 @@ class VirtualGrid {
     let directions = [];
     let list_of_turns = this.get_multiple_turns(num_moves);
     for (let turns of list_of_turns) {
+      // console.log(`Trying turn`);
+      // console.log(turns);
       let future_bot = this.future_position_after_turns(bot, turns);
       if (!future_bot.valid_move) {
         //didnt move at all, dont take into consideration
-        console.log("not a valid move!");
+        // console.log("not a valid move!");
+        // console.log(future_bot);
         continue;
       }
       let distance;
@@ -1484,6 +1494,8 @@ class VirtualGrid {
       //   distance = 0;
       // } else {
       distance = this.min_distance_to_coins(future_bot, valid_coins);
+      // console.log(`Found distance:`);
+      // console.log(distance);
       if (distance === null) {
         //No coin is within reach
         console.log("no coins within reach");
@@ -1970,6 +1982,7 @@ class VirtualGrid {
       width: bot.width,
       height: bot.height,
     };
+    console.log(bot_dimensions);
     // //TODO: What to do if there are no bots?
     // let bot_dimensions;
     // if (Object.keys(this.bots).length !== 0) {
@@ -1983,6 +1996,7 @@ class VirtualGrid {
     //   bot_dimensions = DEFAULT_BOT_DIMENSIONS;
     // }
     for (let coin_id in this.coins) {
+      coin_id = Number(coin_id);
       let coin_index = 0;
       let coin = this.coins[coin_id][coin_index];
       this.coin_graphs[coin_id] = new GridGraph(this, coin, bot_dimensions);

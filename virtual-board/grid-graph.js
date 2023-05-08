@@ -112,7 +112,6 @@ class GridGraph {
     // this.update_values_from_grid_binary_board(grid, bot_id, bot_index);
     this.update_graph(grid, bot_dimensions);
     this.update_distances_to_crash(grid, bot_dimensions, coin);
-    console.log(this.graph);
   }
   get_node_from_position(i, j, angle) {
     return interpolate(NODE_BREAKPOINTS, [i, j, angle]);
@@ -186,6 +185,10 @@ class GridGraph {
    * @returns
    */
   update_distance_values(distances) {
+    if (Object.keys(distances).length === 0) {
+      //If no distances avaialble, don't update anything
+      return;
+    }
     if (Object.keys(this.distances) == 0) {
       this.distances = distances;
       return;
@@ -193,7 +196,9 @@ class GridGraph {
     //Update distances as the minimum of all possibilities
     let newDistances = {};
     for (let key in this.distances) {
-      newDistances[key] = Math.min(this.distances[key], distances[key]);
+      if (key in distances) {
+        newDistances[key] = Math.min(this.distances[key], distances[key]);
+      }
     }
     this.distances = newDistances;
   }
@@ -231,7 +236,10 @@ class GridGraph {
             this.graph.graph,
             start_node
           );
-          this.update_distance_values(distances);
+          //Distances would be an empty {} if the start_node is an invalid node (crashing)
+          if (Object.keys(distances).length > 0) {
+            this.update_distance_values(distances);
+          }
         }
       }
     }
