@@ -4,7 +4,16 @@ import "https://cdn.interactjs.io/v1.9.20/actions/resize/index.js";
 import "https://cdn.interactjs.io/v1.9.20/modifiers/index.js";
 import "https://cdn.interactjs.io/v1.9.20/dev-tools/index.js";
 import interact from "https://cdn.interactjs.io/v1.9.20/interactjs/index.js";
-// let cell_size = 60;
+
+// let gridContainer;
+// window.addEventListener("DOMContentLoaded", () => {
+//   if (selectedMode === "virtual") {
+//     gridContainer = document.getElementById("gridContainer");
+//   } else {
+//     gridContainer = document.getElementById("arucoCanvasOutputGrid");
+//   }
+// });
+
 /**
  *
  * @param {*} id ${TYPE}-${id}n The id of the DOM element
@@ -19,7 +28,12 @@ const setupDraggable = (selector, cell_size) => {
       modifiers: [
         interact.modifiers.snap({
           targets: [interact.snappers.grid({ x: cell_size, y: cell_size })],
-          relativePoints: [{ x: 0, y: 0 }],
+          relativePoints: [
+            {
+              x: 0,
+              y: 0,
+            },
+          ],
         }),
       ],
       //   autoScroll: true,
@@ -49,27 +63,93 @@ const setupDraggable = (selector, cell_size) => {
           original.getAttribute("grid_object") === "true";
         if (!is_clone) {
           // create a clone of the currentTarget element
-          let clone = event.currentTarget.cloneNode(true);
-          clone.setAttribute("clone", "true");
-          clone.classList.add("grabbing");
-          clone.style.position = "absolute";
-          let { left, top } = original.getBoundingClientRect();
-          clone.style.left = `${left}px`;
-          clone.style.top = `${top}px`;
+          //Creating a div at the given position
+          let div = document.createElement("div");
           let template_id = original.getAttribute("template_id");
-          clone.setAttribute("template_id", template_id);
           let { width, height } = ALL_ASSETS[template_id];
-          clone.style.width = `${cell_size * width}px`;
-          clone.style.height = `${cell_size * height}px`;
-          //adding z-index
-          clone.style.zIndex = "10";
-          clone.classList.remove("template"); //To make sure it's no the original
-          clone.style.touchAction = "none";
 
-          document.body.appendChild(clone);
+          div.setAttribute("clone", "true");
+          div.classList.add("grabbing");
+          div.style.position = "absolute";
+          div.setAttribute("template_id", template_id);
+          let { left, top } = original.getBoundingClientRect();
+          // console.log(`left: ${left}, top: ${top}`);
+          // let left_grid = gridContainer.getBoundingClientRect().left;
+          // let top_grid = gridContainer.getBoundingClientRect().top;
+          // let d_left = (left_grid - left) % cell_size;
+          // if (d_left <= 0) {
+          //   d_left += cell_size;
+          // }
+          // let d_top = (top_grid - top) % cell_size;
+          // if (d_top <= 0) {
+          //   d_top += cell_size;
+          // }
+          // left += d_left;
+          // top += d_top;
+          // console.log(`left: ${left}, top: ${top}`);
 
-          // start a drag interaction targeting the clone
-          interaction.start({ name: "drag" }, event.interactable, clone);
+          div.style.left = `${left}px`;
+          div.style.top = `${top}px`;
+          div.style.touchAction = "none";
+
+          let imageEl = document.createElement("img");
+          imageEl.classList.add("bot-image");
+          imageEl.setAttribute("src", event.currentTarget.src);
+          imageEl.style.width = `${cell_size * width}px`;
+          imageEl.style.height = `${cell_size * height}px`;
+
+          div.style.zIndex = "10";
+          div.classList.remove("template"); //To make sure it's no the original
+          div.style.touchAction = "none";
+          div.appendChild(imageEl);
+
+          document.body.appendChild(div);
+
+          interaction.start({ name: "drag" }, event.interactable, div);
+
+          ////////////////////////////////////////////////////////////////
+
+          // let clone = event.currentTarget.cloneNode(true);
+          // clone.setAttribute("clone", "true");
+          // clone.classList.add("grabbing");
+          // clone.style.position = "absolute";
+          // let { left, top } = original.getBoundingClientRect();
+          // let left_grid = gridContainer.getBoundingClientRect().left;
+          // let top_grid = gridContainer.getBoundingClientRect().top;
+          // let d_left = (left_grid - left) % cell_size;
+          // if (d_left <= 0) {
+          //   d_left += cell_size;
+          // }
+          // let d_top = (top_grid - top) % cell_size;
+          // if (d_top <= 0) {
+          //   d_top += cell_size;
+          // }
+          // console.log(`d_left: ${d_left}, d_top: ${d_top}`);
+
+          // // d_left = 0;
+          // // d_top = 0;
+          // let new_left = left + d_left;
+          // let new_top = top + d_top;
+          // console.log(`new_left: ${new_left}, new_top: ${new_top}`);
+          // new_left = Number(new_left);
+          // new_top = Number(new_top);
+
+          // clone.style.left = `${new_left}px`;
+          // clone.style.top = `${new_top}px`;
+          // let template_id = original.getAttribute("template_id");
+          // clone.setAttribute("template_id", template_id);
+          // let { width, height } = ALL_ASSETS[template_id];
+          // clone.style.width = `${cell_size * width}px`;
+          // clone.style.height = `${cell_size * height}px`;
+          // //adding z-index
+          // clone.style.zIndex = "10";
+          // clone.classList.remove("template"); //To make sure it's no the original
+          // clone.style.touchAction = "none";
+
+          // document.body.appendChild(clone);
+
+          // // start a drag interaction targeting the clone
+          // interaction.start({ name: "drag" }, event.interactable, clone);
         } else {
           // Should still be able to be dragged, but don't make a copy
           original.classList.add("grabbing");
@@ -208,12 +288,6 @@ function onDropHandler(event) {
   // let element = event.relatedTarget;
 
   let element = event.target;
-  let gridContainer;
-  if (selectedMode === "virtual") {
-    gridContainer = document.getElementById("gridContainer");
-  } else {
-    gridContainer = document.getElementById("arucoCanvasOutputGrid");
-  }
   let [dx, dy] = getRelativeBottomLeft(gridContainer, element);
   let gridX = Math.round(dx / cell_size); //Have cell_size be part of the info
   let gridY = Math.round(dy / cell_size); //Have cell_size
