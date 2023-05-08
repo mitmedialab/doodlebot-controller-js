@@ -17,6 +17,7 @@ import { Doodlebot } from "./doodlebot_control/doodlebot.js";
 
 let currentDoodlebot; //Current Doodlebot object that has been connected to the device through Bluetooth
 let allDoodlebots = {}; // Doodlebot name -> doodlebot object for control the REAl doodlebots
+let is_own_camera = false;
 window.allDoodlebots = allDoodlebots;
 
 let DOODLEBOT_ID_TO_ARUCO_ID = {
@@ -334,19 +335,18 @@ remote_ip_connect.addEventListener("click", async (evt) => {
   window.cameraHeight = cameraHeight;
   let constraints = { ...cameraConstraints, width: cameraWidth };
 
-  // let url = "http://192.168.41.240:56000/mjpeg"; //TODO: Have this be an input
   let ip = remote_ip_input.value;
-  let is_remote = ip !== "0";
+  is_own_camera = ip === "0";
 
-  if (is_remote) {
+  if (is_own_camera) {
+    let stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoObj.srcObject = stream;
+  } else {
     let url = `http://${ip}/mjpeg`;
     console.log(url);
     image_from_stream.setAttribute("crossOrigin", "anonymous"); //To be able to draw and read from canvas
     image_from_stream.src = url; //+ "?" + new Date().getTime();
     //TODO: If it's invalid url, say so
-  } else {
-    let stream = await navigator.mediaDevices.getUserMedia(constraints);
-    videoObj.srcObject = stream;
   }
 
   arucoCanvasOutputGridOriginal.setAttribute("height", cameraHeight + "px");
@@ -360,7 +360,7 @@ remote_ip_connect.addEventListener("click", async (evt) => {
     cameraConstraints,
     log,
     numFrames, // to detect dissapeared frames
-    is_remote
+    is_own_camera
   );
   cameraController.activateCamera();
   remote_ip_connect.disabled = true; //Once set don't do anything
@@ -441,7 +441,6 @@ function updateVirtualBot(id) {
     if (!success) {
       console.log(`Couldn't add bot ${id}: ${message}`);
     } else {
-      //   socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
     }
   } else {
     //If it already exists, just update accordingly
@@ -454,7 +453,6 @@ function updateVirtualBot(id) {
     if (!success) {
       console.log(`Couldn't update bot ${id}: ${message}`);
     } else {
-      //   socket.emit("update_bot", { id, update, virtualGrid: grid.toJSON() });
     }
   }
 }
@@ -483,19 +481,9 @@ function updateVirtualObstacle(id) {
       image,
       image_rotate_90,
     });
-    if (success) {
-      //   socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
-    }
   } else {
     let update = { width, height, real_bottom_left };
     let { success } = grid.update_obstacle(id, update);
-    if (success) {
-      // socket.emit("update_obstacle", {
-      //   id,
-      //   update,
-      //   virtualGrid: grid.toJSON(),
-      // });
-    }
   }
 }
 /**
@@ -543,8 +531,6 @@ function updateVirtualCoin(id_or_color, is_color = false) {
     if (!success) {
       console.log(`Couldn't add object with id ${id}. Response:`);
       console.log(res);
-    } else {
-      //   socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
     }
   } else {
     let update = { width, height, real_bottom_left };
@@ -553,8 +539,6 @@ function updateVirtualCoin(id_or_color, is_color = false) {
     if (!success) {
       console.log(`Couldn't update object with id ${id}. Response:`);
       console.log(res);
-    } else {
-      //   socket.emit("update_coin", { id, update, virtualGrid: grid.toJSON() });
     }
   }
 }
@@ -596,10 +580,10 @@ function processVideo() {
     return;
   }
   let begin = Date.now();
-  if (cameraController.is_remote) {
-    context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
-  } else {
+  if (cameraController.is_own_camera) {
     context.drawImage(videoObj, 0, 0, cameraWidth, cameraHeight);
+  } else {
+    context.drawImage(image_from_stream, 0, 0, cameraWidth, cameraHeight);
   }
   // context.globalAlpha = 0.5;
   // context.clearRect(0, 0, context.canvas.width, context.canvas.height);
@@ -617,6 +601,7 @@ function processVideo() {
   //     [0, 0, 255]
   //   );
   let currentColors = {};
+
   if (
     cameraController.foundAllCorners() &&
     !cameraController.foundProjectionMatrix()
@@ -633,19 +618,19 @@ function processVideo() {
     if (!hide_grid) {
       cameraController.drawGridLines();
     }
-
-    //Updating appear info of the newly found
-    for (let possible_marker_id in OBJECT_SIZES) {
-      let appeared = currentMarkers[possible_marker_id] ? 1 : 0;
-      cameraController.updateMarkerAppear(possible_marker_id, appeared);
+    if (cameraController.is_own_camera) {
+      //Updating appear info of the newly found
+      for (let possible_marker_id in OBJECT_SIZES) {
+        let appeared = currentMarkers[possible_marker_id] ? 1 : 0;
+        cameraController.updateMarkerAppear(possible_marker_id, appeared);
+      }
+      for (let color in COLOR_SIZES) {
+        let appeared = currentColors[color] ? 1 : 0;
+        let { id } = COLOR_SIZES[color];
+        cameraController.updateMarkerAppear(id, appeared);
+      }
+      updateVirtualObjects(); //Use new aruco positions/colors to update Virtual objects
     }
-    for (let color in COLOR_SIZES) {
-      let appeared = currentColors[color] ? 1 : 0;
-      let { id } = COLOR_SIZES[color];
-      cameraController.updateMarkerAppear(id, appeared);
-    }
-
-    updateVirtualObjects(); //Use new aruco positions/colors to update Virtual objects
 
     try {
       //TODO: Figure out why is this necessary, maybe because the camera coefficients

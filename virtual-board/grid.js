@@ -169,7 +169,7 @@ class VirtualGrid {
     };
   }
   reset_default_require_graph() {
-    console.log("----------Resetting default require graph-----");
+    // console.log("----------Resetting default require graph-----");
     this.requires_graph_load = [];
     for (let bot_id in this.bots) {
       bot_id = Number(bot_id);
@@ -179,7 +179,7 @@ class VirtualGrid {
         this.requires_graph_load.push(bot_id);
       }
     }
-    console.log(this.requires_graph_load);
+    // console.log(this.requires_graph_load);
     this.onChangeRequireGraph();
   }
   /**

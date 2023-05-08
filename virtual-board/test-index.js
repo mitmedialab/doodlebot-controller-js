@@ -579,7 +579,7 @@ const addCoinTemplate = (template_id) => {
   coinsDiv.appendChild(imageEl);
   // waitingRoom.appendChild(imageEl);
 };
-// let videoObj = document.getElementById("videoId");
+let videoObj = document.getElementById("videoId");
 /**
  * Uses the info from MOVEMENT_VALUES to add them as options to distance type select
  */
@@ -672,7 +672,7 @@ document.addEventListener("DOMContentLoaded", () => {
  * @param {*} updatedObject
  */
 const onReplaceBot = (bot_id, bot, options = {}) => {
-  console.log("onReplaceBot");
+  // console.log("onReplaceBot");
   let { is_new } = options;
   if (!options.fromSocket) {
     emitReplaceBot(bot);

@@ -19,7 +19,7 @@ class CameraController {
     cameraConstraints,
     log,
     numFrames,
-    is_remote
+    is_own_camera
   ) {
     console.log("start");
     console.log(cameraMatrix);
@@ -36,7 +36,7 @@ class CameraController {
     this.cameraConstraints = cameraConstraints;
     this.stream = null;
     this.log = log;
-    this.is_remote = is_remote;
+    this.is_own_camera = is_own_camera;
 
     this.rows = rows;
     this.cols = cols;
