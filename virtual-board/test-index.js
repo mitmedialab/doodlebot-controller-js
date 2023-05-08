@@ -424,7 +424,13 @@ const TEMPLATES_PER_THEME = {
       "robot_2",
       "robot_3",
     ],
-    obstacles: ["building"],
+    obstacles: [
+      "building",
+      "river",
+      "river_rotate_90",
+      "brickwall",
+      "brickwall_rotate_90",
+    ],
     coins: ["coin", "star"],
   },
   City: {
