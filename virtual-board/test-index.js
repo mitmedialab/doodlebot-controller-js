@@ -1027,6 +1027,7 @@ const drawBot = (bot) => {
   return DOM_ID;
 };
 const getImageFromDimensions = (width, height, template_id) => {
+  console.log(`Findgin info for template ${template_id}`);
   let original_template = ALL_ASSETS[template_id];
   let template_width = original_template.width;
   let template_height = original_template.height;

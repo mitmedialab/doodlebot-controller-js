@@ -347,6 +347,7 @@ function onDropHandler(event) {
         height: height,
         angle: 0,
         relative_anchor: relative_anchor,
+        template_id: template_id,
         // only_reachable: true, //TODO: Don't hardcode this
         // targets: [COIN_COLLECT_TYPES.STAR], //TODO: Don't hardcode this
       });
@@ -359,6 +360,7 @@ function onDropHandler(event) {
         image: image,
         width: width,
         height: height,
+        template_id: template_id,
       });
     } else if (type === COIN_TYPE) {
       let id = grid.getNewCoinId();
@@ -370,6 +372,7 @@ function onDropHandler(event) {
         width: width,
         height: height,
         coin_collect_type: coin_collect_type,
+        template_id: template_id,
       });
     } else {
       console.log(`Invalid type: ${type}`);
