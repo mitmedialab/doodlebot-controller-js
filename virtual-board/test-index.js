@@ -468,6 +468,26 @@ const TEMPLATES_PER_THEME = {
     coins: ["coin", "star"],
   },
 };
+let waitingToStartModalHandler = new bootstrap.Modal(waitingToStartModal);
+window.waitingToStartModalHandler = waitingToStartModalHandler;
+
+const showWaitModal = () => {
+  waitingToStartModalHandler.show();
+};
+const hideWaitModal = () => {
+  waitingToStartModalHandler.hide();
+};
+window.hideWaitModal = hideWaitModal;
+window.showWaitModal = showWaitModal;
+
+cancelReadyToWait.addEventListener("click", () => {
+  hideWaitModal();
+  let bot = grid.update_ready_to_start(currentBotId, false);
+  socket.emit("replace_bot_ready_to_start", {
+    bot,
+    virtualGrid: grid.toJSON(),
+  });
+});
 /**
  * Creates a grid where each cell is cell_size px x cell_size px
  * and places it on `gridContainer`
@@ -1226,6 +1246,7 @@ async function stopMovingBot(bot_id) {
   } else {
     stopMovingBot_virtual(bot_id);
   }
+  grid.reset_default_require_graph();
 }
 /**
  * If the bot is moving, it will stop (and vice versa)
@@ -1374,15 +1395,23 @@ function stopMovingBot_virtual(bot_id) {
 /**Gets called when the button gets pressed */
 const changeMovingBotsHandler = async (options = {}) => {
   //This decides to hide the controls, and make sure the grid is not interactive
-  if (!options.fromSocket) {
-    socket.emit("change_moving", {});
-  }
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
-    await stopMovingBot(currentBotId, options);
+    socket.emit("stop_moving", {});
+    // await stopMovingBot(currentBotId, options);
     grid.reset_default_require_graph();
   } else {
-    await startMovingBot(currentBotId);
+    let bot = grid.update_ready_to_start(currentBotId, true);
+    socket.emit("replace_bot_ready_to_start", {
+      bot,
+      virtualGrid: grid.toJSON(),
+    });
+    // Check if everyone is ready to start
+    if (grid.is_everyone_ready_to_start()) {
+      socket.emit("everyone_ready_to_start", {});
+    } else {
+      showWaitModal();
+    }
   }
 };
 changeMovingBotsButton.addEventListener("click", async () => {
@@ -1399,8 +1428,8 @@ loadBotButton.addEventListener("click", () => {
   loadBotButton.disabled = true;
 });
 //To use later in socket handler
-// window.startMovingBot = startMovingBot;
-// window.stopMovingBot = stopMovingBot;
+window.startMovingBot = startMovingBot;
+window.stopMovingBot = stopMovingBot;
 // window.setupBeforeStart = setupBeforeStart;
 window.changeMovingBotsHandler = changeMovingBotsHandler;
 

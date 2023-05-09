@@ -168,6 +168,25 @@ class VirtualGrid {
       coins: this.coins,
     };
   }
+  update_ready_to_start(bot_id, value) {
+    let bot = this.bots[bot_id][0];
+    bot.is_ready_to_start = value;
+    return bot;
+  }
+  is_everyone_ready_to_start() {
+    for (let bot_id in this.bots) {
+      let is_ready = this.bots[bot_id][0].is_ready_to_start;
+      if (!is_ready) {
+        return false;
+      }
+    }
+    return true;
+  }
+  reset_ready_to_start() {
+    for (let bot_id in this.bots) {
+      this.update_ready_to_start(bot_id, false);
+    }
+  }
   reset_default_require_graph() {
     // console.log("----------Resetting default require graph-----");
     this.requires_graph_load = [];
@@ -286,6 +305,7 @@ class VirtualGrid {
         angle: ANGLE_DIRS.RIGHT, // Looking to the right
         follow: [], // bots to follow
         run_away_from: [], // bots to run away from
+        is_ready_to_start: false,
         ...newObject,
       };
     }

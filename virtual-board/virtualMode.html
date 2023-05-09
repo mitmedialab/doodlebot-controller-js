@@ -30,8 +30,49 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
 
 </head>
 
-<body id="body">
+<body id="body" class="d-flex justify-content-center align-items-center vh-100">
     <div class="container">
+        <!--Modal start-->
+        <div class="modal" id="myModal">
+            <div class="modal-content">
+                <div style="display:flex; align-items: center;">
+                    <h5 style="margin-top: 5px;">Camera Settings</h5><span style="margin-left: 50%;" class="close">&times;</span>
+                </div>
+                <canvas id="arucoCanvasDebug" width="640" height="640"></canvas>
+
+                <hr>
+                <p>This is the modal content</p>
+                <textarea id="logBox" rows="10" cols="100"></textarea>
+                <select id="devicesSelect"></select>
+                <button id="updateCornersButton" class="btn btn-outline-success">Update Corners</button>
+            </div>
+        </div>
+        <!--Modal end-->
+        <!-- Modal start -->
+        <div class="modal fade" id="waitingToStartModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title text-black" id="staticBackdropLabel">You're ready to play!</h4>
+                    </div>
+                    <div class="modal-body">
+                        <h5 class="text-black">Please wait while other players finish setting things up with their bots</h5>
+                        <!-- <br> -->
+              
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <div style="padding:5px; width:250px;" class="bg-success rounded-3">
+                            <span class="spinner-border spinner-border-sm" style="font-size: 14px;"></span>
+                            Waiting for players...
+                        </div>
+                        <button type="button" class="btn btn-danger" id="cancelReadyToWait">Cancel</button>
+                        <!-- <button type="button" class="btn btn-success btn-lg" onclick="finishTutorial1()">Continue to Game 1</button> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--Modal end-->
         <div id="mySidebar" class="sidebar">
             <div id="objects" class="card">
                 <div valid-mode="virtual" class="card-header"><center><h5>Available Objects</h5></center></div>
@@ -62,23 +103,6 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                     </div>
                 </div>
 
-                <!--Modal start-->
-                <div class="modal" id="myModal">
-                    <div class="modal-content">
-                        <div style="display:flex; align-items: center;">
-                            <h5 style="margin-top: 5px;">Camera Settings</h5><span style="margin-left: 50%;" class="close">&times;</span>
-                        </div>
-                        <canvas id="arucoCanvasDebug" width="640" height="640"></canvas>
-
-                        <hr>
-                        <p>This is the modal content</p>
-                        <textarea id="logBox" rows="10" cols="100"></textarea>
-                        <select id="devicesSelect"></select>
-                        <button id="updateCornersButton" class="btn btn-outline-success">Update Corners</button>
-                    </div>
-                </div>
-                <!--Modal end-->
-                
                 <div class="card-body">
                     <center><button valid-mode="camera" id="bluetooth_button" class="btn btn-outline-success mb-3">Connect to Bluetooth <i class="fa fa-bluetooth"></i></button></center>
                     <!-- <center><small>Select a bot with your mouse</small></center> -->

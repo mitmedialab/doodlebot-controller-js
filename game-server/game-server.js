@@ -328,16 +328,31 @@ socketIO.on("connection", (socket) => {
     }
   );
 
-  socket.on("change_moving", () => {
-    console.log(`[${socket.activeRoom}] Detected change moving. Notifying.`);
+  // socket.on("change_moving", () => {
+  //   console.log(`[${socket.activeRoom}] Detected change moving. Notifying.`);
 
-    socket.broadcast.to(socket.activeRoom).emit("changed_moving", {});
-  });
+  //   socket.broadcast.to(socket.activeRoom).emit("changed_moving", {});
+  // });
   socket.on("replace_bot", ({ bot_id, bot, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected replace bot. Notifying.`);
     socket.broadcast
       .to(socket.activeRoom)
       .emit("replaced_bot", { bot_id, bot });
+  });
+  socket.on("replace_bot_ready_to_start", ({ bot, virtualGrid }) => {
+    console.log(
+      `[${socket.activeRoom}] Detected update bot's ready_to_start status. Notifying.`
+    );
+    // room_info[socket.activeRoom] = virtualGrid;
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("replaced_bot_ready_to_start", { bot });
+  });
+  socket.on("everyone_ready_to_start", () => {
+    socketIO.in(socket.activeRoom).emit("everyone_ready_to_start", {});
+  });
+  socket.on("stop_moving", () => {
+    socketIO.in(socket.activeRoom).emit("stop_moving", {});
   });
   socket.on("replace_obstacle", ({ obstacle_id, obstacle, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected replace obstacle. Notifying.`);

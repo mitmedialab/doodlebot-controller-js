@@ -1,4 +1,6 @@
-let laptop_ip = "192.168.41.240";
+// let laptop_ip = "192.168.41.240";
+let laptop_ip = "localhost";
+
 window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;
 let socket;
@@ -108,6 +110,18 @@ function setupSocket() {
   socket.on("replaced_bot", ({ bot_id, bot }) => {
     grid.replace_bot(bot_id, bot, { is_new: false, fromSocket: true });
   });
+  socket.on("replaced_bot_ready_to_start", ({ bot }) => {
+    grid.replace_bot(bot.id, bot, { is_new: false, fromSocket: true });
+  });
+  socket.on("everyone_ready_to_start", async () => {
+    //Actually start
+    hideWaitModal();
+    await startMovingBot(currentBotId);
+  });
+  socket.on("stop_moving", () => {
+    grid.reset_ready_to_start();
+    stopMovingBot(currentBotId, { fromSocket: true });
+  });
   socket.on("replaced_obstacle", ({ obstacle_id, obstacle }) => {
     grid.replace_obstacle(obstacle_id, obstacle, {
       is_new: false,
@@ -152,9 +166,9 @@ function setupSocket() {
     console.log("receiving change require graph of bot_id: " + bot_id);
     grid.change_require_graph(bot_id, require_graph);
   });
-  socket.on("changed_moving", async () => {
-    await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button
-  });
+  // socket.on("changed_moving", async () => {
+  //   await changeMovingBotsHandler({ fromSocket: true }); //Pretends to press the start button
+  // });
   socket.on("picked_coin", ({ bot, coin }) => {
     removePickedCoin(bot, coin); //Remove
   });
