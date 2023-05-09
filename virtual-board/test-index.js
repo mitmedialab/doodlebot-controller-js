@@ -81,13 +81,22 @@ var waitingRoom = document.getElementById("waitingRoom");
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
-var rows = 16; //was 10
-var cols = 16; //was 20
-var cell_size = 40; //was 60
+let rows; //16; //was 10
+let cols; //16; //was 20
+let cell_size; //40; //was 60
 // Just so that they become global variables
 window.rows = rows;
 window.cols = cols;
 window.cell_size = cell_size;
+if (selectedMode === "virtual") {
+  rows = 16;
+  cols = 16;
+  cell_size = 40;
+} else {
+  rows = 20;
+  cols = 20;
+  cell_size = 32;
+}
 
 let ASSETS_FOLDER = "../assets/";
 const COIN_COLLECT_TYPES = {
