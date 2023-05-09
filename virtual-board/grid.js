@@ -182,6 +182,16 @@ class VirtualGrid {
     }
     return true;
   }
+  num_users_ready_to_start() {
+    let count = 0;
+    for (let bot_id in this.bots) {
+      let is_ready = this.bots[bot_id][0].is_ready_to_start;
+      if (is_ready) {
+        count += 1;
+      }
+    }
+    return count;
+  }
   reset_ready_to_start() {
     for (let bot_id in this.bots) {
       this.update_ready_to_start(bot_id, false);

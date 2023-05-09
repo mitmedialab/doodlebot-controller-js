@@ -112,14 +112,26 @@ function setupSocket() {
   });
   socket.on("replaced_bot_ready_to_start", ({ bot }) => {
     grid.replace_bot(bot.id, bot, { is_new: false, fromSocket: true });
+    // countReadyToStart.innerText = grid.num_users_ready_to_start();
+    if (bot.id !== currentBotId) {
+      if (bot.is_ready_to_start) {
+        body.setAttribute("show-other-user-ready", "");
+      } else {
+        body.removeAttribute("show-other-user-ready");
+      }
+    }
   });
   socket.on("everyone_ready_to_start", async () => {
     //Actually start
     hideWaitModal();
+    body.removeAttribute("show-other-user-ready");
     await startMovingBot(currentBotId);
   });
   socket.on("stop_moving", () => {
     grid.reset_ready_to_start();
+    // countReadyToStart.innerText = grid.num_users_ready_to_start();
+    body.removeAttribute("show-other-user-ready");
+    body.removeAttribute("is-waiting-for-users");
     stopMovingBot(currentBotId, { fromSocket: true });
   });
   socket.on("replaced_obstacle", ({ obstacle_id, obstacle }) => {

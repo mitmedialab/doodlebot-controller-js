@@ -1400,12 +1400,15 @@ const changeMovingBotsHandler = async (options = {}) => {
     socket.emit("stop_moving", {});
     // await stopMovingBot(currentBotId, options);
     grid.reset_default_require_graph();
+    body.removeAttribute("is-waiting-for-users");
   } else {
     let bot = grid.update_ready_to_start(currentBotId, true);
     socket.emit("replace_bot_ready_to_start", {
       bot,
       virtualGrid: grid.toJSON(),
     });
+    body.setAttribute("is-waiting-for-users", "");
+    body.removeAttribute("show-other-user-ready");
     // Check if everyone is ready to start
     if (grid.is_everyone_ready_to_start()) {
       socket.emit("everyone_ready_to_start", {});

@@ -222,3 +222,10 @@ body[current-option="School"] label[for="check_gridlines"] {
 button[disabled] {
   opacity: 0.5;
 }
+
+body[is-waiting-for-users] #waitingMessage {
+  display: none;
+}
+body:not([show-other-user-ready]) #otherUserReady {
+  display: none;
+}
