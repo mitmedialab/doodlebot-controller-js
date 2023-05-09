@@ -827,6 +827,7 @@ const addRemoveBotIcon = (bot) => {
       template.removeAttribute("chosen-bot");
     }
     currentBotId = null;
+    resetBotChoices();
     socket.emit("remove_bot", { bot, virtualGrid: grid.toJSON() });
   });
   bot_dom.appendChild(removeIcon);
@@ -859,13 +860,39 @@ const addRemoveCoinIcon = (coin) => {
   });
   coin_dom.appendChild(removeIcon);
 };
-
+/**
+ * Unchecks all checkboxes left behind from previous (removed) bot
+ */
+const resetBotChoices = () => {
+  let checkboxes = botUpdateSelector.querySelectorAll("input[type='checkbox']");
+  for (let checkbox of checkboxes) {
+    checkbox.checked = false;
+    checkbox.parentNode.classList.add("policy-inactive"); //To not show select
+  }
+  let selected = botUpdateSelector.querySelectorAll("select");
+  for (let select_box of selected) {
+    select_box.selectedIndex = 0;
+  }
+};
 const onRemoveBot = (bot) => {
   // Remove the bot from the grid
   let DOM_ID = `${BOT_TYPE}-${bot.id}`;
   let bot_dom = document.getElementById(DOM_ID);
   bot_dom.remove();
   grid.reset_default_require_graph();
+
+  /** Removes removed bot from being followed/follow */
+  let folow_bot_select = follow_select.querySelector(`[value="${bot.id}"]`);
+  if (folow_bot_select) {
+    //Already exists, don't add it
+    folow_bot_select.remove();
+  }
+  let run_away_bot_select = run_away_from_select.querySelector(
+    `[value="${bot.id}"]`
+  );
+  if (run_away_bot_select) {
+    run_away_bot_select.remove();
+  }
 };
 const onRemoveObstacle = (obstacle) => {
   // Remove the obstacle from the grid
