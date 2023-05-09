@@ -111,7 +111,7 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 51,
-    images: {
+    templates: {
       None: "doodlebot_alone",
       City: "car_1",
       School: "bicycle",
@@ -124,7 +124,7 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 52,
-    images: {
+    templates: {
       None: "doodlebot_cowboy",
       City: "car_2",
       School: "school_bus",
@@ -137,7 +137,7 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 53,
-    images: {
+    templates: {
       None: "doodlebot_alone",
       City: "car_3",
       School: "bicycle",
@@ -150,7 +150,7 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 54,
-    images: {
+    templates: {
       None: "doodlebot_cowboy",
       City: "truck_1",
       School: "school_bus",
@@ -163,7 +163,7 @@ const OBJECT_SIZES = {
     height: 5,
     relative_anchor: [2, 2],
     direction_id: 55,
-    images: {
+    templates: {
       None: "doodlebot_alone",
       City: "car_1",
       School: "bicycle",
@@ -176,7 +176,7 @@ const OBJECT_SIZES = {
     width: 1,
     height: 1,
     other_corner_id: 61,
-    images: {
+    templates: {
       None: "building",
       City: "bush",
       School: "building_roof_1",
@@ -188,7 +188,7 @@ const OBJECT_SIZES = {
     width: 1,
     height: 1,
     other_corner_id: 62,
-    images: {
+    templates: {
       None: "building",
       City: "river",
       School: "brickwall",
@@ -200,7 +200,7 @@ const OBJECT_SIZES = {
     width: 1,
     height: 1,
     other_corner_id: 63,
-    images: {
+    templates: {
       None: "building",
       City: "bush",
       School: "building_roof_1",
@@ -212,7 +212,7 @@ const OBJECT_SIZES = {
     width: 1,
     height: 1,
     other_corner_id: 64,
-    images: {
+    templates: {
       None: "building",
       City: "river",
       School: "building_roof_2",
@@ -224,7 +224,7 @@ const OBJECT_SIZES = {
     width: 1,
     height: 1,
     other_corner_id: 65,
-    images: {
+    templates: {
       None: "building",
       City: "bush",
       School: "hedge",
@@ -236,7 +236,7 @@ const OBJECT_SIZES = {
     type: COIN_TYPE,
     width: 1,
     height: 1,
-    images: {
+    templates: {
       None: "coin",
       City: "coffee",
       School: "coffee_school",
@@ -247,7 +247,7 @@ const OBJECT_SIZES = {
     type: COIN_TYPE,
     width: 1,
     height: 1,
-    images: {
+    templates: {
       None: "coin",
       City: "pizza",
       School: "pizza_school",
@@ -258,7 +258,7 @@ const OBJECT_SIZES = {
     type: COIN_TYPE,
     width: 1,
     height: 1,
-    images: {
+    templates: {
       None: "coin",
       City: "coffee",
       School: "coin_school",
@@ -269,7 +269,7 @@ const OBJECT_SIZES = {
     type: COIN_TYPE,
     width: 1,
     height: 1,
-    images: {
+    templates: {
       None: "coin",
       City: "pizza",
       School: "coffee_school",
@@ -280,7 +280,7 @@ const OBJECT_SIZES = {
     type: COIN_TYPE,
     width: 1,
     height: 1,
-    images: {
+    templates: {
       None: "coin",
       City: "coffee",
       School: "pizza_school",
@@ -294,7 +294,7 @@ const COLOR_SIZES = {
     type: COIN_TYPE,
     width: 3,
     height: 3,
-    images: {
+    templates: {
       None: "coin",
       City: "coffee",
       School: "coin_school",
@@ -403,15 +403,15 @@ const getTemplateForId = (aruco_id, is_color = false) => {
     console.log(`Invalid ${aruco_id}: not in OBJECT_SIZES`);
     return null;
   }
-  if (!info[aruco_id].images) {
-    console.log(`Invalid ${aruco_id}: no images`);
+  if (!info[aruco_id].templates) {
+    console.log(`Invalid ${aruco_id}: no template`);
     return null;
   }
-  if (!info[aruco_id].images[selectedOption]) {
-    console.log(`Invalid ${aruco_id}: no images.${selectedOption}`);
+  if (!info[aruco_id].templates[selectedOption]) {
+    console.log(`Invalid ${aruco_id}: no templates.${selectedOption}`);
     return null;
   }
-  return info[aruco_id].images[selectedOption];
+  return info[aruco_id].templates[selectedOption];
 };
 /**
  * Updates position of a given bot in the virtual grid. If the bot is not there then it
