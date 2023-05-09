@@ -1133,7 +1133,7 @@ const drawCoin = (coin) => {
   return DOM_ID;
 };
 const getAssetTemplate = (aruco_id) => {
-  return OBJECT_SIZES[aruco_id].images[selectedOption];
+  return OBJECT_SIZES[aruco_id].templates[selectedOption];
 };
 /**
  * A bot has been created on the VirtualGrid system. This method:
