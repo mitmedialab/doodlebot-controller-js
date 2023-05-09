@@ -84,10 +84,6 @@ let grid;
 let rows; //16; //was 10
 let cols; //16; //was 20
 let cell_size; //40; //was 60
-// Just so that they become global variables
-window.rows = rows;
-window.cols = cols;
-window.cell_size = cell_size;
 if (selectedMode === "virtual") {
   rows = 16;
   cols = 16;
@@ -97,6 +93,10 @@ if (selectedMode === "virtual") {
   cols = 20;
   cell_size = 32;
 }
+// Just so that they become global variables
+window.rows = rows;
+window.cols = cols;
+window.cell_size = cell_size;
 
 let ASSETS_FOLDER = "../assets/";
 const COIN_COLLECT_TYPES = {
@@ -154,8 +154,17 @@ const ALL_ASSETS = {
   },
   building: {
     image: ASSETS_FOLDER + "None_Building.png",
+    template_rotate_90: "building_rotate_90",
     width: 1, //1.1,
     height: 3,
+    type: OBSTACLE_TYPE,
+    theme: "None",
+    template_cell_size: 30,
+  },
+  building_rotate_90: {
+    image: ASSETS_FOLDER + "None_Building_rotate_90.png",
+    width: 3, //1.1,
+    height: 1,
     type: OBSTACLE_TYPE,
     theme: "None",
     template_cell_size: 30,
@@ -227,6 +236,7 @@ const ALL_ASSETS = {
   },
   river: {
     image: ASSETS_FOLDER + "DB_River_1.png",
+    template_rotate_90: "river_rotate_90",
     width: 1,
     height: 2,
     type: OBSTACLE_TYPE,
@@ -300,6 +310,7 @@ const ALL_ASSETS = {
   },
   pacman_wall: {
     image: ASSETS_FOLDER + "DB_PacmanWall_1_filled.png",
+    template_rotate_90: "pacman_wall_rotate_90",
     width: 1, //0.7,
     height: 3,
     type: OBSTACLE_TYPE,
@@ -351,6 +362,7 @@ const ALL_ASSETS = {
   },
   brickwall: {
     image: ASSETS_FOLDER + "DB_Brickwall_1.png",
+    template_rotate_90: "brickwall_rotate_90",
     width: 1, //1.5,
     height: 2, //1.7,
     type: OBSTACLE_TYPE,
@@ -375,14 +387,24 @@ const ALL_ASSETS = {
   },
   building_roof_2: {
     image: ASSETS_FOLDER + "DB_BuildingRoof_2.png",
+    template_rotate_90: "building_roof_2_rotate_90",
     width: 2, //1.5,
     height: 4, //1.7,
     type: OBSTACLE_TYPE,
     theme: "School",
     template_cell_size: 20,
   },
+  building_roof_2_rotate_90: {
+    image: ASSETS_FOLDER + "DB_BuildingRoof_2_rotate_90.png",
+    width: 4, //1.5,
+    height: 2, //1.7,
+    type: OBSTACLE_TYPE,
+    theme: "School",
+    template_cell_size: 20,
+  },
   hedge: {
     image: ASSETS_FOLDER + "DB_Hedge_1.png",
+    template_rotate_90: "hedge_rotate_90",
     width: 1, //0.7,
     height: 3,
     type: OBSTACLE_TYPE,
@@ -435,6 +457,7 @@ const TEMPLATES_PER_THEME = {
     ],
     obstacles: [
       "building",
+      "building_rotate_90",
       "river",
       "river_rotate_90",
       "brickwall",
@@ -444,7 +467,13 @@ const TEMPLATES_PER_THEME = {
   },
   City: {
     bots: ["car_1", "car_2", "car_3", "truck_1"],
-    obstacles: ["building", "river", "river_rotate_90", "bush"],
+    obstacles: [
+      "building",
+      "building_rotate_90",
+      "river",
+      "river_rotate_90",
+      "bush",
+    ],
     coins: ["pizza", "coffee"],
   },
   Pacman: {
@@ -950,6 +979,7 @@ const drawBot = (bot) => {
     height,
     image,
     image_rotate_90,
+    template_id,
     real_bottom_left: [i, j],
     angle,
   } = bot;
@@ -996,6 +1026,18 @@ const drawBot = (bot) => {
 
   return DOM_ID;
 };
+const getImageFromDimensions = (width, height, template_id) => {
+  let original_template = ALL_ASSETS[template_id];
+  let template_width = original_template.width;
+  let template_height = original_template.height;
+  if (height >= width === template_height >= template_width) {
+    return original_template.image;
+  } else {
+    //Should be the rotate_90
+    let { template_rotate_90 } = original_template;
+    return ALL_ASSETS[template_rotate_90].image;
+  }
+};
 /**
  * An obstacle has been created on the VirtualGrid system. This method
  * creates the image in the grid at the necessary position.
@@ -1005,7 +1047,7 @@ const drawObstacle = (obstacle) => {
     width,
     height,
     real_bottom_left: [i, j],
-    image,
+    template_id,
   } = obstacle;
 
   //Creating a div at the given position
@@ -1024,7 +1066,11 @@ const drawObstacle = (obstacle) => {
   let imageEl = document.createElement("img");
   imageEl.classList.add("obstacle-image");
   imageEl.setAttribute(`id`, `${DOM_ID}-image`);
-  imageEl.setAttribute("src", image);
+  //The images by default will have a longer height than width
+  imageEl.setAttribute(
+    "src",
+    getImageFromDimensions(width, height, template_id)
+  );
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
 
@@ -1048,7 +1094,7 @@ const drawCoin = (coin) => {
     width,
     height,
     real_bottom_left: [i, j],
-    image,
+    template_id,
   } = coin;
 
   //Creating a div at the given position
@@ -1067,7 +1113,11 @@ const drawCoin = (coin) => {
   let imageEl = document.createElement("img");
   imageEl.classList.add("coin-image");
   imageEl.setAttribute(`id`, `${DOM_ID}-image`);
-  imageEl.setAttribute("src", image);
+  //The images by default will have a longer height than width
+  imageEl.setAttribute(
+    "src",
+    getImageFromDimensions(width, height, template_id)
+  );
   imageEl.style.width = `${cell_size * width}px`;
   imageEl.style.height = `${cell_size * height}px`;
 

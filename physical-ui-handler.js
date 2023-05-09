@@ -396,22 +396,22 @@ function getTypeObject(id) {
   }
   return OBJECT_SIZES[id].type;
 }
-const getAssetImages = (aruco_id, is_color = false) => {
+const getTemplateForId = (aruco_id, is_color = false) => {
   let info = is_color ? COLOR_SIZES : OBJECT_SIZES;
 
   if (!(aruco_id in info)) {
     console.log(`Invalid ${aruco_id}: not in OBJECT_SIZES`);
-    return {};
+    return null;
   }
   if (!info[aruco_id].images) {
     console.log(`Invalid ${aruco_id}: no images`);
-    return {};
+    return null;
   }
   if (!info[aruco_id].images[selectedOption]) {
     console.log(`Invalid ${aruco_id}: no images.${selectedOption}`);
-    return {};
+    return null;
   }
-  return ALL_ASSETS[info[aruco_id].images[selectedOption]];
+  return info[aruco_id].images[selectedOption];
 };
 /**
  * Updates position of a given bot in the virtual grid. If the bot is not there then it
@@ -426,8 +426,9 @@ function updateVirtualBot(id) {
     console.log(`Couldnt find size information for id = ${id} `);
   }
   let { relative_anchor, width, height } = OBJECT_SIZES[id];
-
-  let { image, image_rotate_90 } = getAssetImages(id);
+  let template_id = getTemplateForId(id);
+  let assets = ALL_ASSETS[template_id];
+  let { image, image_rotate_90 } = assets;
 
   let [anchor_x, anchor_y] = relative_anchor;
   //If its not there, create one
@@ -442,6 +443,7 @@ function updateVirtualBot(id) {
       height: height, //wont change
       image,
       image_rotate_90,
+      template_id: template_id,
     };
     //This assumes angle is 0, need to turn it if necessary
     bot_to_add = grid.future_position_after_turn(bot_to_add, angle);
@@ -488,8 +490,9 @@ function updateVirtualBot(id) {
 function updateVirtualObstacle(id) {
   let { width, height, real_bottom_left } =
     cameraController.getObjectPositionInfo(id);
-
-  let { image, image_rotate_90 } = getAssetImages(id);
+  let template_id = getTemplateForId(id);
+  let assets = ALL_ASSETS[template_id];
+  let { image, image_rotate_90 } = assets;
 
   if (!grid.obstacles[id]) {
     if (!(id in OBJECT_SIZES)) {
@@ -504,6 +507,7 @@ function updateVirtualObstacle(id) {
       height: height,
       image,
       image_rotate_90,
+      template_id: template_id,
     });
   } else {
     let obstacle = grid.obstacles[id][0];
@@ -525,10 +529,9 @@ function updateVirtualObstacle(id) {
  */
 function updateVirtualCoin(id_or_color, is_color = false) {
   let id, width, height, real_bottom_left;
-  let { image, image_rotate_90, coin_collect_type } = getAssetImages(
-    id_or_color,
-    is_color
-  );
+  let template_id = getTemplateForId(id_or_color, is_color);
+  let assets = ALL_ASSETS[template_id];
+  let { image, image_rotate_90, coin_collect_type } = assets;
   //Regular Aruco detection
   if (!is_color) {
     id = id_or_color;
@@ -558,6 +561,7 @@ function updateVirtualCoin(id_or_color, is_color = false) {
       image,
       image_rotate_90,
       coin_collect_type,
+      template_id,
     });
     let { success, coin } = res;
     if (!success) {
