@@ -28,9 +28,11 @@ function setupSocket() {
   });
 
   //done with tutorial1 go to game1
-  socket.on("room_ready_game1", () => {
+  socket.on("room_ready_game1", ({ bot_id }) => {
     // console.log("redirecting from socket-handler.js");
-    window.location.href = `game1.html?room=${roomId}`;
+    // window.location.href = `game1.html?room=${roomId}&bot_id=${bot_id}`;
+    let theme = "None"; //One of None, City, School or Pacman
+    window.location.href = `virtualMode.html?option=${theme}&mode=virtual&room=${roomId}&tutorial=${1}&bot_id=${bot_id}&`;
   });
 
   //done with game1 go to tutorial2
@@ -86,6 +88,11 @@ function setupSocket() {
     // });
     // drawBoard();
   });
+  // socket.on("joined_room_page", ({ roomId, virtualGrid }) => {
+  //   console.log(`Detecting joining room: ${roomId}`);
+  //   room = roomId;
+  //   // setupGridFromPrevious(virtualGrid);
+  // });
   socket.on("added_bot", (bot) => {
     grid.replace_bot(bot.id, bot, { is_new: true, fromSocket: true });
     // grid.add_bot(bot, { fromSocket: true });

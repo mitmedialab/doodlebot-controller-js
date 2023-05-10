@@ -153,7 +153,14 @@ socketIO.on("connection", (socket) => {
       room_info[roomId].page0.min_users_to_move
     ) {
       console.log("redirecting to game1.html now");
-      socketIO.in(socket.activeRoom).emit("room_ready_game1", {});
+
+      socket.emit("room_ready_game1", { bot_id: 1 }); //Assign who is who
+      // TODO: Send a different id to different users (assuming there's more than 2)
+      socket.broadcast
+        .to(socket.activeRoom)
+        .emit("room_ready_game1", { bot_id: 2 }); //Assign who is who
+
+      // socketIO.in(socket.activeRoom).emit("room_ready_game1", {});
     }
   });
 
@@ -242,7 +249,7 @@ socketIO.on("connection", (socket) => {
   });
   socket.on("add_bot", async ({ bot, virtualGrid }) => {
     console.log(`[${socket.activeRoom}] Detected add bot. Notifying.`);
-    // room_info[socket.activeRoom] = virtualGrid;
+    room_info[socket.activeRoom] = virtualGrid;
     socket.broadcast.to(socket.activeRoom).emit("added_bot", bot);
   });
   socket.on("add_obstacle", async ({ obstacle, virtualGrid }) => {

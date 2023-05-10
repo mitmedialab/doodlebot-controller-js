@@ -229,3 +229,21 @@ body[is-waiting-for-users] #waitingMessage {
 body:not([show-other-user-ready]) #otherUserReady {
   display: none;
 }
+
+body[tutorial] #objects {
+  opacity: 0.5;
+}
+
+body[tutorial] #controls {
+  opacity: 0.5;
+}
+
+body[tutorial] #cancelReadyToWait {
+  display: none;
+}
+body[tutorial][is-moving] #changeMovingBotsButton {
+  display: none;
+}
+body[tutorial][is-moving] #loadBotButton {
+  display: none;
+}

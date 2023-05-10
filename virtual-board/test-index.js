@@ -6,6 +6,11 @@ var urlParams = new URLSearchParams(window.location.search);
 var selectedOption = urlParams.get("option");
 window.selectedOption = selectedOption;
 var selectedMode = urlParams.get("mode");
+let tutorial = urlParams.get("tutorial");
+if (tutorial) {
+  body.setAttribute("tutorial", tutorial);
+  currentBotId = Number(urlParams.get("bot_id")); //If tutorial the bot's id will be provided
+}
 body.setAttribute("current-mode", selectedMode);
 body.setAttribute("current-option", selectedOption);
 window.selectedMode = selectedMode; //make it global
@@ -451,9 +456,9 @@ const TEMPLATES_PER_THEME = {
     bots: [
       "doodlebot_alone",
       "doodlebot_cowboy",
-      "robot_1",
-      "robot_2",
-      "robot_3",
+      // "robot_1",
+      // "robot_2",
+      // "robot_3",
     ],
     obstacles: [
       "building",
@@ -466,7 +471,8 @@ const TEMPLATES_PER_THEME = {
     coins: ["coin", "star"],
   },
   City: {
-    bots: ["car_1", "car_2", "car_3", "truck_1"],
+    // bots: ["car_1", "car_2", "car_3", "truck_1"],
+    bots: ["robot_1", "robot_2", "robot_3"],
     obstacles: [
       "building",
       "building_rotate_90",
@@ -482,7 +488,14 @@ const TEMPLATES_PER_THEME = {
     coins: ["pacman_cherry", "pacman_food"],
   },
   School: {
-    bots: ["bicycle", "school_bus"],
+    // bots: ["bicycle", "school_bus"],
+    bots: [
+      "doodlebot_alone",
+      "doodlebot_cowboy",
+      "robot_1",
+      "robot_2",
+      "robot_3",
+    ],
     obstacles: [
       "building_roof_1",
       "building_roof_2",
@@ -716,22 +729,148 @@ const onChangeRequireGraph = () => {
     loadBotButton.disabled = true;
   }
 };
-document.addEventListener("DOMContentLoaded", () => {
-  setupSelectOptions();
-  if (selectedMode === "virtual") {
-    createDOMGrid(rows, cols, cell_size);
-  } else {
-    canvasContainer.style.width = `${cell_size * cols}px`;
-    canvasContainer.style.height = `${cell_size * rows}px`;
+const TEMPLATE_GRIDS = {
+  game1: {
+    grid: {
+      bots: {
+        1: {
+          angle: 0,
+          height: 3,
+          width: 1,
+          image: "../assets/None_DoodleBot.png",
+          movement_type: MOVEMENT_VALUES.RANDOM.value,
+          policies: [BOT_POLICIES.COLLECT.value],
+          real_bottom_left: [2, 12],
+          relative_anchor: [1, 1],
+          targets: [COIN_COLLECT_TYPES.COIN],
+        },
+        2: {
+          angle: 0,
+          height: 3,
+          width: 1,
+          image: "../assets/None_DoodleBot.png",
+          movement_type: MOVEMENT_VALUES.RANDOM.value,
+          policies: [BOT_POLICIES.COLLECT.value],
+          real_bottom_left: [2, 12],
+          relative_anchor: [1, 1],
+          targets: [COIN_COLLECT_TYPES.COIN],
+        },
+      },
+    },
+  },
+};
+const disableBotChoices = () => {
+  let checkboxes = botUpdateSelector.querySelectorAll("input[type='checkbox']");
+  for (let checkbox of checkboxes) {
+    checkbox.disabled = true;
+    // checkbox.parentNode.classList.add("policy-inactive"); //To not show select
+  }
+  let selected = botUpdateSelector.querySelectorAll("select");
+  for (let select_box of selected) {
+    select_box.disabled = true;
+  }
+};
+const setupTutorialGrid = () => {
+  //-------------------- Step 1: Create the coins--------------------------------------------//
+  let coin_positions = [
+    [1, 1],
+    [2, 4],
+    [4, 8],
+    [7, 4],
+    [8, 4],
+    [11, 8],
+    [13, 4],
+    [14, 1],
+  ];
+  let start_id = 20;
+  let coin_template_mapping = {
+    None: "coin",
+    City: "pizza",
+    School: "coffee",
+    Pacman: "pacman_cherry",
+  };
+  let coin_template_id = coin_template_mapping[selectedOption];
+  for (let [x, y] of coin_positions) {
+    let coin = {
+      ...ALL_ASSETS[coin_template_id],
+      real_bottom_left: [x, y],
+      template_id: coin_template_id,
+      id: start_id,
+    };
+    start_id += 1;
+    grid.replace_coin(coin.id, coin, { is_new: true });
+  }
+  //-------------------- Step 1: Create the bots that collect the coins -------------------------------------//
+  let movement_type_mapping = {
+    game1: MOVEMENT_VALUES.RANDOM.value,
+    game2: MOVEMENT_VALUES.EUCLIDEAN.value,
+    game3: MOVEMENT_VALUES.MANHATTAN.value,
+    game4: MOVEMENT_VALUES.DIJKSTRA.value,
+  };
+  let movement_type = movement_type_mapping[tutorial];
 
-    videoObj.setAttribute("width", cell_size * cols);
-    videoObj.setAttribute("height", cell_size * rows);
+  let bots = [
+    { id: 1, real_bottom_left: [1, 12], angle: 0 },
+    { id: 2, real_bottom_left: [12, 12], angle: 180 },
+  ];
+  for (let bot_info of bots) {
+    let template_id = OBJECT_SIZES[bot_info.id].templates[selectedOption];
+    let bot = {
+      ...ALL_ASSETS[template_id],
+      ...bot_info,
+      template_id,
+    };
+    let res = grid.replace_bot(bot.id, bot, { is_new: true }); //Pretend it came from somewhere else
 
-    image_from_stream.setAttribute("width", cell_size * cols);
-    image_from_stream.setAttribute("height", cell_size * rows);
+    grid.update_bot_policy(bot.id, "COLLECT", true); //Activate selected
+    let collect_type = ALL_ASSETS[coin_template_id].coin_collect_type;
+    grid.update_bot_collect(bot.id, collect_type);
+
+    if (bot.id === currentBotId) {
+      // Make options appear
+      setupSelectedBot(res);
+      // Show options in the grid
+      collect_checkbox.checked = true;
+      collect_checkbox.parentNode.classList.remove("policy-inactive"); //To show the select
+      collect_select.value = collect_type;
+
+      grid.update_bot_movement_type(currentBotId, movement_type);
+      movementTypeSelect.value = movement_type;
+      if (movement_type === MOVEMENT_VALUES.DIJKSTRA.value) {
+        body.setAttribute("needs-loading", "");
+      } else {
+        body.removeAttribute("needs-loading");
+      }
+    }
+  }
+  let obstacle_template_mapping = {
+    None: "building",
+    City: "hedge",
+    School: "hedge",
+    Pacman: "pacman_wall",
+  };
+  let obstacles = [
+    { id: 11, real_bottom_left: [2, 9] },
+    { id: 12, real_bottom_left: [11, 9] },
+  ];
+  if (tutorial === "game3" || tutorial === "game4") {
+    for (let obstacle_info of obstacles) {
+      let obstacle_template_id = obstacle_template_mapping[selectedOption];
+
+      let obstacle = {
+        ...ALL_ASSETS[obstacle_template_id],
+        ...obstacle_info,
+        template_id: obstacle_template_id,
+      };
+      let res = grid.replace_obstacle(obstacle.id, obstacle, { is_new: true }); //Pretend it came from somewhere else
+    }
   }
 
+  disableBotChoices();
+};
+const setupGridFromPrevious = (prevGrid = {}) => {
   grid = new VirtualGrid(rows, cols, {
+    ...prevGrid,
     onAddBot,
     onAddObstacle,
     onAddCoin,
@@ -763,9 +902,33 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let template_id of coins) {
       addCoinTemplate(template_id);
     }
-    setupDraggable(".template", cell_size); //Make all templates draggable
-    setupGridDropzone(cell_size); // To style the grid when an object can be dropped
+    //In template disabled interactivity
+    if (!tutorial) {
+      setupDraggable(".template", cell_size); //Make all templates draggable
+      setupGridDropzone(cell_size); // To style the grid when an object can be dropped
+    } else {
+      //IF it's tutorial: Setup the bots
+      setupTutorialGrid();
+    }
   }
+};
+window.setupGridFromPrevious = setupGridFromPrevious;
+document.addEventListener("DOMContentLoaded", () => {
+  setupSelectOptions();
+  if (selectedMode === "virtual") {
+    createDOMGrid(rows, cols, cell_size);
+  } else {
+    canvasContainer.style.width = `${cell_size * cols}px`;
+    canvasContainer.style.height = `${cell_size * rows}px`;
+
+    videoObj.setAttribute("width", cell_size * cols);
+    videoObj.setAttribute("height", cell_size * rows);
+
+    image_from_stream.setAttribute("width", cell_size * cols);
+    image_from_stream.setAttribute("height", cell_size * rows);
+  }
+
+  setupGridFromPrevious({});
 });
 /**
  * An object has been updated, so this deletes
@@ -781,7 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
 const onReplaceBot = (bot_id, bot, options = {}) => {
   // console.log("onReplaceBot");
   let { is_new } = options;
-  if (!options.fromSocket) {
+  if (!options.fromSocket && !tutorial) {
     emitReplaceBot(bot);
   }
 
@@ -802,14 +965,17 @@ const onReplaceBot = (bot_id, bot, options = {}) => {
   if (is_new && selectedMode === "camera" && bot_id === currentBotId) {
     setupSelectedBot(bot);
   }
-
-  // Came from creating an object
-  grid.reset_default_require_graph();
+  //Difference is that for game4 the 'Start' disable state depends on something else
+  //whereas for the other ones it should just be allowed
+  if (tutorial !== "game4") {
+    // Came from creating an object
+    grid.reset_default_require_graph();
+  }
 };
 
 const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
   let { is_new } = options;
-  if (!options.fromSocket) {
+  if (!options.fromSocket && !tutorial) {
     emitReplaceObstacle(obstacle);
   }
   //If it's not new, then delete traces of the previous image
@@ -828,7 +994,7 @@ const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
 };
 const onReplaceCoin = (coin_id, coin, options = {}) => {
   let { is_new } = options;
-  if (!options.fromSocket) {
+  if (!options.fromSocket && !tutorial) {
     emitReplaceCoin(coin);
   }
   //If it's not new, then delete traces of the previous image
@@ -1144,12 +1310,14 @@ const setupNewBot = (bot) => {
   let DOM_ID = drawBot(bot);
 
   if (selectedMode === "virtual") {
-    if (bot.id === currentBotId) {
+    if (bot.id === currentBotId && !tutorial) {
       //Makes the created div draggable
       addRotateBotIcon(bot);
       addRemoveBotIcon(bot);
     }
-    setupDraggable(`#${DOM_ID}`, cell_size);
+    if (!tutorial) {
+      setupDraggable(`#${DOM_ID}`, cell_size);
+    }
   } else {
     addBotTemplate(getAssetTemplate(bot.id));
   }
@@ -1222,8 +1390,10 @@ const setupNewObstacle = (obstacle) => {
   let DOM_ID = drawObstacle(obstacle);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
-    addRemoveObstacleIcon(obstacle);
-    setupDraggable(`#${DOM_ID}`, cell_size);
+    if (!tutorial) {
+      addRemoveObstacleIcon(obstacle);
+      setupDraggable(`#${DOM_ID}`, cell_size);
+    }
   } else {
     addObstacleTemplate(getAssetTemplate(obstacle.id));
   }
@@ -1242,8 +1412,10 @@ const setupNewCoin = (coin) => {
   let DOM_ID = drawCoin(coin);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
-    addRemoveCoinIcon(coin);
-    setupDraggable(`#${DOM_ID}`, cell_size);
+    if (!tutorial) {
+      addRemoveCoinIcon(coin);
+      setupDraggable(`#${DOM_ID}`, cell_size);
+    }
   } else {
     addCoinTemplate(getAssetTemplate(coin.id));
   }

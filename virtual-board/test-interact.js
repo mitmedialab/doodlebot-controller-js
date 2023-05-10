@@ -337,11 +337,10 @@ function onDropHandler(event) {
       grid.add_bot({
         id: id,
         real_bottom_left: [gridX, gridY],
-        template_id: template_id,
         image: image,
         image_rotate_90: image_rotate_90,
         // policies: policies, //TODO: Don't hardcode this
-        run_away_from: [1],
+        // run_away_from: [1], //TODO: Don't hardcode this
         // movement_type: "Euclidean", //TODO: Don't hardcode this
         width: width,
         height: height,

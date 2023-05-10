@@ -113,8 +113,8 @@ const OBJECT_SIZES = {
     direction_id: 51,
     templates: {
       None: "doodlebot_alone",
-      City: "car_1",
-      School: "bicycle",
+      City: "robot_1",
+      School: "robot_3",
       Pacman: "pacman",
     },
   },
@@ -126,8 +126,8 @@ const OBJECT_SIZES = {
     direction_id: 52,
     templates: {
       None: "doodlebot_cowboy",
-      City: "car_2",
-      School: "school_bus",
+      City: "robot_2",
+      School: "doodlebot_cowboy",
       Pacman: "ghost_blue",
     },
   },
@@ -139,8 +139,8 @@ const OBJECT_SIZES = {
     direction_id: 53,
     templates: {
       None: "doodlebot_alone",
-      City: "car_3",
-      School: "bicycle",
+      City: "robot_1",
+      School: "robot_3",
       Pacman: "ghost_orange",
     },
   },
@@ -152,8 +152,8 @@ const OBJECT_SIZES = {
     direction_id: 54,
     templates: {
       None: "doodlebot_cowboy",
-      City: "truck_1",
-      School: "school_bus",
+      City: "robot_2",
+      School: "doodlebot_cowboy",
       Pacman: "ghost_pink",
     },
   },
@@ -165,8 +165,8 @@ const OBJECT_SIZES = {
     direction_id: 55,
     templates: {
       None: "doodlebot_alone",
-      City: "car_1",
-      School: "bicycle",
+      City: "robot_1",
+      School: "robot_3",
       Pacman: "ghost_red",
     },
   }, //TODO: Put back when obstacle's other_corner is set to another id

@@ -78,7 +78,19 @@ let defaultOptions = {
   onReplaceCoin: (coin_id, coin, options) => {},
   onChangeRequireGraph: () => {},
 };
-let defaultBot = {};
+let defaultBot = {
+  coins: [],
+  policies: [],
+  // distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
+  movement_type: MOVEMENT_VALUES.RANDOM.value,
+  only_reachable: false, //Whether to only calculate distance to reachable points
+  targets: [], //coin_collect_types
+  isMoving: false,
+  angle: ANGLE_DIRS.RIGHT, // Looking to the right
+  follow: [], // bots to follow
+  run_away_from: [], // bots to run away from
+  is_ready_to_start: false,
+};
 
 class VirtualGrid {
   constructor(m, n, options = {}) {
@@ -305,17 +317,7 @@ class VirtualGrid {
     let newObject = { ...obj, type, id_index };
     if (type === BOT_TYPE) {
       newObject = {
-        coins: [],
-        policies: [],
-        // distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
-        movement_type: MOVEMENT_VALUES.RANDOM.value,
-        only_reachable: false, //Whether to only calculate distance to reachable points
-        targets: [], //coin_collect_types
-        isMoving: false,
-        angle: ANGLE_DIRS.RIGHT, // Looking to the right
-        follow: [], // bots to follow
-        run_away_from: [], // bots to run away from
-        is_ready_to_start: false,
+        ...defaultBot,
         ...newObject,
       };
     }
@@ -1650,8 +1652,10 @@ class VirtualGrid {
         `[replace_bot] Careful, is_new is ${is_new} but a bot with id ${bot_id} already exists`
       );
     }
-    this.bots[bot_id] = [bot];
+    bot = { ...defaultBot, ...bot }; //Add additional fields if necessary
+    this.bots[bot_id] = { 0: bot };
     this.onReplaceBot(bot_id, bot, options);
+    return bot;
   }
   replace_obstacle(obstacle_id, obstacle, options) {
     let { is_new } = options;
@@ -1660,8 +1664,9 @@ class VirtualGrid {
         `[replace_obstacle] Careful, is_new is ${is_new} but an obstacle with id ${obstacle_id} already exists`
       );
     }
-    this.obstacles[obstacle_id] = [obstacle];
+    this.obstacles[obstacle_id] = { 0: obstacle };
     this.onReplaceObstacle(obstacle_id, obstacle, options);
+    return obstacle;
   }
   replace_coin(coin_id, coin, options) {
     let { is_new } = options;
@@ -1672,8 +1677,9 @@ class VirtualGrid {
         `[replace_coin] Careful, is_new is ${is_new} but a coin with id ${coin_id} already exists`
       );
     }
-    this.coins[coin_id] = [coin];
+    this.coins[coin_id] = { 0: coin };
     this.onReplaceCoin(coin_id, coin, options);
+    return coin;
   }
   /**
    *
