@@ -96,7 +96,12 @@ if (virtualMode) {
   virtualMode.addEventListener("click", function () {
     console.log(virtualMode.getAttribute("name"));
     var currentOption = virtualMode.getAttribute("name");
-    var url = "virtualMode.html?option=" + currentOption + "&mode=virtual";
+    var url = `virtualMode.html?option=${currentOption}&mode=virtual&room=${roomId}`;
+    socket.emit("choose_theme", {
+      option: currentOption,
+      mode: "virtual",
+      roomId: roomId,
+    });
     window.location.href = url;
   });
 }
@@ -106,7 +111,12 @@ if (realVideoStream) {
   realVideoStream.addEventListener("click", function () {
     console.log(realVideoStream.getAttribute("name"));
     var currentOption = realVideoStream.getAttribute("name");
-    var url = "virtualMode.html?option=" + currentOption + "&mode=camera";
+    var url = `virtualMode.html?option=${currentOption}&mode=camera&room=${roomId}`;
+    socket.emit("choose_theme", {
+      option: currentOption,
+      mode: "camera",
+      roomId: roomId,
+    });
     window.location.href = url;
   });
 }

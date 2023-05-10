@@ -522,6 +522,13 @@ const TEMPLATES_PER_THEME = {
 let waitingToStartModalHandler = new bootstrap.Modal(waitingToStartModal);
 window.waitingToStartModalHandler = waitingToStartModalHandler;
 
+let scoreModalHandler = new bootstrap.Modal(scoreModal);
+let continueModalHandler = new bootstrap.Modal(continueModal);
+continueToNextPage.addEventListener("click", () => {
+  scoreModalHandler.hide();
+  continueModalHandler.show();
+  socket.emit("finish_page", { roomId: roomId, page: tutorial });
+});
 const showWaitModal = () => {
   waitingToStartModalHandler.show();
 };
@@ -1480,6 +1487,17 @@ async function stopMovingBot(bot_id) {
   }
   grid.reset_default_require_graph();
 }
+let countdown_interval;
+let seconds_left = 15;
+let SECONDS_PER_MINUTE = 60;
+const updateScoresInModal = () => {
+  let message = "";
+  for (let bot_id in grid.bots) {
+    let bot = grid.bots[bot_id][0];
+    message += `Bot #${bot_id} collected ${bot.coins.length} coins.\n`;
+  }
+  scoreModalBody.innerHTML = message;
+};
 /**
  * If the bot is moving, it will stop (and vice versa)
  *
@@ -1492,6 +1510,25 @@ async function startMovingBot(bot_id) {
   document.getElementById("objects").style.visibility = "hidden";
   document.getElementById("main").style.marginLeft = "250px";
   body.setAttribute("is-moving", "true");
+  if (tutorial) {
+    //Start counter!
+    countdown_interval = setInterval(() => {
+      let m = Math.floor(seconds_left / SECONDS_PER_MINUTE);
+      let s = seconds_left % SECONDS_PER_MINUTE;
+      m = m.toString().padStart(2, "0");
+      s = s.toString().padStart(2, "0");
+      countdown.style.display = "block";
+      countdown.innerText = `${m}:${s}`;
+      if (seconds_left === 0) {
+        clearInterval(countdown_interval);
+        grid.reset_ready_to_start();
+        stopMovingBot(currentBotId);
+        updateScoresInModal();
+        scoreModalHandler.show();
+      }
+      seconds_left -= 1;
+    }, 1000);
+  }
 
   //Setting up the graphs for the bots. This could take a while
   changeMovingBotsButton.innerHTML = "Stop moving";

@@ -63,6 +63,28 @@ function setupSocket() {
   socket.on("room_ready_tutorial", () => {
     window.location.href = `tutorial.html?room=${room}`;
   });
+  socket.on("page_ready", ({ roomId, is_game, page, bot_id }) => {
+    let GAME_TO_THEME = {
+      game1: "None",
+      game2: "School",
+      game3: "City",
+      game4: "Pacman",
+    };
+    if (page === "final_game") {
+      window.location.href = `index.html?room=${roomId}`;
+      return;
+    }
+    if (is_game) {
+      window.location.href = `virtualMode.html?option=${GAME_TO_THEME[page]}&mode=virtual&room=${roomId}&tutorial=${page}&bot_id=${bot_id}&`;
+      return;
+    } else {
+      window.location.href = `${page}.html?room=${roomId}`;
+      return;
+    }
+  });
+  socket.on("theme_chosen", ({ roomId, option, mode }) => {
+    window.location.href = `virtualMode.html?option=${option}&mode=${mode}&room=${roomId}`;
+  });
   socket.on("joined_room", async ({ roomId, virtualGrid }) => {
     console.log(`Detecting joining room: ${roomId}`);
     room = roomId;

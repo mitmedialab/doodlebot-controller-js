@@ -952,7 +952,7 @@ class VirtualGrid {
       default:
         console.log(`Unkown distance_type: ${movement_type}`);
     }
-    return result;
+    // return result;
   }
   /**
    *

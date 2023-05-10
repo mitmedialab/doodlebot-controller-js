@@ -73,6 +73,45 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             </div>
         </div>
         <!--Modal end-->
+        <!-- Modal start -->
+        <div class="modal fade" id="scoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title text-black" id="staticBackdropLabel">Results!</h4>
+                    </div>
+                    <div class="modal-body text-black" id="scoreModalBody">
+                        
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-lg btn-success" id="continueToNextPage">Continue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--Modal end-->
+
+        <!-- Modal -->
+        <div class="modal fade" id="continueModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title text-black" id="staticBackdropLabel">Continuing</h3>
+                    </div>
+                    <div class="modal-body text-black">
+                        <h5>Please wait for the other player to press continue</h5>
+                        <br>
+                        <div style="padding:5px; width:250px;" class="bg-success text-white rounded-3">
+                            <span class="spinner-border spinner-border-sm" style="font-size: 14px;"></span>
+                            Waiting for players...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- modal -->
         <div id="mySidebar" class="sidebar">
             <div id="objects" class="card">
                 <div valid-mode="virtual" class="card-header"><center><h5>Available Objects</h5></center></div>
@@ -191,6 +230,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 <button id="changeMovingBotsButton" class="bot-start" style="padding:5px; margin-bottom:10px;" disabled>Start Moving!</button>
                 <span id="otherUserReady" style="margin-left: 5px;">The other user is ready!</span>
                 <button id="loadBotButton" class="bot-start" style="padding:5px; margin-bottom:10px;">Load bot info!</button>
+                <span style="display:none" id="countdown"></span>
                 <div style="width:280px;"></div>
                 <div valid-mode="camera" id="activate_camera_div">
                     <label class="form-check-label mt-1" for="activate_camera" style="font-size: 14px; margin-right:5px; color:antiquewhite;">Activate Camera</label>

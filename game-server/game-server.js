@@ -59,6 +59,45 @@ let DEFAULT_ROOM_INFO = {
     num_users: 0,
     min_users_to_move: 2,
   },
+  game1: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  game2: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  game3: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+  game4: {
+    num_users: 0,
+    min_users_to_move: 2,
+  },
+};
+let PAGE_ORDER = [
+  "tutorial1",
+  "game1",
+  "tutorial2",
+  "game2",
+  "tutorial3",
+  "game3",
+  "tutorial4",
+  "game4",
+  "tutorial5",
+  "final_game",
+];
+const getNextPage = (page) => {
+  let idx = PAGE_ORDER.indexOf(page);
+  if (idx === -1) {
+    console.error(
+      `Careful! The page ${page} is not a valid page from PAGE_ORDER`
+    );
+  }
+  let next_page = PAGE_ORDER[idx + 1];
+  let is_game = next_page.startsWith("game");
+  return { is_game, next_page };
 };
 //room_id -> JSON representation of the VirtualGrid in the given room
 let room_info = {};
@@ -108,7 +147,7 @@ socketIO.on("connection", (socket) => {
   socket.on("create_room", () => {
     let roomId = generateRandomRoom();
     console.log(`Creating room ${roomId}`);
-    room_info[roomId] = DEFAULT_ROOM_INFO;
+    room_info[roomId] = { ...DEFAULT_ROOM_INFO };
     joinRoom(roomId);
   });
   socket.on("join_room", async (roomId) => {
@@ -140,17 +179,67 @@ socketIO.on("connection", (socket) => {
   //   room_info[socket.activeRoom].seen_tutorial = true;
   // });
 
+  // When users pressed 'Continue'. If everyone did then it moves to next page
+  socket.on("finish_page", ({ roomId, page }) => {
+    console.log(room_info);
+    if (!(roomId in room_info)) {
+      room_info[roomId] = { ...DEFAULT_ROOM_INFO };
+    }
+    if (!(page in room_info[roomId])) {
+      room_info[roomId][page] = {
+        num_users: 0,
+        min_users_to_move: 2,
+      };
+    }
+    socket.activeRoom = roomId;
+
+    room_info[roomId][page].num_users += 1;
+    let { num_users, min_users_to_move } = room_info[roomId][page];
+    console.log(`Number of users done with ${page}: ${num_users}`);
+    if (num_users === min_users_to_move) {
+      //Ready to move!
+      let { next_page, is_game } = getNextPage(page);
+      if (!is_game) {
+        socketIO
+          .in(socket.activeRoom)
+          .emit("page_ready", { roomId, is_game, page: next_page });
+      } else {
+        //If it's a game, users will need to know their bot_id. Let's decide it here
+
+        socket.emit("page_ready", {
+          roomId,
+          is_game,
+          page: next_page,
+          bot_id: 1,
+        }); //Assign who is who
+        // TODO: Send a different id to different users (assuming there's more than 2)
+        socket.broadcast
+          .to(socket.activeRoom)
+          .emit("page_ready", { roomId, is_game, page: next_page, bot_id: 2 }); //Assign who is who
+      }
+    }
+  });
+
+  socket.on("choose_theme", ({ roomId, option, mode }) => {
+    console.log(`[${socket.activeRoom}] Detected choose_theme. Notifying.`);
+
+    socket.activeRoom = roomId;
+    socket.broadcast
+      .to(socket.activeRoom)
+      .emit("theme_chosen", { roomId, option, mode });
+  });
+
   //finish tutorial1 and wait for others, then go to game1
   socket.on("finish_tutorial1", (roomId) => {
     console.log(roomId);
-    room_info[roomId].page0.num_users += 1;
+    room_info[roomId].tutorial1.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
-      `Number of users done with tutorial1: ${room_info[roomId].page0.num_users}`
+      `Number of users done with tutorial1: ${room_info[roomId].tutorial1.num_users}`
     );
     if (
-      room_info[roomId].page0.num_users ===
-      room_info[roomId].page0.min_users_to_move
+      room_info[roomId].tutorial1.num_users ===
+      room_info[roomId].tutorial1.min_users_to_move
     ) {
       console.log("redirecting to game1.html now");
 
@@ -168,14 +257,14 @@ socketIO.on("connection", (socket) => {
   socket.on("finish_game1", (roomId) => {
     room_info[roomId] = DEFAULT_ROOM_INFO;
     console.log(roomId);
-    room_info[roomId].page1.num_users += 1;
+    room_info[roomId].game1.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
       `Number of users done with game1: ${room_info[roomId].page1.num_users}`
     );
     if (
-      room_info[roomId].page1.num_users ===
-      room_info[roomId].page1.min_users_to_move
+      room_info[roomId].game1.num_users ===
+      room_info[roomId].game1.min_users_to_move
     ) {
       console.log("redirecting to tutorial2.html now");
       socketIO.in(socket.activeRoom).emit("room_ready_tutorial2", {});
@@ -186,17 +275,21 @@ socketIO.on("connection", (socket) => {
   socket.on("finish_tutorial2", (roomId) => {
     room_info[roomId] = DEFAULT_ROOM_INFO;
     console.log(roomId);
-    room_info[roomId].page2.num_users += 1;
+    room_info[roomId].tutorial2.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
-      `Number of users done with tutorial2: ${room_info[roomId].page2.num_users}`
+      `Number of users done with tutorial2: ${room_info[roomId].tutorial2.num_users}`
     );
     if (
-      room_info[roomId].page2.num_users ===
-      room_info[roomId].page2.min_users_to_move
+      room_info[roomId].tutorial2.num_users ===
+      room_info[roomId].tutorial2.min_users_to_move
     ) {
       console.log("redirecting to game2.html now");
-      socketIO.in(socket.activeRoom).emit("room_ready_game2", {});
+      socket.emit("room_ready_game2", { bot_id: 1 }); //Assign who is who
+      // TODO: Send a different id to different users (assuming there's more than 2)
+      socket.broadcast
+        .to(socket.activeRoom)
+        .emit("room_ready_game2", { bot_id: 2 }); //Assign who is who
     }
   });
 
@@ -204,14 +297,14 @@ socketIO.on("connection", (socket) => {
   socket.on("finish_game2", (roomId) => {
     room_info[roomId] = DEFAULT_ROOM_INFO;
     console.log(roomId);
-    room_info[roomId].page3.num_users += 1;
+    room_info[roomId].game2.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
-      `Number of users done with game1: ${room_info[roomId].page3.num_users}`
+      `Number of users done with game1: ${room_info[roomId].game2.num_users}`
     );
     if (
-      room_info[roomId].page3.num_users ===
-      room_info[roomId].page3.min_users_to_move
+      room_info[roomId].game2.num_users ===
+      room_info[roomId].game2.min_users_to_move
     ) {
       console.log("redirecting to tutorial3.html now");
       socketIO.in(socket.activeRoom).emit("room_ready_tutorial3", {});
@@ -222,14 +315,52 @@ socketIO.on("connection", (socket) => {
   socket.on("finish_tutorial3", (roomId) => {
     room_info[roomId] = DEFAULT_ROOM_INFO;
     console.log(roomId);
-    room_info[roomId].page4.num_users += 1;
+    room_info[roomId].tutorial3.num_users += 1;
     socket.activeRoom = roomId;
     console.log(
-      `Number of users done with tutorial2: ${room_info[roomId].page4.num_users}`
+      `Number of users done with tutorial2: ${room_info[roomId].tutorial3.num_users}`
     );
     if (
-      room_info[roomId].page4.num_users ===
-      room_info[roomId].page4.min_users_to_move
+      room_info[roomId].tutorial3.num_users ===
+      room_info[roomId].tutorial3.min_users_to_move
+    ) {
+      console.log("redirecting to game3.html now");
+      socket.emit("room_ready_game3", { bot_id: 1 }); //Assign who is who
+      // TODO: Send a different id to different users (assuming there's more than 2)
+      socket.broadcast
+        .to(socket.activeRoom)
+        .emit("room_ready_game3", { bot_id: 2 }); //Assign who is who
+    }
+  });
+  //finish game1 and wait for others, then go to tutorial2
+  socket.on("finish_game3", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].game3.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with game1: ${room_info[roomId].game3.num_users}`
+    );
+    if (
+      room_info[roomId].game3.num_users ===
+      room_info[roomId].game3.min_users_to_move
+    ) {
+      console.log("redirecting to tutorial2.html now");
+      socketIO.in(socket.activeRoom).emit("room_ready_tutorial4", {});
+    }
+  });
+  //finish tutorial3 and wait for others, then go to game3
+  socket.on("finish_tutorial4", (roomId) => {
+    room_info[roomId] = DEFAULT_ROOM_INFO;
+    console.log(roomId);
+    room_info[roomId].tutorial4.num_users += 1;
+    socket.activeRoom = roomId;
+    console.log(
+      `Number of users done with tutorial2: ${room_info[roomId].tutorial4.num_users}`
+    );
+    if (
+      room_info[roomId].tutorial4.num_users ===
+      room_info[roomId].tutorial4.min_users_to_move
     ) {
       console.log("redirecting to game3.html now");
       socketIO.in(socket.activeRoom).emit("room_ready_game3", {});

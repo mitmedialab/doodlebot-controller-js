@@ -127,7 +127,7 @@
       );
 
       function finishTutorial1() {
-        socket.emit("finish_tutorial1", roomId);
+        socket.emit("finish_page", { roomId, page: "tutorial1" });
       }
     </script>
   </body>
