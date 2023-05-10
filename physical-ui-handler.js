@@ -125,7 +125,7 @@ const OBJECT_SIZES = {
     relative_anchor: [2, 2],
     direction_id: 52,
     templates: {
-      None: "doodlebot_cowboy",
+      None: "robot_1",
       City: "car_2",
       School: "school_bus",
       Pacman: "ghost_blue",
@@ -151,7 +151,7 @@ const OBJECT_SIZES = {
     relative_anchor: [2, 2],
     direction_id: 54,
     templates: {
-      None: "doodlebot_cowboy",
+      None: "robot_1",
       City: "truck_1",
       School: "school_bus",
       Pacman: "ghost_pink",
