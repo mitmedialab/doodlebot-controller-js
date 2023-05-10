@@ -299,6 +299,61 @@ const OBJECT_SIZES = {
       Pacman: "pacman_food",
     },
   },
+  26: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    templates: {
+      None: "coin",
+      City: "pizza",
+      School: "coffee_school",
+      Pacman: "pacman_cherry",
+    },
+  },
+  27: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    templates: {
+      None: "coin",
+      City: "coffee",
+      School: "pizza_school",
+      Pacman: "pacman_food",
+    },
+  },
+  28: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    templates: {
+      None: "coin",
+      City: "pizza",
+      School: "coffee_school",
+      Pacman: "pacman_cherry",
+    },
+  },
+  29: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    templates: {
+      None: "coin",
+      City: "coffee",
+      School: "pizza_school",
+      Pacman: "pacman_food",
+    },
+  },
+  30: {
+    type: COIN_TYPE,
+    width: 1,
+    height: 1,
+    templates: {
+      None: "coin",
+      City: "pizza",
+      School: "coffee_school",
+      Pacman: "pacman_cherry",
+    },
+  },
 };
 const COLOR_SIZES = {
   PINK: {
