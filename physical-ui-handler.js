@@ -179,7 +179,7 @@ const OBJECT_SIZES = {
     templates: {
       None: "building",
       City: "hedge",
-      School: "building",
+      School: "hedge",
       Pacman: "pacman_wall",
     },
   },
@@ -189,7 +189,7 @@ const OBJECT_SIZES = {
     height: 1,
     other_corner_id: 62,
     templates: {
-      None: "building",
+      None: "brickwall",
       City: "river",
       School: "brickwall",
       Pacman: "pacman_wall",
@@ -203,7 +203,7 @@ const OBJECT_SIZES = {
     templates: {
       None: "building",
       City: "hedge",
-      School: "building",
+      School: "hedge",
       Pacman: "pacman_wall",
     },
   },
@@ -213,7 +213,7 @@ const OBJECT_SIZES = {
     height: 1,
     other_corner_id: 64,
     templates: {
-      None: "building",
+      None: "brickwall",
       City: "river",
       School: "brickwall",
       Pacman: "pacman_wall",
@@ -227,6 +227,18 @@ const OBJECT_SIZES = {
     templates: {
       None: "building",
       City: "hedge",
+      School: "hedge",
+      Pacman: "pacman_wall",
+    },
+  },
+  16: {
+    type: OBSTACLE_TYPE,
+    width: 3,
+    height: 1,
+    other_corner_id: 66,
+    templates: {
+      None: "brickwall",
+      City: "river",
       School: "brickwall",
       Pacman: "pacman_wall",
     },
