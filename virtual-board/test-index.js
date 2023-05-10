@@ -1494,8 +1494,15 @@ const updateScoresInModal = () => {
   let message = "";
   for (let bot_id in grid.bots) {
     let bot = grid.bots[bot_id][0];
-    message += `Bot #${bot_id} collected ${bot.coins.length} coins.\n`;
+    message += `<image width="40px" height="40px" alt="img" src="${bot.image}"> collected ${bot.coins.length} coins.<br><br>\n`;
+    // message += "<br>NEW TEST: " + bot.coins + "<br>END OF NEW TEST<br>";
+    // for (let test in bot.coins) {
+    //   message += "<br>NEW TEST: " + test + "<br>END OF NEW TEST<br>";
+    // }
+    // message += `<br>TEST<br><image width="20px" height="20px" alt="img" src="${bot.image}">  `;
   }
+  // scoreModalBody.innerHTML = "test/" + bot + "/test";
+
   scoreModalBody.innerHTML = message;
 };
 /**
