@@ -179,7 +179,7 @@ const OBJECT_SIZES = {
     templates: {
       None: "building",
       City: "hedge",
-      School: "building_roof_2",
+      School: "building",
       Pacman: "pacman_wall",
     },
   },
@@ -203,7 +203,7 @@ const OBJECT_SIZES = {
     templates: {
       None: "building",
       City: "hedge",
-      School: "building_roof_2",
+      School: "building",
       Pacman: "pacman_wall",
     },
   },
