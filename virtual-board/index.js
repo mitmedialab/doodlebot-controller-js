@@ -39,6 +39,7 @@ createRoomButton.addEventListener("click", () => {
 joinRoomButton.addEventListener("click", () => {
   let room = roomInput.value;
   // alert(room);
+  console.log("asjkndasd");
   joinRoomButton.innerText = "Waiting for others...";
   socket.emit("join_room", room);
 });
