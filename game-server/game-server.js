@@ -27,7 +27,7 @@ let DEFAULT_VIRTUAL_GRID = {
 };
 let DEFAULT_ROOM_INFO = {
   num_users: 0,
-  min_users_to_move: 2,
+  min_users_to_move: 3, //kid 1 + kid2 + teacher
   seen_tutorial: false,
   page0: {
     //page0 is tutorial.html
