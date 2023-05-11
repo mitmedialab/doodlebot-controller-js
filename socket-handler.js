@@ -1,5 +1,5 @@
-// let laptop_ip = "192.168.41.240";
-let laptop_ip = "localhost";
+let laptop_ip = "192.168.41.240";
+// let laptop_ip = "localhost";
 
 window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;

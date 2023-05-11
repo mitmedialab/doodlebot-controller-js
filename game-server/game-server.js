@@ -104,9 +104,10 @@ let room_info = {};
 function generateRandomRoom() {
   let adjective = faker.word.adjective();
   let city = faker.word.noun();
-  let name = `${adjective} ${city}`;
-  let noWhitespaceName = name.replaceAll(" ", "-");
-  return noWhitespaceName;
+  // console.log(ad)
+  // let name = `${adjective} ${city}`;
+  // let noWhitespaceName = name.replaceAll(" ", "-");
+  return city;
 }
 //Add this before the app.get() block
 socketIO.on("connection", (socket) => {
