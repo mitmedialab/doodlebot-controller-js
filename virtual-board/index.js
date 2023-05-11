@@ -39,7 +39,7 @@ createRoomButton.addEventListener("click", () => {
 joinRoomButton.addEventListener("click", () => {
   let room = roomInput.value;
   // alert(room);
-  joinRoomButton.innerHTML = "Waiting for others...";
+  joinRoomButton.innerText = "Waiting for others...";
   socket.emit("join_room", room);
 });
 let currentBotId;
