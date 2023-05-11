@@ -972,12 +972,13 @@ const onReplaceBot = (bot_id, bot, options = {}) => {
   if (is_new && selectedMode === "camera" && bot_id === currentBotId) {
     setupSelectedBot(bot);
   }
-  //Difference is that for game4 the 'Start' disable state depends on something else
-  //whereas for the other ones it should just be allowed
-  if (tutorial !== "game4") {
-    // Came from creating an object
+  //If it's changed dont reset it
+  if (!options.changed_ready_start) {
     grid.reset_default_require_graph();
   }
+  // if (tutorial && tutorial !== "game4") {
+  //   // Came from creating an object
+  // }
 };
 
 const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
@@ -1697,6 +1698,10 @@ changeMovingBotsButton.addEventListener("click", async () => {
   await changeMovingBotsHandler();
 });
 loadBotButton.addEventListener("click", () => {
+  //Unfortunately the html cahnges won't show until the update_all_coin_graphs is finished
+  loadBotButton.innerHtml = "Loading..."; //Don't make it press twice
+  loadBotButton.disabled = true; //Don't make it press twice
+  loadBotButton.style.opacity = 0.5;
   grid.update_all_coin_graphs(currentBotId);
   grid.change_require_graph(currentBotId, false);
   socket.emit("change_require_graph", {
@@ -1704,7 +1709,6 @@ loadBotButton.addEventListener("click", () => {
     require_graph: false,
   });
   loadBotButton.innerHTML = "Loaded!";
-  loadBotButton.disabled = true;
 });
 //To use later in socket handler
 window.startMovingBot = startMovingBot;

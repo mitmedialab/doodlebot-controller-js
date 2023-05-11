@@ -1,5 +1,5 @@
-// let laptop_ip = "192.168.41.240";
-let laptop_ip = "localhost";
+let laptop_ip = "192.168.41.240";
+// let laptop_ip = "localhost";
 
 window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;
@@ -140,7 +140,11 @@ function setupSocket() {
     grid.replace_bot(bot_id, bot, { is_new: false, fromSocket: true });
   });
   socket.on("replaced_bot_ready_to_start", ({ bot }) => {
-    grid.replace_bot(bot.id, bot, { is_new: false, fromSocket: true });
+    grid.replace_bot(bot.id, bot, {
+      is_new: false,
+      fromSocket: true,
+      changed_ready_start: true,
+    });
     // countReadyToStart.innerText = grid.num_users_ready_to_start();
     if (bot.id !== currentBotId) {
       if (bot.is_ready_to_start) {
