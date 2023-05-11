@@ -25,7 +25,7 @@
             <h1>OR</h1>
             <center>
                 <div class="mt-3 d-flex align-items-center">
-                    <button class="btn btn-success btn-lg" onclick="joinRoom()">Join a Room</button>
+                    <button class="btn btn-success btn-lg" id="joinRoomBtn" onclick="joinRoom()">Join a Room</button>
                     <input type="text" class="mx-3 form-control" id="roomID" placeholder="Enter room ID" name="roomID">
                 </div>
             </center>
@@ -73,6 +73,7 @@
         }
         function joinRoom() {
             let room = roomID.value;
+            joinRoomBtn.innerText = "Waiting for players to join..."
             socket.emit("join_room", room);
         }
     </script>
