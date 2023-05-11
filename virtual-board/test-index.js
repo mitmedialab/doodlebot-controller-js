@@ -159,7 +159,7 @@ const ALL_ASSETS = {
     theme: "None",
   },
   robot_3: {
-    image: ASSETS_FOLDER + "DB_Robot_3.png",
+    image: ASSETS_FOLDER + "DB_Robot_3_smaller.png",
     width: 3, //1.9,
     height: 3,
     type: BOT_TYPE,
@@ -1464,6 +1464,9 @@ const addCoinTypeToSelect = (coin) => {
 //--------------------------- Below code controls moving -------------------------------------///
 let is_bot_moving = false;
 let intervals = {}; //bot_id -> interval
+scoreModalClose.addEventListener("click", () => {
+  scoreModalHandler.hide();
+});
 /**
  * If the bot is moving, it will stop (and vice versa)
  *
@@ -1731,7 +1734,6 @@ loadBotButton.addEventListener("click", () => {
   //Unfortunately the html cahnges won't show until the update_all_coin_graphs is finished
   loadBotButton.innerHtml = "Loading..."; //Don't make it press twice
   loadBotButton.disabled = true; //Don't make it press twice
-  loadBotButton.style.opacity = 0.5;
   grid.update_all_coin_graphs(currentBotId);
   grid.change_require_graph(currentBotId, false);
   socket.emit("change_require_graph", {

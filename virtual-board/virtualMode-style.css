@@ -251,3 +251,10 @@ body[tutorial][is-moving] #changeMovingBotsButton {
 body[tutorial][is-moving] #loadBotButton {
   display: none;
 }
+
+body:not([tutorial]) #continueToNextPage {
+  display: none;
+}
+body[tutorial] #scoreModalClose {
+  display: none;
+}
