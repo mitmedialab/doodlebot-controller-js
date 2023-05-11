@@ -66,8 +66,8 @@ createRoomButton.addEventListener("click", () => {
 joinRoomButton.addEventListener("click", () => {
   let room = roomInput.value;
   // alert(room);
-  socket.emit("join_room", room);
   joinRoomButton.innerHTML = "Waiting for others...";
+  socket.emit("join_room", room);
 });
 
 const REAL_GRID_CALLBACKS = {
