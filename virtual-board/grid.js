@@ -704,7 +704,7 @@ class VirtualGrid {
           //Don't pickup if its not a valid coin
           continue;
         }
-        bot.coins.push([coin_id, coin_index]);
+        bot.coins.push(coin);
         coinsPicked.push(coin);
         this.remove_coin(coin_id, coin_index);
       }
@@ -811,8 +811,13 @@ class VirtualGrid {
     if (COIN_TYPE in potential_crashes) {
       //If crashed with coins then pick them up
       for (let [coin_id, coin_index, _] of potential_crashes[COIN_TYPE]) {
-        //TODO: Change bot state (e.g., give it more points)
-        bot.coins.push([coin_id, coin_index]);
+        //TODO: Change bot state (e.g., give it more points
+        let coin = this.coins[coin_id][coin_index];
+        if (!bot.targets.includes(coin.coin_collect_type)) {
+          //Don't pickup if its not a valid coin
+          continue;
+        }
+        bot.coins.push(coin);
         coinsPicked.push(this.coins[coin_id][coin_index]);
         this.remove_coin(coin_id, coin_index);
       }

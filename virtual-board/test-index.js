@@ -112,7 +112,16 @@ const COIN_COLLECT_TYPES = {
   CHERRY: "Cherry",
   FOOD: "Food",
 };
+const COIN_IMAGES = {
+  [COIN_COLLECT_TYPES.COIN]: ASSETS_FOLDER + "None_Coin.png",
+  [COIN_COLLECT_TYPES.PIZZA]: ASSETS_FOLDER + "DB_Pizza_1.png",
+  [COIN_COLLECT_TYPES.COFFEE]: ASSETS_FOLDER + "DB_Coffee_1.png",
+  [COIN_COLLECT_TYPES.STAR]: ASSETS_FOLDER + "Star_1.png",
+  [COIN_COLLECT_TYPES.CHERRY]: ASSETS_FOLDER + "DB_PacmanCherry_1.png",
+  [COIN_COLLECT_TYPES.FOOD]: ASSETS_FOLDER + "DB_PacmanFood_1.png",
+};
 window.COIN_COLLECT_TYPES = COIN_COLLECT_TYPES;
+window.COIN_IMAGES = COIN_IMAGES;
 // Should place everything here.
 // There will be no resizing, so the width and height are fixed.
 const ALL_ASSETS = {
@@ -1494,8 +1503,28 @@ let SECONDS_PER_MINUTE = 60;
 const updateScoresInModal = () => {
   let message = "";
   for (let bot_id in grid.bots) {
+    let is_self = Number(currentBotId) === Number(bot_id);
     let bot = grid.bots[bot_id][0];
-    message += `<image width="40px" height="40px" alt="img" src="${bot.image}"> collected ${bot.coins.length} coins.<br><br>\n`;
+
+    let count_target = 0;
+    let coin_target = bot.targets[0];
+    let coin_image = COIN_IMAGES[coin_target];
+    for (let coin of bot.coins) {
+      if (coin_target === coin.coin_collect_type) {
+        count_target += 1;
+      }
+    }
+    // let html_count = "";
+    // for (let [coin_image, coin_count] of Object.entries(collected)) {
+    // }
+    let bot_html = `<div style="font-size:24px"><image width="60px" height="60px" alt="img" src="${bot.image}"> `;
+
+    bot_html += `collected ${count_target} <image width="40px" height="40px" alt="img" src="${coin_image}">`;
+    if (is_self) {
+      bot_html += " (You) ";
+    }
+    bot_html += `<br><br>\n</div>`;
+    message += bot_html;
     // message += "<br>NEW TEST: " + bot.coins + "<br>END OF NEW TEST<br>";
     // for (let test in bot.coins) {
     //   message += "<br>NEW TEST: " + test + "<br>END OF NEW TEST<br>";
