@@ -67,6 +67,7 @@ joinRoomButton.addEventListener("click", () => {
   let room = roomInput.value;
   // alert(room);
   joinRoomButton.innerHTML = "Waiting for others...";
+  console.log("this is actually changing");
   socket.emit("join_room", room);
 });
 
