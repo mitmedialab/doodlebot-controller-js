@@ -150,6 +150,7 @@ socketIO.on("connection", (socket) => {
     console.log(`Creating room ${roomId}`);
     room_info[roomId] = { ...DEFAULT_ROOM_INFO };
     joinRoom(roomId);
+    socket.emit("created_room", {});
   });
   socket.on("join_room", async (roomId) => {
     joinRoom(roomId);

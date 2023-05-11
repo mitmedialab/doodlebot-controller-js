@@ -67,9 +67,13 @@
     <script src="../socket-handler.js" type="text/javascript"></script>
     
     <script>
+        let is_tutor;
         function createRoom() {
             //Creates and joins a random room
             socket.emit("create_room");
+            is_tutor = true;
+            window.is_tutor = true;
+            console.log("setting is_tutor to true")
         }
         function joinRoom() {
             let room = roomID.value;

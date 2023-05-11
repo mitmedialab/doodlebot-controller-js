@@ -7,7 +7,8 @@ var selectedOption = urlParams.get("option");
 window.selectedOption = selectedOption;
 var selectedMode = urlParams.get("mode");
 let tutorial = urlParams.get("tutorial");
-if (tutorial) {
+let is_tutor = urlParams.get("is_tutor") === true;
+if (tutorial && !is_tutor) {
   body.setAttribute("tutorial", tutorial);
   currentBotId = Number(urlParams.get("bot_id")); //If tutorial the bot's id will be provided
 }
@@ -1583,12 +1584,14 @@ async function startMovingBot(bot_id) {
   //Start
   is_bot_moving = true;
 
-  if (selectedMode === "camera") {
-    if (!cameraController.is_own_camera) {
-      await startMovingBot_camera(bot_id);
+  if (!is_tutor) {
+    if (selectedMode === "camera") {
+      if (!cameraController.is_own_camera) {
+        await startMovingBot_camera(bot_id);
+      }
+    } else {
+      startMovingBot_virtual(bot_id);
     }
-  } else {
-    startMovingBot_virtual(bot_id);
   }
 }
 function getRealBotFromArucoId(aruco_bot_id) {

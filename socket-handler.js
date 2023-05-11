@@ -1,15 +1,27 @@
-let laptop_ip = "192.168.41.240";
-// let laptop_ip = "localhost";
+// let laptop_ip = "192.168.41.240";
+let laptop_ip = "localhost";
 
 window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;
 let socket;
 let room;
+// let is_tutor = false;
+// window.is_tutor = is_tutor;
 
 document.addEventListener("DOMContentLoaded", () => {
   setupSocket();
 });
-
+const getIsTutor = () => {
+  let urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("is_tutor") === "true";
+};
+const updateIfTutor = (url) => {
+  if (getIsTutor()) {
+    return (url += "&is_tutor=true");
+  } else {
+    return url;
+  }
+};
 function setupSocket() {
   socket = io(SERVER_LINK, { autoConnect: false });
   socket.connect();
@@ -24,7 +36,7 @@ function setupSocket() {
   // new tasneem - starts here
   //done with all tutorials and game demos -- go to index.html to start playing
   socket.on("room_ready_game", () => {
-    window.location.href = `index.html?room=${roomId}`;
+    window.location.href = updateIfTutor(`index.html?room=${roomId}`);
   });
 
   //done with tutorial1 go to game1
@@ -32,7 +44,14 @@ function setupSocket() {
     // console.log("redirecting from socket-handler.js");
     // window.location.href = `game1.html?room=${roomId}&bot_id=${bot_id}`;
     let theme = "None"; //One of None, City, School or Pacman
-    window.location.href = `virtualMode.html?option=${theme}&mode=virtual&room=${roomId}&tutorial=${1}&bot_id=${bot_id}&`;
+    window.location.href = updateIfTutor(
+      `virtualMode.html?option=${theme}&mode=virtual&room=${roomId}&tutorial=${1}&bot_id=${bot_id}`
+    );
+  });
+  socket.on("created_room", () => {
+    console.log("detectd created room");
+    is_tutor = true;
+    window.is_tutor = is_tutor;
   });
 
   //done with game1 go to tutorial2
@@ -61,7 +80,11 @@ function setupSocket() {
 
   // new tasneem - ends here
   socket.on("room_ready_tutorial", () => {
-    window.location.href = `tutorial.html?room=${room}`;
+    if (is_tutor) {
+      window.location.href = `tutorial.html?room=${room}&is_tutor=true`;
+    } else {
+      window.location.href = `tutorial.html?room=${room}`;
+    }
   });
   socket.on("page_ready", ({ roomId, is_game, page, bot_id }) => {
     let GAME_TO_THEME = {
@@ -71,14 +94,18 @@ function setupSocket() {
       game4: "Pacman",
     };
     if (page === "final_game") {
-      window.location.href = `index.html?room=${roomId}`;
+      window.location.href = updateIfTutor(`index.html?room=${roomId}`);
       return;
     }
     if (is_game) {
-      window.location.href = `virtualMode.html?option=${GAME_TO_THEME[page]}&mode=virtual&room=${roomId}&tutorial=${page}&bot_id=${bot_id}&`;
+      if (getIsTutor()) {
+        window.location.href = `virtualMode.html?option=${GAME_TO_THEME[page]}&mode=virtual&room=${roomId}&tutorial=${page}&is_tutor=true`;
+      } else {
+        window.location.href = `virtualMode.html?option=${GAME_TO_THEME[page]}&mode=virtual&room=${roomId}&tutorial=${page}&bot_id=${bot_id}`;
+      }
       return;
     } else {
-      window.location.href = `${page}.html?room=${roomId}`;
+      window.location.href = updateIfTutor(`${page}.html?room=${roomId}`);
       return;
     }
   });
