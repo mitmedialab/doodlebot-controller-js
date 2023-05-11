@@ -193,6 +193,10 @@ body[chosen-bot] #bots:hover {
 .current-bot:hover {
   cursor: not-allowed;
 }
+.current-bot {
+  background-color: rgb(144, 255, 127);
+  border-radius: 10px;
+}
 
 /* body:not([current-option="School"]) [grid_object="true"][chosen-bot] {
   background-color: green;

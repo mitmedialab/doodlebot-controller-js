@@ -1489,7 +1489,7 @@ async function stopMovingBot(bot_id) {
   grid.reset_default_require_graph();
 }
 let countdown_interval;
-let seconds_left = 15;
+let seconds_left;
 let SECONDS_PER_MINUTE = 60;
 const updateScoresInModal = () => {
   let message = "";
@@ -1520,6 +1520,7 @@ async function startMovingBot(bot_id) {
   body.setAttribute("is-moving", "true");
   if (tutorial) {
     //Start counter!
+    seconds_left = tutorial === "game1" ? 30 : 15; //Give more time for random to pickup something
     countdown_interval = setInterval(() => {
       let m = Math.floor(seconds_left / SECONDS_PER_MINUTE);
       let s = seconds_left % SECONDS_PER_MINUTE;
