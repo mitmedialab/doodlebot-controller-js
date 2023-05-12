@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase": "^9.21.0",
     "interactjs": "^1.10.17",
     "moveable": "^0.46.0"
   },
