@@ -113,6 +113,26 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             </div>
         </div>
         <!-- modal -->
+        
+        <!--Modal start-->
+        <div class="modal" id="needToSelectMovementModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title text-black">Oops!</h3>
+                    </div>
+                    <div class="modal-body text-black">
+                        Need to select a type of movement for your bot!
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="cancelNeedMovementButton">Ah yes, I forgot!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--Modal end-->
+
         <div id="mySidebar" class="sidebar">
              <!--In camera view it might be too distracting-->
             <div id="objects" valid-mode="virtual" class="card">
@@ -191,9 +211,10 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                                 </label>
                             </div>
                             <label for="sel1" class="form-label" style="font-size: 14px; margin-top: 20px;">
-                                Distance Type
+                                Movement Type
                             </label>
                             <select class="form-select form-select-sm" id="movementTypeSelect" name="movementTypeSelect" style="width:80%;">
+                                <option value="None">-- Select a way to move --</option>
                                 <!-- <option value="euclidian">Random</option> -->
                                 <!-- <option value="euclidian">Euclidean</option> -->
                                 <!-- <option value="euclidian">Manhattan</option> -->

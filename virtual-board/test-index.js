@@ -536,6 +536,10 @@ window.waitingToStartModalHandler = waitingToStartModalHandler;
 
 let scoreModalHandler = new bootstrap.Modal(scoreModal);
 let continueModalHandler = new bootstrap.Modal(continueModal);
+let needToSelectMovementHandler = new bootstrap.Modal(
+  needToSelectMovementModal
+);
+
 continueToNextPage.addEventListener("click", () => {
   scoreModalHandler.hide();
   continueModalHandler.show();
@@ -1740,7 +1744,15 @@ const changeMovingBotsHandler = async (options = {}) => {
     }
   }
 };
+cancelNeedMovementButton.addEventListener("click", () => {
+  console.log("clicked cancel!");
+  needToSelectMovementHandler.hide();
+});
 changeMovingBotsButton.addEventListener("click", async () => {
+  if (grid.bots[currentBotId][0].movement_type === null) {
+    needToSelectMovementHandler.show();
+    return;
+  }
   await changeMovingBotsHandler();
 });
 loadBotButton.addEventListener("click", () => {
@@ -1881,9 +1893,12 @@ run_away_from_select.addEventListener("change", (evt) => {
 
 //------------------------------ Bot distance handlers ------------------------------------//
 movementTypeSelect.addEventListener("change", (evt) => {
-  let key = evt.target.value;
-  let bot = grid.update_bot_movement_type(currentBotId, key);
-  if (key === MOVEMENT_VALUES.DIJKSTRA.value) {
+  let value = evt.target.value;
+  if (value === "None") {
+    value = null;
+  }
+  let bot = grid.update_bot_movement_type(currentBotId, value);
+  if (value === MOVEMENT_VALUES.DIJKSTRA.value) {
     body.setAttribute("needs-loading", "");
     // handleRequireGraph(true);
   } else {

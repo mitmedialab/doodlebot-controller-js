@@ -82,7 +82,7 @@ let defaultBot = {
   coins: [],
   policies: [],
   // distance_type: DISTANCE_VALUES.EUCLIDEAN.value, //default distance, should be first in 'select' UI
-  movement_type: MOVEMENT_VALUES.RANDOM.value,
+  movement_type: null,
   only_reachable: false, //Whether to only calculate distance to reachable points
   targets: [], //coin_collect_types
   isMoving: false,
