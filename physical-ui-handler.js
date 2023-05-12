@@ -100,7 +100,7 @@ let context = arucoCanvasOutputGridOriginal.getContext("2d", {
 //OpenCv variables
 
 // Number of frames to check to figure out whether a marker is still on the board
-let numFrames = 20;
+let numFrames = 200;
 //TODO: Maybe bettter to use ALL_ASSETS ?
 const OBJECT_SIZES = {
   //bots
