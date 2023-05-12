@@ -680,7 +680,40 @@ function updateVirtualObjects() {
   }
 }
 function updateAppearInfo() {}
-
+function removeUnseenMarkers() {
+  for (let possible_marker_id in OBJECT_SIZES) {
+    if (!cameraController.isInBoard(possible_marker_id)) {
+      possible_marker_id = Number(possible_marker_id);
+      if (possible_marker_id in cameraController.currentVectors) {
+        console.log(
+          `Dont detect marker ${possible_marker_id} from board so also delete it from currentVectors`
+        );
+        delete cameraController.currentVectors[possible_marker_id];
+      }
+      // If not in board anymore, delete it from the virtual grid
+      if (possible_marker_id in grid.bots) {
+        // Don't remove bots for now, just wait until they are detected again
+        // grid.remove_bot(possible_marker_id);
+      } else if (possible_marker_id in grid.obstacles) {
+        let obstacle = grid.obstacles[possible_marker_id][0];
+        grid.remove_obstacle(possible_marker_id);
+        socket.emit("remove_obstacle", {
+          obstacle,
+          virtualGrid: grid.toJSON(),
+        });
+      } else if (possible_marker_id in grid.coins) {
+        let coin = grid.coins[possible_marker_id][0];
+        grid.remove_coin(possible_marker_id);
+        socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+      }
+    } else {
+      //It's still in board
+      // if (grid && possible_marker_id in grid.coins){
+      //   updateCoinInfo(possible_marker_id);
+      // }
+    }
+  }
+}
 /**
  * Runs through every frames, and detects updates in position
  * for the objects.
@@ -741,6 +774,8 @@ function processVideo() {
         let { id } = COLOR_SIZES[color];
         cameraController.updateMarkerAppear(id, appeared);
       }
+      // Deleting whatever needs to be deleted
+      removeUnseenMarkers();
       updateVirtualObjects(); //Use new aruco positions/colors to update Virtual objects
     }
 
