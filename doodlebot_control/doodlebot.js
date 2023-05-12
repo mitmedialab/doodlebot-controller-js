@@ -133,6 +133,7 @@ class Doodlebot {
       this.motorEvent.dispatchEvent(stopEvent);
       this.isMoving = false;
     }
+    this.log(res);
     this.customOnReceiveValue(evt);
   }
   /**
@@ -142,7 +143,16 @@ class Doodlebot {
    */
   async apply_next_move_to_bot(move) {
     console.log(`Tyring to apply move ${move} to (real) bot`);
-    let GRID_TO_PHYSICAL_COORDS = 227 / 8;
+    // let GRID_TO_PHYSICAL_COORDS = 227 / 8;
+    let GRID_TO_PHYSICAL_COORDS = 18;
+    /**
+     * From empirical data:
+     * Sending command this.drive({NUM: 28}) makes it move 5mm
+     *
+     * Grid: 64mm -> 20 cells
+     *
+     * (28 units/ 5mm) * (64mm / 20 cells) = 18 units / cell
+     */
     if (move[0] === "move") {
       await this.drive({ NUM: move[1] * GRID_TO_PHYSICAL_COORDS });
       return;
@@ -176,6 +186,7 @@ class Doodlebot {
     }
     this.isMoving = true;
     let { NUM, DIR } = args;
+    NUM = Math.round(NUM); //Gotta be an integer
     //For left and right motor
     let leftSteps = NUM;
     let rightSteps = NUM;
@@ -205,6 +216,7 @@ class Doodlebot {
     }
     this.isMoving = true;
     let { NUM, DIR } = args;
+    NUM = Math.round(NUM);
     let nDegrees = NUM;
     if (DIR === "right") {
       nDegrees *= -1;

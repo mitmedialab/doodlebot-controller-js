@@ -83,7 +83,9 @@ var botsDiv = document.getElementById("bots");
 var obstaclesDiv = document.getElementById("obstacles");
 var coinsDiv = document.getElementById("coins");
 var waitingRoom = document.getElementById("waitingRoom");
-
+const sleep = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 let grid;
 
 // TODO: This info should depende on how good it'll look in the screen
@@ -1211,7 +1213,7 @@ const drawBot = (bot) => {
   return DOM_ID;
 };
 const getImageFromDimensions = (width, height, template_id) => {
-  console.log(`Findgin info for template ${template_id}`);
+  // console.log(`Findgin info for template ${template_id}`);
   let original_template = ALL_ASSETS[template_id];
   let template_width = original_template.width;
   let template_height = original_template.height;
@@ -1587,6 +1589,7 @@ async function startMovingBot(bot_id) {
   if (!is_tutor) {
     if (selectedMode === "camera") {
       if (!cameraController.is_own_camera) {
+        frames_without_aligning = 0;
         await startMovingBot_camera(bot_id);
       }
     } else {
@@ -1632,6 +1635,9 @@ async function adjustAngleRealBot(aruco_bot_id) {
     await realBot.apply_next_move_to_bot(["turn", dAngle]);
   }
 }
+let frames_without_aligning = 0;
+let FRAMES_TO_ALIGN = 10 * 30;
+
 async function startMovingBot_camera(bot_id) {
   // Don't calculate next steps until bot has finished moving
   //If the real bot is not connected then don't do anything
@@ -1656,8 +1662,11 @@ async function startMovingBot_camera(bot_id) {
     let next_move = grid.get_next_move_using_policies(bot_id, num_turns);
 
     if (next_move) {
-      await adjustAngleRealBot(bot_id);
+      if (frames_without_aligning % FRAMES_TO_ALIGN === 0) {
+        await adjustAngleRealBot(bot_id);
+      }
       await realBot.apply_next_move_to_bot(next_move);
+      frames_without_aligning += 1;
       // The video stream will update the virtual grid
       console.log("---------------------------------------");
       console.log("Making next move!");
@@ -1673,6 +1682,7 @@ async function startMovingBot_camera(bot_id) {
     }
   }
   if (did_bot_move) {
+    await sleep(1000); //wait for it to finish
     //Keep moving
     // await apply_next_move_to_bot(bot_id);
     await startMovingBot_camera(bot_id);
