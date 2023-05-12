@@ -1151,6 +1151,10 @@ class VirtualGrid {
     let extreme_directions = [];
     for (let direction in ANGLE_DIRS) {
       let turn_angle = ANGLE_DIRS[direction];
+      if (turn_angle === 180) {
+        //Don't consider full tuns as one movement (turning 90 is first)
+        continue;
+      }
       let future_bot = this.future_position_after_turn(bot, turn_angle);
       if (!future_bot.valid_position) {
         continue;
@@ -1193,22 +1197,42 @@ class VirtualGrid {
    *
    * @param {*} num_turns
    * @returns Array of possible moves, each of the form of ['RIGHT', 'UP', 'RIGHT']
+   * Only chooses the ones that are either the same direction as the previous one, or
+   * a turn of 90 in either side  (no 180 deg change)
    */
-  get_multiple_turns(num_turns) {
+  get_multiple_turns(num_turns, current_angle) {
     if (num_turns < 1) {
       return [];
     }
     if (num_turns === 1) {
-      return Object.keys(ANGLE_DIRS).map((direction) => [direction]);
+      let res = [];
+      for (let [direction, angle] of Object.entries(ANGLE_DIRS)) {
+        if (angle === 180) {
+          continue;
+        }
+        res.push([direction]);
+      }
+      return res;
     }
-    let prev = this.get_multiple_turns(num_turns - 1);
-    let res = [];
-    for (let direction in ANGLE_DIRS) {
-      for (let move of prev) {
-        res.push([...move, direction]);
+    let final = [];
+    let one_turn = this.get_multiple_turns(1, current_angle);
+    for (let direction of one_turn) {
+      let new_angle = (angle + ANGLE_DIRS[direction]) % 360;
+      let rest = this.get_multiple_turns(num_turns - 1, new_angle);
+      for (let moves of rest) {
+        final.push([direction, ...moves]);
       }
     }
-    return res;
+    return final;
+
+    // let prev = this.get_multiple_turns(num_turns - 1, current_angle);
+    // let res = [];
+    // for (let direction in ANGLE_DIRS) {
+    //   for (let move of prev) {
+    //     res.push([...move, direction]);
+    //   }
+    // }
+    // return res;
   }
   /**
    * Returns the position a bot would be after a certain amount of turns (and moving in that direction). If at any point it
@@ -1324,6 +1348,10 @@ class VirtualGrid {
         return ["move", 1];
       } else {
         let diff = targetAngle - bot.angle;
+        if ((diff - 180) % 360 === 0) {
+          // IF it wants to move 180, just move 90 first
+          return ["turn", 90];
+        }
         return ["turn", diff];
       }
     };
@@ -1441,7 +1469,7 @@ class VirtualGrid {
     //Only relevant if we want to know whether coins are reachable
     let min_distance = Number.MAX_SAFE_INTEGER;
     let directions = [];
-    let list_of_turns = this.get_multiple_turns(num_moves);
+    let list_of_turns = this.get_multiple_turns(num_moves, bot.angle);
     for (let turns of list_of_turns) {
       let future_bot = this.future_position_after_turns(bot, turns);
       if (!future_bot.valid_move) {
@@ -1512,7 +1540,7 @@ class VirtualGrid {
     //Only relevant if we want to know whether coins are reachable
     let min_distance = Number.MAX_SAFE_INTEGER;
     let directions = [];
-    let list_of_turns = this.get_multiple_turns(num_moves);
+    let list_of_turns = this.get_multiple_turns(num_moves, bot.angle);
     for (let turns of list_of_turns) {
       // console.log(`Trying turn`);
       // console.log(turns);
@@ -1553,11 +1581,11 @@ class VirtualGrid {
     }
     //If there was a tie, pick randomly
     let chosen_turns = this.random_from(directions);
-    let chosen_turn = ANGLE_DIRS[chosen_turns[0]];
+    let chosen_turn = ANGLE_DIRS[chosen_turns[0]]; //Just move one of that
     if (chosen_turn === 0) {
       return ["move", 1];
     } else {
-      return ["turn", chosen_turn];
+      return ["turn", chosen_turn]; //should be either 90 or 270
     }
   }
   /**
