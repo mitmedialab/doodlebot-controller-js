@@ -70,7 +70,7 @@
         let is_tutor;
         function createRoom() {
             //Creates and joins a random room
-            socket.emit("create_room");
+            live_updates.create_room();
             is_tutor = true;
             window.is_tutor = true;
             console.log("setting is_tutor to true")
@@ -78,7 +78,7 @@
         function joinRoom() {
             let room = roomID.value;
             joinRoomBtn.innerText = "Waiting for players to join..."
-            socket.emit("join_room", room);
+            live_updates.join_room(room);
         }
     </script>
 </body>

@@ -416,7 +416,7 @@ const setupCameraStream = async (options = {}) => {
   if (is_own_camera) {
     let stream = await navigator.mediaDevices.getUserMedia(constraints);
     videoObj.srcObject = stream;
-    socket.emit("activate_camera", {});
+    live_updates.activate_camera({});
   } else {
     // let url = `http://${ip}/mjpeg`;
     let port = 56000 + currentBotId;
@@ -697,14 +697,14 @@ function removeUnseenMarkers() {
       } else if (possible_marker_id in grid.obstacles) {
         let obstacle = grid.obstacles[possible_marker_id][0];
         grid.remove_obstacle(possible_marker_id);
-        socket.emit("remove_obstacle", {
+        live_updates.remove_obstacle({
           obstacle,
           virtualGrid: grid.toJSON(),
         });
       } else if (possible_marker_id in grid.coins) {
         let coin = grid.coins[possible_marker_id][0];
         grid.remove_coin(possible_marker_id);
-        socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+        live_updates.remove_coin({ coin, virtualGrid: grid.toJSON() });
       }
     } else {
       //It's still in board

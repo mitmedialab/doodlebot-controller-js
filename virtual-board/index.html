@@ -75,7 +75,7 @@
             console.log(roomId);
             document.getElementById("displayRoomId").innerHTML = "<h2>Room ID: "+ roomId +"</h2>";
             document.addEventListener("DOMContentLoaded", () =>
-                    socket.emit("join_room_page", roomId)
+                    live_updates.join_room_page(roomId)
                 );
         </script>
         <script type="text/javascript" src="./preindex.js"></script>
