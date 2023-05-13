@@ -543,7 +543,7 @@ let needToSelectMovementHandler = new bootstrap.Modal(
 continueToNextPage.addEventListener("click", () => {
   scoreModalHandler.hide();
   continueModalHandler.show();
-  socket.emit("finish_page", { roomId: roomId, page: tutorial });
+  live_updates.finish_page({ roomId: roomId, page: tutorial });
 });
 const showWaitModal = () => {
   waitingToStartModalHandler.show();
@@ -557,7 +557,7 @@ window.showWaitModal = showWaitModal;
 cancelReadyToWait.addEventListener("click", () => {
   hideWaitModal();
   let bot = grid.update_ready_to_start(currentBotId, false);
-  socket.emit("replace_bot_ready_to_start", {
+  live_updates.replace_bot_ready_to_start({
     bot,
     virtualGrid: grid.toJSON(),
   });
@@ -1076,7 +1076,7 @@ const addRemoveBotIcon = (bot) => {
     }
     currentBotId = null;
     resetBotChoices();
-    socket.emit("remove_bot", { bot, virtualGrid: grid.toJSON() });
+    live_updates.remove_bot({ bot, virtualGrid: grid.toJSON() });
   });
   bot_dom.appendChild(removeIcon);
 };
@@ -1090,7 +1090,7 @@ const addRemoveObstacleIcon = (obstacle) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${obstacle.id}`);
     grid.remove_obstacle(obstacle.id);
-    socket.emit("remove_obstacle", { obstacle, virtualGrid: grid.toJSON() });
+    live_updates.remove_obstacle({ obstacle, virtualGrid: grid.toJSON() });
   });
   obstacle_dom.appendChild(removeIcon);
 };
@@ -1104,7 +1104,7 @@ const addRemoveCoinIcon = (coin) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${coin.id}`);
     grid.remove_coin(coin.id);
-    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+    live_updates.remove_coin({ coin, virtualGrid: grid.toJSON() });
   });
   coin_dom.appendChild(removeIcon);
 };
@@ -1155,7 +1155,7 @@ const onRemoveCoin = (coin, options) => {
   let coin_dom = document.getElementById(DOM_ID);
   coin_dom.remove();
   if (!options.fromSocket) {
-    socket.emit("remove_coin", { coin, virtualGrid: grid.toJSON() });
+    live_updates.remove_coin({ coin, virtualGrid: grid.toJSON() });
   }
   grid.reset_default_require_graph();
 };
@@ -1373,7 +1373,7 @@ const onAddBot = (bot) => {
   if (selectedMode === "virtual") {
     setupSelectedBot(bot);
   }
-  socket.emit("add_bot", { bot, virtualGrid: grid.toJSON() });
+  live_updates.add_bot({ bot, virtualGrid: grid.toJSON() });
   grid.reset_default_require_graph();
   setupNewBot(bot);
 };
@@ -1423,7 +1423,7 @@ const setupNewObstacle = (obstacle) => {
   }
 };
 const onAddObstacle = (obstacle) => {
-  socket.emit("add_obstacle", { obstacle, virtualGrid: grid.toJSON() });
+  live_updates.add_obstacle({ obstacle, virtualGrid: grid.toJSON() });
   grid.reset_default_require_graph();
   setupNewObstacle(obstacle);
 };
@@ -1447,7 +1447,7 @@ const setupNewCoin = (coin) => {
   addCoinTypeToSelect(coin);
 };
 const onAddCoin = (coin) => {
-  socket.emit("add_coin", { coin, virtualGrid: grid.toJSON() });
+  live_updates.add_coin({ coin, virtualGrid: grid.toJSON() });
   grid.reset_default_require_graph();
   setupNewCoin(coin);
 };
@@ -1724,13 +1724,13 @@ const changeMovingBotsHandler = async (options = {}) => {
   //This decides to hide the controls, and make sure the grid is not interactive
   let was_moving = body.getAttribute("is-moving") === "true";
   if (was_moving) {
-    socket.emit("stop_moving", {});
+    live_updates.stop_moving({});
     // await stopMovingBot(currentBotId, options);
     grid.reset_default_require_graph();
     body.removeAttribute("is-waiting-for-users");
   } else {
     let bot = grid.update_ready_to_start(currentBotId, true);
-    socket.emit("replace_bot_ready_to_start", {
+    live_updates.replace_bot_ready_to_start({
       bot,
       virtualGrid: grid.toJSON(),
     });
@@ -1738,7 +1738,7 @@ const changeMovingBotsHandler = async (options = {}) => {
     body.removeAttribute("show-other-user-ready");
     // Check if everyone is ready to start
     if (grid.is_everyone_ready_to_start()) {
-      socket.emit("everyone_ready_to_start", {});
+      live_updates.everyone_ready_to_start({});
     } else {
       showWaitModal();
     }
@@ -1761,7 +1761,7 @@ loadBotButton.addEventListener("click", () => {
   loadBotButton.disabled = true; //Don't make it press twice
   grid.update_all_coin_graphs(currentBotId);
   grid.change_require_graph(currentBotId, false);
-  socket.emit("change_require_graph", {
+  live_updates.echange_require_graph({
     bot_id: currentBotId,
     require_graph: false,
   });
@@ -1791,21 +1791,21 @@ check_gridlines.addEventListener("change", (evt) => {
   }
 });
 const emitReplaceBot = (bot) => {
-  socket.emit("replace_bot", {
+  live_updates.replace_bot({
     bot_id: bot.id,
     bot: bot,
     virtualGrid: grid.toJSON(),
   });
 };
 const emitReplaceObstacle = (obstacle) => {
-  socket.emit("replace_obstacle", {
+  live_updates.replace_obstacle({
     obstacle_id: obstacle.id,
     obstacle: obstacle,
     virtualGrid: grid.toJSON(),
   });
 };
 const emitReplaceCoin = (coin) => {
-  socket.emit("replace_coin", {
+  live_updates.replace_coin({
     coin_id: coin.id,
     coin: coin,
     virtualGrid: grid.toJSON(),

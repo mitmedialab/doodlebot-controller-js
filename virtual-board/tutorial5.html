@@ -123,11 +123,11 @@
       roomId = urlParams.get("room");
       console.log(roomId);
       document.addEventListener("DOMContentLoaded", () =>
-        socket.emit("join_room_page", roomId)
+        live_updates.join_room_page(roomId)
       );
 
       function finishtutorial5() {
-        socket.emit("finish_page", { roomId, page: "tutorial5" });
+        live_updates.finish_page({ roomId, page: "tutorial5" });
       }
     </script>
   </body>

@@ -316,7 +316,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
         var urlParams = new URLSearchParams(window.location.search);
         roomId = urlParams.get("room");
         console.log(roomId);
-        document.addEventListener('DOMContentLoaded', () => socket.emit("join_room_page", roomId)); 
+        document.addEventListener('DOMContentLoaded', () => live_updates.join_room_page(roomId)); 
 
         let currentBotId;
         window.currentBotId = currentBotId;

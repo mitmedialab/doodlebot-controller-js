@@ -1,5 +1,5 @@
-let laptop_ip = "192.168.41.240";
-// let laptop_ip = "localhost";
+// let laptop_ip = "192.168.41.240";
+let laptop_ip = "localhost";
 
 window.laptop_ip = laptop_ip;
 const SERVER_LINK = `http://${laptop_ip}:5001`;
@@ -249,3 +249,102 @@ function setupSocket() {
     await setupCameraStream({ is_remote: true });
   });
 }
+
+class RealtimeUpdates {
+  constructor() {}
+  activate_camera() {
+    socket.emit("activate_camera", {});
+  }
+  /*--------   Room handlers ------- */
+
+  create_room(data) {
+    //empty
+    socket.emit("create_room", data);
+  }
+  join_room(data) {
+    //roomId
+    socket.emit("join_room", data);
+  }
+  join_room_page(data) {
+    //roomId
+    socket.emit("join_room_page", data);
+  }
+
+  /*--------   Add objects ------- */
+
+  add_bot(data) {
+    //bot, virtualGrid
+    socket.emit("add_bot", data);
+  }
+  add_obstacle(data) {
+    //obstacle, virtualGrid
+    socket.emit("add_obstacle", data);
+  }
+  add_coin(data) {
+    //coin, virtualGrid
+    socket.emit("add_coin", data);
+  }
+
+  /*--------   Replace objects ------- */
+
+  replace_bot(data) {
+    //bot_id, bot, virtualGrid
+    socket.emit("replace_bot", data);
+  }
+  replace_obstacle(data) {
+    //obstacle_id, obstacle, virtualGrid
+    socket.emit("replace_obstacle", data);
+  }
+  replace_coin(data) {
+    //coin_id, coin, virtualGrid
+    socket.emit("replace_coin", data);
+  }
+
+  /*--------   Remove  objects ------- */
+
+  remove_bot(data) {
+    //bot, virtualGrid
+    socket.emit("remove_bot", data);
+  }
+  remove_obstacle(data) {
+    // obstacle, virtualGrid
+    socket.emit("remove_obstacle", data);
+  }
+  remove_coin(data) {
+    //coin, virtualGrid
+    socket.emit("remove_coin", data);
+  }
+
+  /*--------   Tutorial handlers ------- */
+
+  choose_theme(data) {
+    //option (None, City,..), mode (virtual vs camera), roomId
+    socket.emit("choose_theme", data);
+  }
+
+  finish_page(data) {
+    //roomId, page
+    socket.emit("finish_page", data);
+  }
+
+  /*--------   Game handlers ------- */
+
+  replace_bot_ready_to_start(data) {
+    //bot, virtualGrid
+    socket.emit("replace_bot_ready_to_start", data);
+  }
+  everyone_ready_to_start(data) {
+    //{}
+    socket.emit("everyone_ready_to_start", data);
+  }
+  stop_moving(data) {
+    //{}
+    socket.emit("stop_moving", data);
+  }
+  change_require_graph(data) {
+    //bot_id, require_graph
+    socket.emit("change_require_graph", data);
+  }
+}
+
+let live_updates = new RealtimeUpdates();

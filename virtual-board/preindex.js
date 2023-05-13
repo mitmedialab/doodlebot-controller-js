@@ -97,7 +97,7 @@ if (virtualMode) {
     console.log(virtualMode.getAttribute("name"));
     var currentOption = virtualMode.getAttribute("name");
     var url = `virtualMode.html?option=${currentOption}&mode=virtual&room=${roomId}`;
-    socket.emit("choose_theme", {
+    live_updates.choose_theme({
       option: currentOption,
       mode: "virtual",
       roomId: roomId,
@@ -112,7 +112,7 @@ if (realVideoStream) {
     console.log(realVideoStream.getAttribute("name"));
     var currentOption = realVideoStream.getAttribute("name");
     var url = `virtualMode.html?option=${currentOption}&mode=camera&room=${roomId}`;
-    socket.emit("choose_theme", {
+    live_updates.choose_theme({
       option: currentOption,
       mode: "camera",
       roomId: roomId,
