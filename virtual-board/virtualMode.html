@@ -300,7 +300,7 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
     <script type="text/javascript" src="./grid-graph.js"></script>
     <script type="text/javascript" src="./grid.js"></script>
     <script type="module" src="./test-index.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script> -->
 
 
     <!-- Specific to camera mode-->
@@ -318,8 +318,6 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
         var urlParams = new URLSearchParams(window.location.search);
         roomId = urlParams.get("room");
         console.log(roomId);
-        document.addEventListener('DOMContentLoaded', () => live_updates.join_room_page(roomId)); 
-
         let currentBotId;
         window.currentBotId = currentBotId;
 

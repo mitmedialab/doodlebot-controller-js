@@ -118,15 +118,17 @@
         <!-- </center> -->
       </div>
     </div>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="../socket-handler.js" type="text/javascript"></script>
+    <!-- <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script> -->
+    <!-- <script src="../socket-handler.js" type="text/javascript"></script> -->
+    <script src="../firebase-handler.js" type="module"></script>
+
     <script>
       var urlParams = new URLSearchParams(window.location.search);
       roomId = urlParams.get("room");
       console.log(roomId);
-      document.addEventListener("DOMContentLoaded", () =>
-        live_updates.join_room_page(roomId)
-      );
+      // document.addEventListener("DOMContentLoaded", () =>
+      //   live_updates.join_room_page(roomId)
+      // );
 
       function finishTutorial1() {
         live_updates.finish_page({ roomId, page: "tutorial1" });
