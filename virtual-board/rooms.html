@@ -66,7 +66,7 @@
     <!-- <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script> -->
     <!-- <script src="../socket-handler.js" type="text/javascript"></script> -->
     <script src="../firebase-handler.js" type="module"></script>
-
+    <script src="../name.js" type="module"></script>
     <script>
         // import {live_updates} from "../socket-handler.js"
         let is_tutor;
@@ -80,7 +80,12 @@
         function joinRoom() {
             let room = roomID.value;
             joinRoomBtn.innerText = "Waiting for players to join..."
-            live_updates.join_room_page({roomId: room});
+            live_updates.join_room_page({
+                roomId: room,  
+                is_tutor: false,
+                curr_page: "rooms",
+                html_page: "rooms"
+            });
         }
     </script>
 </body>

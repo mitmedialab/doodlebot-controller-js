@@ -131,6 +131,102 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
                 </div>
             </div>
         </div>
+        <!--Modal start-->
+        <div class="modal fade bd-example-modal-lg" id="prevVideosModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title text-black">For your convenience!</h3>
+                    </div>
+                    <div class="modal-body text-black modal-lg">
+                        <h1>Level 1: Random</h1>
+                        <p>
+                            This video introduces us to autonomus navigation and how to use it. 
+                            It also features a introduction to our first movement type: random!
+                        </p>
+                        <iframe
+                            width="400"
+                            height="200"
+                            src="https://www.youtube.com/embed/tJJKLcx2XaE"
+                            allow="fullscreen;"
+                            allowfullscreen
+                        >
+                        </iframe>
+                        <br/>
+                        <br/>
+
+                        <h1>Level 2: Euclidean</h1>
+                        <p>
+                            Maybe random is not the best idea! This video introduces us to a
+                            new type of distance, which is super popular: The Euclidean distance!
+                        </p>
+                        <iframe
+                            width="400"
+                            height="200"
+                            src="https://www.youtube.com/embed/IrAZOyW4s88"
+                            allow="fullscreen;"
+                            allowfullscreen
+                        >
+                        </iframe>
+                        <br/>
+                        <br/>
+
+                        <h1>Level 3: Manhattan</h1>
+                        <p>
+                            That was faster! Now let's learn about another type of 
+                            distance, also very useful: The Manhattan distance!
+                        </p>
+                        <iframe
+                            width="400"
+                            height="200"
+                            src="https://www.youtube.com/embed/tvLFFFtnoNc"
+                            allow="fullscreen;"
+                            allowfullscreen
+                        >
+                        </iframe>
+                        <br/>
+                        <br/>
+
+                        <h1>Level 4: Dijkstra</h1>
+                        <p>
+                            This video introduces us to the basics of the Dijkstra algorithm.
+                            This algorithm takes obstacles into consideration, but takes a long time
+                            to load, so it's a tradeoff!
+                        </p>
+                        <iframe
+                            width="400"
+                            height="200"
+                            src="https://www.youtube.com/embed/ZwH4szb7Ofk"
+                            allow="fullscreen;"
+                            allowfullscreen
+                        >
+                        </iframe>
+                        <br/>
+                        <br/>
+
+                        <h1>The interface</h1>
+                        <p>
+                            This video introduces us to the Doodlebot interface, and how you can
+                            drag + drop elements into it. If you want to play with someone else on the
+                            same room, just send them your URL!
+                        </p>
+                        <iframe
+                            width="400"
+                            height="200"
+                            src="https://www.youtube.com/embed/4GSNhdIPxAI"
+                            allow="fullscreen;"
+                            allowfullscreen
+                        >
+                        </iframe>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="hidePrevVideosModalButton">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!--Modal end-->
 
         <div id="mySidebar" class="sidebar">
@@ -279,10 +375,14 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
             <canvas valid-mode="camera" id="arucoCanvasOutputGrid" class="dropzone"></canvas>
             </div>
             <!----------------->
-
+            <div class="d-flex justify-content-between ">
             <div class="form-check" style="padding-top:20px;">
                 <input type="checkbox" class="form-check-input" id="check_gridlines" name="option2">
                 <label class="form-check-label" for="check_gridlines" style="font-size: 14px; color:antiquewhite;">Hide gridlines</label>
+            </div>
+            <div id="showVideosModalButton" style="padding-top:20px;">
+                <button class="btn btn-secondary" style="font-size: 14px;">See previous videos</button>
+            </div>
             </div>
             <!--Integration html code-->
 
@@ -299,7 +399,8 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
     <script type="text/javascript" src="./graph.js"></script>
     <script type="text/javascript" src="./grid-graph.js"></script>
     <script type="text/javascript" src="./grid.js"></script>
-    <script type="module" src="./test-index.js"></script>
+    <script src="../firebase-handler.js" type="module"></script>
+    <script src="./test-index.js" type="module"></script>
     <!-- <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script> -->
 
 
@@ -312,7 +413,6 @@ AND THERE IS NO NEED FOR virtualMode.js ANYMORE
         type="text/javascript"
     ></script>
     <!-- <script src="../socket-handler.js" type="text/javascript"></script> -->
-    <script src="../firebase-handler.js" type="text/javascript"></script>
 
     <script>
         var urlParams = new URLSearchParams(window.location.search);

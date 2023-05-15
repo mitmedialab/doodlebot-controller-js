@@ -327,7 +327,9 @@ function onDropHandler(event) {
       coin_collect_type,
     } = ALL_ASSETS[template_id];
     console.log(`New ${type}, adding to grid!`);
-
+    if (!image_rotate_90) {
+      image_rotate_90 = null; //Cannot be undefined
+    }
     if (type === BOT_TYPE) {
       let id = grid.getNewBotId();
       // let policies = id === 2 ? ["run_away_from"] : []; //TODO: Don't hardcode this

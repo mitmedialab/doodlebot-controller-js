@@ -539,7 +539,13 @@ let continueModalHandler = new bootstrap.Modal(continueModal);
 let needToSelectMovementHandler = new bootstrap.Modal(
   needToSelectMovementModal
 );
-
+let prevVideosModalHandler = new bootstrap.Modal(prevVideosModal);
+showVideosModalButton.addEventListener("click", () =>
+  prevVideosModalHandler.show()
+);
+hidePrevVideosModalButton.addEventListener("click", () =>
+  prevVideosModalHandler.hide()
+);
 continueToNextPage.addEventListener("click", () => {
   scoreModalHandler.hide();
   continueModalHandler.show();
@@ -549,6 +555,7 @@ const showWaitModal = () => {
   waitingToStartModalHandler.show();
 };
 const hideWaitModal = () => {
+  console.log("hiding the wait modal...");
   waitingToStartModalHandler.hide();
 };
 window.hideWaitModal = hideWaitModal;
@@ -741,7 +748,7 @@ const onChangeRequireGraph = () => {
     //While is moving don't change anything
     return;
   }
-  changeMovingBotsButton.disabled = !grid.is_ready_to_start();
+  // changeMovingBotsButton.disabled = !grid.is_ready_to_start();
 
   let current_needs = grid.requires_graph_load.includes(currentBotId);
   if (current_needs) {
@@ -793,6 +800,36 @@ const disableBotChoices = () => {
     select_box.disabled = true;
   }
 };
+const syncBotOptions = (bot) => {
+  // Show options in the grid
+  if (bot.policies.includes(BOT_POLICIES.COLLECT.value)) {
+    collect_checkbox.checked = true;
+    collect_checkbox.parentNode.classList.remove("policy-inactive"); //To show the select
+    // The options should be there before, otherwise it won't work
+    collect_select.value = bot.targets.length > 0 ? bot.targets[0] : "None";
+  }
+  // if (bot.policies.includes())
+  movementTypeSelect.value = bot.movement_type;
+};
+/**
+ *
+ * @param {*} bot
+ */
+const resetBotOptions = (bot) => {
+  console.log(`Resetting bot options:`);
+  console.log(bot);
+  bot = grid.update_bot_movement_type(bot.id, null);
+  bot = grid.update_bot_policy(bot.id, "FOLLOW", false);
+  bot = grid.update_bot_policy(bot.id, "RUN_AWAY_FROM", false);
+  bot = grid.update_bot_policy(bot.id, "COLLECT", false);
+  bot = grid.update_bot_collect(bot.id, "None");
+  bot = grid.update_bot_follow(bot.id, null);
+  bot = grid.update_bot_run_away_from(bot.id, null);
+  body.removeAttribute("needs-loading", "");
+  emitReplaceBot(bot);
+  live_updates.reset_default_require_graph();
+};
+window.resetBotOptions = resetBotOptions;
 const setupTutorialGrid = () => {
   //-------------------- Step 1: Create the coins--------------------------------------------//
   let coin_positions = [
@@ -805,6 +842,8 @@ const setupTutorialGrid = () => {
     [13, 4],
     [14, 1],
   ];
+  // let coin_positions = [];
+  console.log(`Number of coins: ${coin_positions.length}`);
   let start_id = 20;
   let coin_template_mapping = {
     None: "coin",
@@ -813,15 +852,19 @@ const setupTutorialGrid = () => {
     Pacman: "pacman_cherry",
   };
   let coin_template_id = coin_template_mapping[selectedOption];
-  for (let [x, y] of coin_positions) {
-    let coin = {
-      ...ALL_ASSETS[coin_template_id],
-      real_bottom_left: [x, y],
-      template_id: coin_template_id,
-      id: start_id,
-    };
-    start_id += 1;
-    grid.replace_coin(coin.id, coin, { is_new: true });
+  if (currentBotId === 1) {
+    //Only make one user add it
+    for (let [x, y] of coin_positions) {
+      let coin = {
+        ...ALL_ASSETS[coin_template_id],
+        real_bottom_left: [x, y],
+        template_id: coin_template_id,
+        id: start_id,
+      };
+      start_id += 1;
+      // grid.replace_coin(coin.id, coin, { is_new: true });
+      grid.add_coin(coin);
+    }
   }
   //-------------------- Step 1: Create the bots that collect the coins -------------------------------------//
   let movement_type_mapping = {
@@ -842,28 +885,29 @@ const setupTutorialGrid = () => {
       ...ALL_ASSETS[template_id],
       ...bot_info,
       template_id,
+      userId,
     };
-    let res = grid.replace_bot(bot.id, bot, { is_new: true }); //Pretend it came from somewhere else
+    let res;
+    if (bot.id !== currentBotId) {
+      continue;
+      // res = grid.replace_bot(bot.id, bot, { is_new: true }); //Pretend it came from somewhere else
+    }
 
-    grid.update_bot_policy(bot.id, "COLLECT", true); //Activate selected
+    res = grid.add_bot(bot);
+    bot = res.bot;
+    bot = grid.update_bot_policy(bot.id, "COLLECT", true); //Activate selected
     let collect_type = ALL_ASSETS[coin_template_id].coin_collect_type;
-    grid.update_bot_collect(bot.id, collect_type);
+    bot = grid.update_bot_collect(bot.id, collect_type);
+    bot = grid.update_bot_movement_type(bot.id, movement_type);
+    emitReplaceBot(bot);
+    // Make options appear
+    setupSelectedBot(bot);
+    syncBotOptions(bot);
 
-    if (bot.id === currentBotId) {
-      // Make options appear
-      setupSelectedBot(res);
-      // Show options in the grid
-      collect_checkbox.checked = true;
-      collect_checkbox.parentNode.classList.remove("policy-inactive"); //To show the select
-      collect_select.value = collect_type;
-
-      grid.update_bot_movement_type(currentBotId, movement_type);
-      movementTypeSelect.value = movement_type;
-      if (movement_type === MOVEMENT_VALUES.DIJKSTRA.value) {
-        body.setAttribute("needs-loading", "");
-      } else {
-        body.removeAttribute("needs-loading");
-      }
+    if (movement_type === MOVEMENT_VALUES.DIJKSTRA.value) {
+      body.setAttribute("needs-loading", "");
+    } else {
+      body.removeAttribute("needs-loading");
     }
   }
   let obstacle_template_mapping = {
@@ -876,16 +920,19 @@ const setupTutorialGrid = () => {
     { id: 11, real_bottom_left: [2, 9] },
     { id: 12, real_bottom_left: [11, 9] },
   ];
-  if (tutorial === "game3" || tutorial === "game4") {
-    for (let obstacle_info of obstacles) {
-      let obstacle_template_id = obstacle_template_mapping[selectedOption];
+  if (currentBotId === 1) {
+    //Only make one user add it
+    if (tutorial === "game3" || tutorial === "game4") {
+      for (let obstacle_info of obstacles) {
+        let obstacle_template_id = obstacle_template_mapping[selectedOption];
 
-      let obstacle = {
-        ...ALL_ASSETS[obstacle_template_id],
-        ...obstacle_info,
-        template_id: obstacle_template_id,
-      };
-      let res = grid.replace_obstacle(obstacle.id, obstacle, { is_new: true }); //Pretend it came from somewhere else
+        let obstacle = {
+          ...ALL_ASSETS[obstacle_template_id],
+          ...obstacle_info,
+          template_id: obstacle_template_id,
+        };
+        let res = grid.add_obstacle(obstacle); //Pretend it came from somewhere else
+      }
     }
   }
 
@@ -936,7 +983,9 @@ const setupGridFromPrevious = (prevGrid = {}) => {
   }
 };
 window.setupGridFromPrevious = setupGridFromPrevious;
-document.addEventListener("DOMContentLoaded", () => {
+// document.addEventListener("DOMContentLoaded", () => {
+const onConnectionSetup = () => {
+  console.log("it's loaded!");
   setupSelectOptions();
   if (selectedMode === "virtual") {
     createDOMGrid(rows, cols, cell_size);
@@ -950,9 +999,11 @@ document.addEventListener("DOMContentLoaded", () => {
     image_from_stream.setAttribute("width", cell_size * cols);
     image_from_stream.setAttribute("height", cell_size * rows);
   }
-
+  console.log(live_updates);
   setupGridFromPrevious({});
-});
+};
+window.onConnectionSetup = onConnectionSetup;
+// );
 /**
  * An object has been updated, so this deletes
  * the previous div and creates a new one with the new
@@ -975,7 +1026,9 @@ const onReplaceBot = (bot_id, bot, options = {}) => {
   if (!is_new) {
     let DOM_ID = `${BOT_TYPE}-${bot_id}`;
     let div = document.getElementById(DOM_ID);
-    div.remove(); //Not needed anymore, but paint the object again
+    if (div) {
+      div.remove(); //Not needed anymore, but paint the object again
+    }
     if (selectedMode === "camera") {
       //Also remove the template as it'll get created again
       let template = document.getElementById(getAssetTemplate(bot_id));
@@ -1006,7 +1059,9 @@ const onReplaceObstacle = (obstacle_id, obstacle, options = {}) => {
   if (!is_new) {
     let DOM_ID = `${OBSTACLE_TYPE}-${obstacle_id}`;
     let div = document.getElementById(DOM_ID);
-    div.remove(); //Not needed anymore, but paint the object again
+    if (div) {
+      div.remove(); //Not needed anymore, but paint the object again
+    }
     if (selectedMode === "camera") {
       //Also remove the template as it'll get created again
       let template = document.getElementById(getAssetTemplate(obstacle_id));
@@ -1025,7 +1080,9 @@ const onReplaceCoin = (coin_id, coin, options = {}) => {
   if (!is_new) {
     let DOM_ID = `${COIN_TYPE}-${coin_id}`;
     let div = document.getElementById(DOM_ID);
-    div.remove(); //Not needed anymore, but paint the object again
+    if (div) {
+      div.remove(); //Not needed anymore, but paint the object again
+    }
     if (selectedMode === "camera") {
       //Also remove the template as it'll get created again
       let template = document.getElementById(getAssetTemplate(coin_id));
@@ -1067,7 +1124,7 @@ const addRemoveBotIcon = (bot) => {
   removeIcon.addEventListener("click", () => {
     console.log(`Removing bot with id ${bot.id}`);
     // If clicking the removing bot, then unset
-    grid.remove_bot(bot.id);
+    // grid.remove_bot(bot.id);
     let bots_container = document.getElementById("bots");
     document.body.removeAttribute("chosen-bot");
     selectedBotMessage.innerText = `Select a bot`;
@@ -1089,7 +1146,7 @@ const addRemoveObstacleIcon = (obstacle) => {
   removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${obstacle.id}`);
-    grid.remove_obstacle(obstacle.id);
+    // grid.remove_obstacle(obstacle.id);
     live_updates.remove_obstacle({ obstacle, virtualGrid: grid.toJSON() });
   });
   obstacle_dom.appendChild(removeIcon);
@@ -1103,7 +1160,7 @@ const addRemoveCoinIcon = (coin) => {
   removeIcon.classList.add("edit-icon");
   removeIcon.addEventListener("click", () => {
     console.log(`Removing obstacle with id ${coin.id}`);
-    grid.remove_coin(coin.id);
+    // grid.remove_coin(coin.id);
     live_updates.remove_coin({ coin, virtualGrid: grid.toJSON() });
   });
   coin_dom.appendChild(removeIcon);
@@ -1152,6 +1209,7 @@ const onRemoveObstacle = (obstacle) => {
 const onRemoveCoin = (coin, options) => {
   // Remove the coin from the grid
   let DOM_ID = `${COIN_TYPE}-${coin.id}`;
+  console.log(`Trying to find coin with ID ${DOM_ID} to remove`);
   let coin_dom = document.getElementById(DOM_ID);
   coin_dom.remove();
   if (!options.fromSocket) {
@@ -1331,6 +1389,11 @@ const getAssetTemplate = (aruco_id) => {
  * 2. Makes the created image draggable
  */
 const setupNewBot = (bot) => {
+  if (document.getElementById(`${BOT_TYPE}-${bot.id}`)) {
+    //TODO: Kinda hacky, make sure this method is not called twice in
+    // a row
+    return;
+  }
   let DOM_ID = drawBot(bot);
 
   if (selectedMode === "virtual") {
@@ -1365,6 +1428,7 @@ const setupSelectedBot = (bot) => {
     }
   }
 };
+window.setupSelectedBot = setupSelectedBot;
 /**
  * Assumes that this will only be called for currentBotId
  * @param {*} bot
@@ -1411,6 +1475,11 @@ const addBotToRunFromSelect = (bot) => {
  * @param {*} obstacle
  */
 const setupNewObstacle = (obstacle) => {
+  if (document.getElementById(`${OBSTACLE_TYPE}-${obstacle.id}`)) {
+    //TODO: Kinda hacky, make sure this method is not called twice in
+    // a row
+    return;
+  }
   let DOM_ID = drawObstacle(obstacle);
   if (selectedMode === "virtual") {
     //Makes the created div draggable
@@ -1433,7 +1502,13 @@ const onAddObstacle = (obstacle) => {
  * @param {*} obstacle
  */
 const setupNewCoin = (coin) => {
+  if (document.getElementById(`${COIN_TYPE}-${coin.id}`)) {
+    //TODO: Kinda hacky, make sure this method is not called twice in
+    // a row
+    return;
+  }
   let DOM_ID = drawCoin(coin);
+
   if (selectedMode === "virtual") {
     //Makes the created div draggable
     if (!tutorial) {
@@ -1481,6 +1556,11 @@ scoreModalClose.addEventListener("click", () => {
  * @param {*} evt
  */
 async function stopMovingBot(bot_id) {
+  let bot = grid.bots[bot_id][0];
+  if (!is_bot_moving) {
+    console.log("Tried to stop bot but it's already not moving!");
+    return;
+  }
   body.removeAttribute("is-moving");
   //Stop
   console.log("stopping...");
@@ -1493,11 +1573,6 @@ async function stopMovingBot(bot_id) {
   changeMovingBotsButton.classList.remove("bot-stop");
   changeMovingBotsButton.classList.add("bot-start");
 
-  let bot = grid.bots[bot_id][0];
-  if (!is_bot_moving) {
-    console.log("Tried to stop bot but it's already not moving!");
-    return;
-  }
   is_bot_moving = false;
   if (selectedMode === "camera") {
     // await stopMovingBot_camera(currentBotId);
@@ -1506,6 +1581,7 @@ async function stopMovingBot(bot_id) {
     stopMovingBot_virtual(bot_id);
   }
   grid.reset_default_require_graph();
+  live_updates.reset_default_require_graph();
 }
 let countdown_interval;
 let seconds_left;
@@ -1696,6 +1772,9 @@ async function startMovingBot_camera(bot_id) {
 
 /** Starts bot by creating a code that runs every certain time */
 function startMovingBot_virtual(bot_id) {
+  if (!bot_id) {
+    return;
+  }
   if (bot_id in intervals) {
     log("The bot is already moving!");
     return;
@@ -1737,11 +1816,11 @@ const changeMovingBotsHandler = async (options = {}) => {
     body.setAttribute("is-waiting-for-users", "");
     body.removeAttribute("show-other-user-ready");
     // Check if everyone is ready to start
-    if (grid.is_everyone_ready_to_start()) {
-      live_updates.everyone_ready_to_start({});
-    } else {
-      showWaitModal();
-    }
+    // if (grid.is_everyone_ready_to_start()) {
+    //   live_updates.everyone_ready_to_start({});
+    // } else {
+    //   showWaitModal();
+    // }
   }
 };
 cancelNeedMovementButton.addEventListener("click", () => {
@@ -1761,7 +1840,7 @@ loadBotButton.addEventListener("click", () => {
   loadBotButton.disabled = true; //Don't make it press twice
   grid.update_all_coin_graphs(currentBotId);
   grid.change_require_graph(currentBotId, false);
-  live_updates.echange_require_graph({
+  live_updates.change_require_graph({
     bot_id: currentBotId,
     require_graph: false,
   });

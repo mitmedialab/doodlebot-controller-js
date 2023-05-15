@@ -124,9 +124,6 @@
       var urlParams = new URLSearchParams(window.location.search);
       roomId = urlParams.get("room");
       console.log(roomId);
-      document.addEventListener("DOMContentLoaded", () =>
-        live_updates.join_room_page(roomId)
-      );
 
       function finishtutorial5() {
         live_updates.finish_page({ roomId, page: "tutorial5" });

@@ -81,9 +81,9 @@ function setupSocket() {
   // new tasneem - ends here
   socket.on("room_ready_tutorial", () => {
     if (is_tutor) {
-      window.location.href = `tutorial.html?room=${room}&is_tutor=true`;
+      window.location.href = `tutorial1.html?room=${room}&is_tutor=true`;
     } else {
-      window.location.href = `tutorial.html?room=${room}`;
+      window.location.href = `tutorial1.html?room=${room}`;
     }
   });
   socket.on("page_ready", ({ roomId, is_game, page, bot_id }) => {

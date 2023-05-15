@@ -210,18 +210,18 @@ class VirtualGrid {
     }
   }
   reset_default_require_graph() {
-    // console.log("----------Resetting default require graph-----");
-    this.requires_graph_load = [];
-    for (let bot_id in this.bots) {
-      bot_id = Number(bot_id);
-      let require_graph =
-        this.bots[bot_id][0].movement_type === MOVEMENT_VALUES.DIJKSTRA.value;
-      if (require_graph) {
-        this.requires_graph_load.push(bot_id);
-      }
-    }
-    // console.log(this.requires_graph_load);
-    this.onChangeRequireGraph();
+    // // console.log("----------Resetting default require graph-----");
+    // this.requires_graph_load = [];
+    // for (let bot_id in this.bots) {
+    //   bot_id = Number(bot_id);
+    //   let require_graph =
+    //     this.bots[bot_id][0].movement_type === MOVEMENT_VALUES.DIJKSTRA.value;
+    //   if (require_graph) {
+    //     this.requires_graph_load.push(bot_id);
+    //   }
+    // }
+    // // console.log(this.requires_graph_load);
+    // this.onChangeRequireGraph();
   }
   /**
    * Changes the status of whether a bot requires a graph update
@@ -805,6 +805,9 @@ class VirtualGrid {
     bot.real_bottom_left = potentialBot.real_bottom_left;
     bot.angle = potentialBot.angle;
     bot.realAngle = potentialBot.realAngle;
+    if (!bot.realAngle) {
+      bot.realAngle = null; //can't have undefined
+    }
     bot.width = potentialBot.width;
     bot.height = potentialBot.height;
     let coinsPicked = [];
@@ -2016,14 +2019,16 @@ class VirtualGrid {
       return result;
     }
   }
-  remove_bot(bot_id, bot_index = 0) {
-    this.onRemoveBot(this.bots[bot_id][bot_index]);
+  remove_bot(bot_id, options) {
+    let bot_index = 0;
+    let bot = this.bots[bot_id][bot_index];
     delete this.bots[bot_id][bot_index];
     // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
     if (Object.keys(this.bots[bot_id]).length === 0) {
       delete this.bots[bot_id];
     }
+    this.onRemoveBot(bot, options);
   }
   add_obstacle(obstacle) {
     let result = this.add_object(obstacle, OBSTACLE_TYPE);
@@ -2071,14 +2076,16 @@ class VirtualGrid {
       this.coin_graphs[coin_id] = new GridGraph(this, coin, bot_dimensions);
     }
   }
-  remove_obstacle(obstacle_id, obstacle_index = 0) {
-    this.onRemoveObstacle(this.obstacles[obstacle_id][obstacle_index]);
+  remove_obstacle(obstacle_id, options) {
+    let obstacle_index = 0;
+    let obstacle = this.obstacles[obstacle_id][obstacle_index];
     delete this.obstacles[obstacle_id][obstacle_index];
     // this.obstacles[obstacle_id].splice(obstacle_index, 1);
     // this.update_all_coin_graphs();
     if (Object.keys(this.obstacles[obstacle_id]).length === 0) {
       delete this.obstacles[obstacle_id];
     }
+    this.onRemoveObstacle(obstacle, options);
   }
   add_coin(coin) {
     let result = this.add_object(coin, COIN_TYPE);
@@ -2099,7 +2106,7 @@ class VirtualGrid {
     if (!(coin_id in this.coins)) {
       return;
     }
-    this.onRemoveCoin(this.coins[coin_id][coin_index], options);
+    let coin = this.coins[coin_id][coin_index];
     delete this.coins[coin_id][coin_index];
     // this.obstacles[obstacle_id].splice(obstacle_index, 1);
 
@@ -2107,6 +2114,7 @@ class VirtualGrid {
       delete this.coins[coin_id];
       delete this.coin_graphs[coin_id];
     }
+    this.onRemoveCoin(coin, options);
   }
   /**
    * Quite slow, use only for testing
